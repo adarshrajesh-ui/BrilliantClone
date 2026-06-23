@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from './useAuth'
 import { useChapterData } from './useChapterData'
 import { markProblemComplete } from '../lib/chapterProgressService'
@@ -64,6 +64,28 @@ export function useProblemSession(
   }, [user, problem.problemId, problemState, revealedHintIds, sessionLoaded, completed])
 
   const hintUsed = revealedHintIds.length > 0
+
+  // Direct correction: when the learner edits their answer, clear the stale
+  // feedback from the previous submit so the old mistake no longer lingers.
+  const stateSignature = problemState ? JSON.stringify(problemState) : ''
+  const lastSubmittedSignature = useRef<string | null>(null)
+  useEffect(() => {
+    if (!sessionLoaded) {
+      return
+    }
+    if (lastSubmittedSignature.current === null) {
+      return
+    }
+    if (stateSignature !== lastSubmittedSignature.current) {
+      setFeedback(null)
+      lastSubmittedSignature.current = null
+    }
+  }, [stateSignature, sessionLoaded])
+
+  const clearFeedback = useCallback(() => {
+    setFeedback(null)
+    lastSubmittedSignature.current = null
+  }, [])
 
   const revealHint = useCallback(
     (hintId: string) => {
@@ -138,13 +160,23 @@ export function useProblemSession(
       normalizedAnswer: string | number = result.isCorrect ? 'correct' : result.mistakeType ?? 'incorrect',
     ) => {
       setFeedback(result)
-      await recordAttempt(result, stepId, submittedAnswer, normalizedAnswer)
+      lastSubmittedSignature.current = stateSignature
+
+      // A guard result (no mistakeType, not correct) means the learner has not
+      // finished entering an answer yet — e.g. "fill all fields" / "run 100 spins".
+      // Those are not graded attempts, so we don't record them or inflate the
+      // attempt count that mastery depends on.
+      const isGuard = !result.isCorrect && (!result.mistakeType || result.mistakeType === '')
+      if (!isGuard) {
+        await recordAttempt(result, stepId, submittedAnswer, normalizedAnswer)
+      }
+
       if (result.canComplete) {
         await finishIfComplete(result)
       }
       return result
     },
-    [recordAttempt, finishIfComplete],
+    [recordAttempt, finishIfComplete, stateSignature],
   )
 
   return {
@@ -152,6 +184,7 @@ export function useProblemSession(
     revealHint,
     feedback,
     setFeedback,
+    clearFeedback,
     completed,
     submitting,
     hintUsed,
