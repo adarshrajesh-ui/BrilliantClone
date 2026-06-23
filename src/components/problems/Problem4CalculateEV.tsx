@@ -12,7 +12,7 @@ const DEFAULT: P4State = { contributions: ['', '', ''], evAnswer: '' }
 const EXPECTED_CONTRIBS = [2, 2, 0]
 
 export function Problem4CalculateEV() {
-  const { state, setState, loaded } = usePersistedProblemState<P4State>('problem-4', DEFAULT)
+  const { state, setState, loaded, reset } = usePersistedProblemState<P4State>('problem-4', DEFAULT)
   const session = useProblemSession(PROBLEM_4, state)
   const rows = [
     { outcome: '$12 (× 1/6)', count: '—', probability: '1/6', color: 'green' },
@@ -45,6 +45,8 @@ export function Problem4CalculateEV() {
   return (
     <ProblemLayout problem={PROBLEM_4} problemNumber={4} feedback={session.feedback} completed={session.completed}
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-5"
+      restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
+      attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
       taskGuide={taskGuide}>
       <section className="card problem-section">
         <div className="ev-chunks">

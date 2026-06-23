@@ -16,7 +16,7 @@ interface P6State { selectedGame: string | null; assignments: Record<string, str
 const DEFAULT: P6State = { selectedGame: null, assignments: {} }
 
 export function Problem6FairnessSort() {
-  const { state, setState, loaded } = usePersistedProblemState<P6State>('problem-6', DEFAULT)
+  const { state, setState, loaded, reset } = usePersistedProblemState<P6State>('problem-6', DEFAULT)
   const session = useProblemSession(PROBLEM_6, state)
 
   if (!loaded || !session.sessionLoaded) return <div className="loading-screen"><div className="spinner" /><p>Loading…</p></div>
@@ -42,6 +42,8 @@ export function Problem6FairnessSort() {
   return (
     <ProblemLayout problem={PROBLEM_6} problemNumber={6} feedback={session.feedback} completed={session.completed}
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-7"
+      restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
+      attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
       taskGuide={taskGuide}>
       <section className="card problem-section">
         <p className="section-note tap-hint">Tap a game to pick it up, then tap a bucket. Tap a placed game again to move it.</p>

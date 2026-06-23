@@ -1496,3 +1496,307 @@ code {
   .course-hole-left .course-hole-label { flex-direction: row; }
   .course-hero { flex-direction: column; }
 }
+
+/* ---- Home: two-column layout with right-side progress card ---- */
+.home-page {
+  max-width: 1080px;
+}
+.home-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1.25rem;
+  align-items: start;
+}
+.home-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+.home-aside {
+  position: sticky;
+  top: 1rem;
+}
+
+@media (max-width: 900px) {
+  .home-layout {
+    grid-template-columns: 1fr;
+  }
+  .home-aside {
+    position: static;
+  }
+}
+
+/* ---- Home: golf-course chapter progress card ---- */
+.chapter-progress-card {
+  background: linear-gradient(165deg, #064e3b 0%, #14532d 48%, #052e16 100%);
+  color: #ecfdf5;
+  border: 1px solid rgba(134, 239, 172, 0.25);
+  border-radius: 20px;
+  padding: 1.35rem 1.25rem;
+  box-shadow: 0 18px 40px rgba(5, 46, 22, 0.45), 0 0 0 1px rgba(74, 222, 128, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: hidden;
+}
+.cpc-header { display: flex; flex-direction: column; gap: 0.15rem; }
+.cpc-eyebrow {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #86efac;
+}
+.cpc-title {
+  margin: 0;
+  color: #f0fdf4;
+  font-size: 1.25rem;
+}
+.cpc-subtitle {
+  margin: 0;
+  color: #d1fae5;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.cpc-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+.cpc-stat {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 0.5rem 0.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  text-align: center;
+}
+.cpc-stat-value { font-weight: 800; font-size: 0.95rem; color: #fefce8; }
+.cpc-stat-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a7f3d0;
+}
+.cpc-stat-pct .cpc-stat-value { color: #fde047; font-size: 1.1rem; }
+
+.cpc-current {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #ecfdf5;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.cpc-current strong { color: #fde047; }
+.cpc-current-flag {
+  width: 0.7rem;
+  height: 0.55rem;
+  background: #f87171;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  flex-shrink: 0;
+}
+
+.cpc-course {
+  border-radius: 18px;
+  overflow: hidden;
+}
+.cpc-course-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.cpc-fairway-base {
+  fill: none;
+  stroke: #052e16;
+  stroke-width: 14;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+.cpc-fairway {
+  fill: none;
+  stroke: #4ade80;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 2 12;
+  opacity: 0.7;
+}
+.cpc-hole-cup {
+  fill: #064e3b;
+  stroke: #34d399;
+  stroke-width: 2;
+}
+.cpc-hole-text {
+  font-size: 13px;
+  font-weight: 800;
+  fill: #ecfdf5;
+}
+.cpc-hole-complete .cpc-hole-cup {
+  fill: #16a34a;
+  stroke: #bbf7d0;
+}
+.cpc-hole-current .cpc-hole-cup {
+  fill: #ca8a04;
+  stroke: #fde047;
+  stroke-width: 3;
+}
+.cpc-hole-current .cpc-hole-text { fill: #fff; }
+.cpc-hole-glow {
+  fill: rgba(250, 204, 21, 0.28);
+  stroke: rgba(253, 224, 71, 0.7);
+  stroke-width: 1.5;
+  animation: highlight-pulse 1.3s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.cpc-hole-upcoming .cpc-hole-cup { opacity: 0.55; }
+.cpc-hole-upcoming .cpc-hole-text { opacity: 0.7; }
+.cpc-hole-flagmark line { stroke: #fca5a5; stroke-width: 1.5; opacity: 0.6; }
+.cpc-hole-flagmark polygon { fill: #fca5a5; opacity: 0.6; }
+.cpc-hole-final .cpc-hole-cup {
+  fill: #0b1220;
+  stroke: #fca5a5;
+  stroke-width: 3;
+}
+.cpc-hole-final .cpc-hole-text { fill: #fde047; }
+
+.cpc-milestones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #a7f3d0;
+}
+.cpc-milestones-label { text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+.cpc-milestones-track { display: inline-flex; gap: 0.3rem; flex: 1; }
+.cpc-milestone-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.cpc-milestone-on {
+  background: #facc15;
+  border-color: #fde047;
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.6);
+}
+.cpc-milestones-count { font-weight: 700; color: #ecfdf5; }
+
+.cpc-actions { display: flex; flex-direction: column; gap: 0.5rem; }
+.cpc-btn-primary,
+.cpc-btn-ghost {
+  display: inline-block;
+  text-align: center;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.cpc-btn-primary {
+  background: #facc15;
+  color: #422006;
+  box-shadow: 0 4px 14px rgba(250, 204, 21, 0.35);
+}
+.cpc-btn-primary:hover { background: #fde047; text-decoration: none; transform: translateY(-1px); }
+.cpc-btn-ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ecfdf5;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.cpc-btn-ghost:hover { background: rgba(255, 255, 255, 0.16); text-decoration: none; }
+
+/* ---- Completed problem review / restart UI ---- */
+.review-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  border: 1px solid #bbf7d0;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+}
+.review-banner-head { display: flex; align-items: flex-start; gap: 0.75rem; }
+.review-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+.review-banner-title { margin: 0; font-weight: 700; color: var(--text-heading); }
+.review-banner-sub { margin: 0.15rem 0 0; font-size: 0.9rem; color: #4b5563; }
+.review-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.review-mode-active {
+  cursor: default;
+  background: #16a34a;
+  border-color: #16a34a;
+}
+.btn-outline {
+  display: inline-block;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.btn-outline:hover { background: var(--primary); color: #fff; }
+
+.review-detail { display: flex; flex-direction: column; gap: 0.85rem; }
+.review-state-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #15803d;
+}
+.review-row { display: flex; flex-direction: column; gap: 0.2rem; }
+.review-row-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+.review-row-value { margin: 0; color: var(--text); }
+.review-summary-stats {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+.review-summary-stats li { display: flex; flex-direction: column; gap: 0.1rem; }
+.review-summary-stats span {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+}
+.review-summary-stats strong { font-size: 1rem; color: var(--text-heading); }
+.review-stat-complete { color: #16a34a; }
+
+.restart-banner {
+  border: 1px dashed var(--primary);
+  background: #eff6ff;
+}
+.restart-banner-title { margin: 0; font-weight: 700; color: #1d4ed8; }
+.restart-banner-sub { margin: 0.2rem 0 0.5rem; font-size: 0.9rem; color: #4b5563; }

@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from './useAuth'
-import { loadProblemSession, saveProblemSession } from '../lib/problemSessionService'
+import {
+  clearProblemSession,
+  loadProblemSession,
+  saveProblemSession,
+} from '../lib/problemSessionService'
 
 export function usePersistedProblemState<T>(
   problemId: string,
@@ -38,6 +42,21 @@ export function usePersistedProblemState<T>(
     setStateInternal(updater)
   }, [])
 
+  // Reset only this problem's local + persisted session back to a fresh start.
+  // Used when a learner explicitly restarts a completed problem; chapter-level
+  // progress (completedProblemIds, percentage, etc.) is intentionally untouched.
+  const reset = useCallback(() => {
+    setStateInternal(defaultState)
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current)
+      saveTimer.current = null
+    }
+    if (user) {
+      void clearProblemSession(user.uid, problemId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- defaultState is stable per problem
+  }, [user, problemId])
+
   const persist = useCallback(
     (nextState: T, revealedHintIds: string[]) => {
       if (!user) {
@@ -53,5 +72,5 @@ export function usePersistedProblemState<T>(
     [user, problemId],
   )
 
-  return { state, setState, loaded, persist }
+  return { state, setState, loaded, persist, reset }
 }

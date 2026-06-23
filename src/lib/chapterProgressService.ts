@@ -5,7 +5,7 @@ import {
   type ChapterProgress,
   type MasteryStatus,
 } from '../types/chapter'
-import { CHAPTER_PROBLEMS } from '../data/chapter'
+import { CHAPTER_PROBLEMS, getNextIncompleteProblemIndex } from '../data/chapter'
 import { db } from './firebase'
 import {
   createDefaultLocalProgress,
@@ -183,9 +183,10 @@ export async function markProblemComplete(
 
   const completedProblemIds = [...base.completedProblemIds, problemId]
   const completionPercentage = computeCompletionPercentage(completedProblemIds)
-  const problemIndex = CHAPTER_PROBLEMS.findIndex((p) => p.problemId === problemId)
-  const currentProblemIndex =
-    problemIndex >= 0 ? Math.min(problemIndex + 1, TOTAL_PROBLEMS - 1) : base.currentProblemIndex
+  // Resume point follows the farthest completed progression, and never moves
+  // backward (e.g. when an earlier problem is re-completed after a restart).
+  const nextIndex = getNextIncompleteProblemIndex(completedProblemIds)
+  const currentProblemIndex = Math.max(base.currentProblemIndex, nextIndex)
 
   const progress: ChapterProgress = {
     ...base,
@@ -209,10 +210,15 @@ export async function setCurrentProblem(
 ): Promise<void> {
   const base = (await getChapterProgress(userId)) ?? createDefaultProgress(userId)
   const problemIndex = CHAPTER_PROBLEMS.findIndex((p) => p.problemId === problemId)
+  // Track which problem is open for resume hints, but never let opening an
+  // older (e.g. completed) problem drag the farthest progression backward.
   const progress: ChapterProgress = {
     ...base,
     currentProblemId: problemId,
-    currentProblemIndex: problemIndex >= 0 ? problemIndex : base.currentProblemIndex,
+    currentProblemIndex:
+      problemIndex >= 0
+        ? Math.max(base.currentProblemIndex, problemIndex)
+        : base.currentProblemIndex,
     updatedAt: new Date().toISOString(),
   }
   await saveProgress(progress)

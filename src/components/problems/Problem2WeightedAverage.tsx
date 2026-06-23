@@ -18,7 +18,7 @@ interface P2State {
 const DEFAULT: P2State = { slots: ['', '', '', ''], selectedCard: null, evAnswer: '' }
 
 export function Problem2WeightedAverage() {
-  const { state, setState, loaded } = usePersistedProblemState<P2State>('problem-2', DEFAULT)
+  const { state, setState, loaded, reset } = usePersistedProblemState<P2State>('problem-2', DEFAULT)
   const session = useProblemSession(PROBLEM_2, state)
 
   if (!loaded || !session.sessionLoaded) {
@@ -46,6 +46,8 @@ export function Problem2WeightedAverage() {
   return (
     <ProblemLayout problem={PROBLEM_2} problemNumber={2} feedback={session.feedback} completed={session.completed}
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-3"
+      restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
+      attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
       taskGuide={taskGuide}>
       <section className="card problem-section">
         <ConfigurableSpinner segments={SPINNER_P2} rotation={0} spinning={false} lastOutcome={null} />

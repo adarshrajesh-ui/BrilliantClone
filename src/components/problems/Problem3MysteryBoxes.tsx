@@ -28,7 +28,7 @@ const DEFAULT: P3State = {
 }
 
 export function Problem3MysteryBoxes() {
-  const { state, setState, loaded } = usePersistedProblemState<P3State>('problem-3', DEFAULT)
+  const { state, setState, loaded, reset } = usePersistedProblemState<P3State>('problem-3', DEFAULT)
   const session = useProblemSession(PROBLEM_3, state)
 
   const highlightValue = state.activeRow !== null ? [12, 6, 0][state.activeRow] : null
@@ -60,6 +60,8 @@ export function Problem3MysteryBoxes() {
   return (
     <ProblemLayout problem={PROBLEM_3} problemNumber={3} feedback={session.feedback} completed={session.completed}
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-4"
+      restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
+      attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
       taskGuide={taskGuide}>
       <section className="card problem-section">
         <MysteryBoxes boxes={MYSTERY_BOXES_P3} revealedIds={state.revealed}

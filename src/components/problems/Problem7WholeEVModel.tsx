@@ -31,7 +31,7 @@ const DEFAULT: P7State = {
 }
 
 export function Problem7WholeEVModel() {
-  const { state, setState, loaded } = usePersistedProblemState<P7State>('problem-7', DEFAULT)
+  const { state, setState, loaded, reset } = usePersistedProblemState<P7State>('problem-7', DEFAULT)
   const session = useProblemSession(PROBLEM_7, state)
 
   const rows = [
@@ -70,6 +70,8 @@ export function Problem7WholeEVModel() {
   return (
     <ProblemLayout problem={PROBLEM_7} problemNumber={7} feedback={session.feedback} completed={session.completed}
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-8"
+      restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
+      attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
       taskGuide={taskGuide}>
       <section className="card problem-section">
         <h2>Carnival wheel (10 sections)</h2>

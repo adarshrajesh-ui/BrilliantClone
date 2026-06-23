@@ -29,8 +29,20 @@ export function useProblemSession(
   const [submitting, setSubmitting] = useState(false)
   const [sessionLoaded, setSessionLoaded] = useState(false)
 
+  // Whether this problem is recorded complete in chapter progress. Chapter
+  // progress loads asynchronously, so we sync into local state below — otherwise
+  // returning to a completed problem would render it as a fresh (restarted) run.
   const alreadyComplete = progress?.completedProblemIds.includes(problem.problemId) ?? false
-  const [completed, setCompleted] = useState(alreadyComplete)
+  const [justCompleted, setJustCompleted] = useState(false)
+  // Explicit, learner-initiated fresh practice attempt on a completed problem.
+  const [restarted, setRestarted] = useState(false)
+  const completed = alreadyComplete || justCompleted
+
+  // Review-mode summary data (sourced from recorded attempts so it survives the
+  // session being cleared on completion).
+  const [finalAttemptCount, setFinalAttemptCount] = useState(0)
+  const [lastSubmittedAnswer, setLastSubmittedAnswer] = useState<string | null>(null)
+  const [reviewHintUsed, setReviewHintUsed] = useState(false)
 
   useEffect(() => {
     if (!user) {
@@ -47,7 +59,16 @@ export function useProblemSession(
       if (cancelled) {
         return
       }
+      const finals = attempts.filter(
+        (a) => a.problemId === problem.problemId && a.stepId === 'final',
+      )
+      const lastFinal = finals[finals.length - 1]
       setRevealedHintIds(session.revealedHintIds ?? [])
+      setFinalAttemptCount(finals.length)
+      setLastSubmittedAnswer(lastFinal ? lastFinal.submittedAnswer : null)
+      setReviewHintUsed(
+        attempts.some((a) => a.problemId === problem.problemId && a.hintUsed),
+      )
       setAttemptNumber(countFinalAttempts(attempts, problem.problemId) + 1)
       setSessionLoaded(true)
     })()
@@ -58,6 +79,8 @@ export function useProblemSession(
   }, [user, problem.problemId])
 
   useEffect(() => {
+    // Don't persist session state for completed problems (review or restart);
+    // completion is the source of truth and restart attempts are ephemeral.
     if (!user || !sessionLoaded || completed || !problemState) {
       return
     }
@@ -127,6 +150,16 @@ export function useProblemSession(
       })
 
       setAttemptNumber((n) => n + 1)
+
+      // Keep the review summary in sync with the latest final attempt so a
+      // restart → re-complete cycle shows up-to-date info without a remount.
+      if (stepId === 'final') {
+        setFinalAttemptCount((c) => c + 1)
+        setLastSubmittedAnswer(submittedAnswer)
+        if (hintUsed) {
+          setReviewHintUsed(true)
+        }
+      }
     },
     [user, problem, attemptNumber, hintUsed],
   )
@@ -144,7 +177,9 @@ export function useProblemSession(
         await evaluateMastery(user.uid)
         await clearProblemSession(user.uid, problem.problemId)
         await reload()
-        setCompleted(true)
+        setJustCompleted(true)
+        // A finished restart attempt returns to review mode automatically.
+        setRestarted(false)
         return true
       } finally {
         setSubmitting(false)
@@ -152,6 +187,21 @@ export function useProblemSession(
     },
     [user, problem.problemId, reload],
   )
+
+  // Explicit restart: make a completed problem interactive again for a fresh
+  // practice attempt. Completion + chapter progress are preserved.
+  const restart = useCallback(() => {
+    setRestarted(true)
+    setFeedback(null)
+    lastSubmittedSignature.current = null
+  }, [])
+
+  // Return from a restart attempt back to the completed review view.
+  const backToReview = useCallback(() => {
+    setRestarted(false)
+    setFeedback(null)
+    lastSubmittedSignature.current = null
+  }, [])
 
   const handleCheck = useCallback(
     async (
@@ -186,6 +236,12 @@ export function useProblemSession(
     setFeedback,
     clearFeedback,
     completed,
+    restarted,
+    restart,
+    backToReview,
+    finalAttemptCount,
+    lastSubmittedAnswer,
+    reviewHintUsed,
     submitting,
     hintUsed,
     handleCheck,

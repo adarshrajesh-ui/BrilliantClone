@@ -34,7 +34,7 @@ const DEFAULT: P1State = {
 }
 
 export function Problem1LongRunAverage() {
-  const { state, setState, loaded } = usePersistedProblemState<P1State>('problem-1', DEFAULT)
+  const { state, setState, loaded, reset } = usePersistedProblemState<P1State>('problem-1', DEFAULT)
   const session = useProblemSession(PROBLEM_1, state)
 
   const runSpins = useCallback(
@@ -87,6 +87,8 @@ export function Problem1LongRunAverage() {
   return (
     <ProblemLayout problem={PROBLEM_1} problemNumber={1} feedback={session.feedback} completed={session.completed}
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-2"
+      restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
+      attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
       taskGuide={taskGuide}
       completionMessage="You predicted, ran 100+ spins, and identified $5 as the long-run average.">
       <section className="card problem-section">

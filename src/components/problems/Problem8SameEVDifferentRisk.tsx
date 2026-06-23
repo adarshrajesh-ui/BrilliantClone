@@ -24,7 +24,7 @@ const DEFAULT: P8State = {
 }
 
 export function Problem8SameEVDifferentRisk() {
-  const { state, setState, loaded } = usePersistedProblemState<P8State>('problem-8', DEFAULT)
+  const { state, setState, loaded, reset } = usePersistedProblemState<P8State>('problem-8', DEFAULT)
   const session = useProblemSession(PROBLEM_8, state)
 
   const runA = useCallback(() => {
@@ -63,6 +63,8 @@ export function Problem8SameEVDifferentRisk() {
   return (
     <ProblemLayout problem={PROBLEM_8} problemNumber={8} feedback={session.feedback} completed={session.completed}
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint}
+      restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
+      attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
       taskGuide={taskGuide}
       completionMessage="You compared two games with the same EV but different risk profiles.">
       <section className="card problem-section">
