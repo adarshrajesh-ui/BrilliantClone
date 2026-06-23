@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from './useAuth'
 import { useChapterData } from './useChapterData'
+import { isGradedAttempt } from '../lib/answerChecker'
 import { markProblemComplete } from '../lib/chapterProgressService'
 import { syncMilestonesForCompletion } from '../lib/milestonesService'
 import { evaluateMastery } from '../lib/masteryService'
@@ -162,12 +163,11 @@ export function useProblemSession(
       setFeedback(result)
       lastSubmittedSignature.current = stateSignature
 
-      // A guard result (no mistakeType, not correct) means the learner has not
+      // Guard results (no mistakeType, not correct) mean the learner has not
       // finished entering an answer yet — e.g. "fill all fields" / "run 100 spins".
       // Those are not graded attempts, so we don't record them or inflate the
       // attempt count that mastery depends on.
-      const isGuard = !result.isCorrect && (!result.mistakeType || result.mistakeType === '')
-      if (!isGuard) {
+      if (isGradedAttempt(result)) {
         await recordAttempt(result, stepId, submittedAnswer, normalizedAnswer)
       }
 

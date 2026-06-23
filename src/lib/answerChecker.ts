@@ -36,6 +36,19 @@ const fail = (mistakeType: string, feedback: string): CheckResult => ({
   canComplete: false,
 })
 
+/**
+ * A graded attempt is a real evaluation of the learner's answer. A "guard"
+ * result (not correct, with no mistakeType) means the learner hasn't finished
+ * entering an answer yet — e.g. "fill all fields" / "run 100 spins" — and must
+ * NOT count toward the attempt total that mastery depends on.
+ */
+export function isGradedAttempt(result: CheckResult): boolean {
+  if (result.isCorrect) {
+    return true
+  }
+  return Boolean(result.mistakeType && result.mistakeType.length > 0)
+}
+
 export function checkProblem1Completion(input: Problem1CheckInput): CheckResult {
   if (!input.predictionSubmitted) {
     return fail('', 'Submit your prediction before spinning.')
@@ -184,6 +197,12 @@ export function checkProblem4(input: Problem4CheckInput): CheckResult {
   // Mistake: summed raw payouts (12 + 6 + 0) without weighting by probability.
   if (areNumbersClose(c1, 12) && areNumbersClose(c2, 6)) {
     return fail('unweighted-sum', 'You used the raw payouts. Each contribution is outcome × probability, e.g. 12 × 1/6 = 2.')
+  }
+
+  // Mistake: the two paying rows are right, but the $0 row was treated as if it
+  // contributes something. The $0 outcome still belongs in the sum at 0.
+  if (areNumbersClose(c1, expected[0]) && areNumbersClose(c2, expected[1]) && !areNumbersClose(c3, expected[2])) {
+    return fail('omitted-zero-row', 'The $0 row still belongs in the sum — it contributes 0 × 3/6 = $0. Enter 0 for that row.')
   }
 
   if (!areNumbersClose(c1, expected[0]) || !areNumbersClose(c2, expected[1]) || !areNumbersClose(c3, expected[2])) {
