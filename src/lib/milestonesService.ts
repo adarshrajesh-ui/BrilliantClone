@@ -118,6 +118,23 @@ export async function syncMilestonesForCompletion(
   return saveMilestones(milestones)
 }
 
+export async function setChapterMastered(userId: string): Promise<Milestones> {
+  const base = await ensureMilestones(userId)
+  const unlocked = new Set(base.unlockedMilestones)
+  unlocked.add('chapter-complete')
+  unlocked.add('chapter-mastered')
+
+  const milestones: Milestones = {
+    ...base,
+    unlockedMilestones: [...unlocked],
+    chapterCompleted: true,
+    chapterMastered: true,
+    updatedAt: new Date().toISOString(),
+  }
+
+  return saveMilestones(milestones)
+}
+
 export async function getMilestones(userId: string): Promise<Milestones | null> {
   try {
     const firestore = requireDb()

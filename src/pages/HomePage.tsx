@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useChapterData } from '../hooks/useChapterData'
 import { ChapterSyncBanner } from '../components/SyncWarningBanner'
+import { SuggestedReview } from '../components/SuggestedReview'
 import { CHAPTER_TITLE } from '../data/chapter'
 
 export function HomePage() {
@@ -49,10 +50,12 @@ export function HomePage() {
           </div>
         ) : null}
 
-        <Link to="/chapter/expected-value-intro" className="btn-secondary">
+        <Link to="/chapter/expected-value-intro" className="btn-secondary touch-target">
           {progress && progress.completionPercentage > 0 ? 'Continue chapter' : 'Start chapter'}
         </Link>
       </section>
+
+      <SuggestedReview />
 
       <section className="card">
         <h2>How it works</h2>

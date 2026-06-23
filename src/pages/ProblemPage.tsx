@@ -1,6 +1,7 @@
-import type { ComponentType } from 'react'
 import { useParams } from 'react-router-dom'
+import type { ComponentType } from 'react'
 import { getProblemDefinition } from '../data/problems'
+import { useTrackCurrentProblem } from '../hooks/useTrackCurrentProblem'
 import { Problem1LongRunAverage } from '../components/problems/Problem1LongRunAverage'
 import { Problem2WeightedAverage } from '../components/problems/Problem2WeightedAverage'
 import { Problem3MysteryBoxes } from '../components/problems/Problem3MysteryBoxes'
@@ -23,6 +24,7 @@ const PROBLEM_COMPONENTS: Record<string, ComponentType> = {
 }
 
 export function ProblemPage() {
+  useTrackCurrentProblem()
   const { problemId } = useParams<{ problemId: string }>()
 
   if (!problemId) {

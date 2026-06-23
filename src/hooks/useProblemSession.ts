@@ -1,30 +1,90 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from './useAuth'
 import { useChapterData } from './useChapterData'
 import { markProblemComplete } from '../lib/chapterProgressService'
 import { syncMilestonesForCompletion } from '../lib/milestonesService'
-import { recordProblemAttempt } from '../lib/problemAttemptService'
+import { evaluateMastery } from '../lib/masteryService'
+import {
+  countFinalAttempts,
+  getChapterAttempts,
+  recordProblemAttempt,
+} from '../lib/problemAttemptService'
+import {
+  clearProblemSession,
+  loadProblemSession,
+  saveProblemSession,
+} from '../lib/problemSessionService'
 import type { CheckResult, ProblemDefinition } from '../types/problem'
 
-export function useProblemSession(problem: ProblemDefinition) {
+export function useProblemSession(
+  problem: ProblemDefinition,
+  problemState?: Record<string, unknown> | object,
+) {
   const { user } = useAuth()
   const { reload, progress } = useChapterData()
   const [revealedHintIds, setRevealedHintIds] = useState<string[]>([])
   const [feedback, setFeedback] = useState<CheckResult | null>(null)
   const [attemptNumber, setAttemptNumber] = useState(1)
   const [submitting, setSubmitting] = useState(false)
+  const [sessionLoaded, setSessionLoaded] = useState(false)
 
   const alreadyComplete = progress?.completedProblemIds.includes(problem.problemId) ?? false
   const [completed, setCompleted] = useState(alreadyComplete)
 
+  useEffect(() => {
+    if (!user) {
+      setSessionLoaded(true)
+      return
+    }
+
+    let cancelled = false
+    void (async () => {
+      const [session, attempts] = await Promise.all([
+        loadProblemSession(user.uid, problem.problemId),
+        getChapterAttempts(user.uid),
+      ])
+      if (cancelled) {
+        return
+      }
+      setRevealedHintIds(session.revealedHintIds ?? [])
+      setAttemptNumber(countFinalAttempts(attempts, problem.problemId) + 1)
+      setSessionLoaded(true)
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user, problem.problemId])
+
+  useEffect(() => {
+    if (!user || !sessionLoaded || completed || !problemState) {
+      return
+    }
+    void saveProblemSession(user.uid, problem.problemId, problemState as Record<string, unknown>, revealedHintIds)
+  }, [user, problem.problemId, problemState, revealedHintIds, sessionLoaded, completed])
+
   const hintUsed = revealedHintIds.length > 0
 
-  const revealHint = useCallback((hintId: string) => {
-    setRevealedHintIds((prev) => (prev.includes(hintId) ? prev : [...prev, hintId]))
-  }, [])
+  const revealHint = useCallback(
+    (hintId: string) => {
+      setRevealedHintIds((prev) => {
+        const next = prev.includes(hintId) ? prev : [...prev, hintId]
+        if (user && problemState) {
+          void saveProblemSession(user.uid, problem.problemId, problemState as Record<string, unknown>, next)
+        }
+        return next
+      })
+    },
+    [user, problem.problemId, problemState],
+  )
 
   const recordAttempt = useCallback(
-    async (result: CheckResult, stepId: string, submittedAnswer: string) => {
+    async (
+      result: CheckResult,
+      stepId: string,
+      submittedAnswer: string,
+      normalizedAnswer: string | number,
+    ) => {
       if (!user) {
         return
       }
@@ -35,7 +95,7 @@ export function useProblemSession(problem: ProblemDefinition) {
         problemId: problem.problemId,
         stepId,
         submittedAnswer,
-        normalizedAnswer: result.isCorrect ? 'correct' : result.mistakeType ?? 'incorrect',
+        normalizedAnswer,
         isCorrect: result.isCorrect,
         attemptNumber,
         hintUsed,
@@ -58,6 +118,8 @@ export function useProblemSession(problem: ProblemDefinition) {
       try {
         const prog = await markProblemComplete(user.uid, problem.problemId)
         await syncMilestonesForCompletion(user.uid, prog.completedProblemIds.length)
+        await evaluateMastery(user.uid)
+        await clearProblemSession(user.uid, problem.problemId)
         await reload()
         setCompleted(true)
         return true
@@ -69,9 +131,14 @@ export function useProblemSession(problem: ProblemDefinition) {
   )
 
   const handleCheck = useCallback(
-    async (result: CheckResult, stepId: string, submittedAnswer: string) => {
+    async (
+      result: CheckResult,
+      stepId: string,
+      submittedAnswer: string,
+      normalizedAnswer: string | number = result.isCorrect ? 'correct' : result.mistakeType ?? 'incorrect',
+    ) => {
       setFeedback(result)
-      await recordAttempt(result, stepId, submittedAnswer)
+      await recordAttempt(result, stepId, submittedAnswer, normalizedAnswer)
       if (result.canComplete) {
         await finishIfComplete(result)
       }
@@ -91,5 +158,6 @@ export function useProblemSession(problem: ProblemDefinition) {
     handleCheck,
     finishIfComplete,
     recordAttempt,
+    sessionLoaded,
   }
 }

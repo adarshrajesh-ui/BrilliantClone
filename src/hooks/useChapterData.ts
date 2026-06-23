@@ -3,6 +3,7 @@ import { FirebaseError } from 'firebase/app'
 import { useAuth } from './useAuth'
 import { ensureChapterProgress } from '../lib/chapterProgressService'
 import { ensureMilestones } from '../lib/milestonesService'
+import { evaluateMastery } from '../lib/masteryService'
 import { getFirestoreErrorMessage } from '../lib/authErrors'
 import type { ChapterProgress, Milestones } from '../types/chapter'
 
@@ -39,13 +40,20 @@ export function useChapterData() {
     setState((prev) => ({ ...prev, loading: true, error: null }))
 
     try {
-      const [progress, milestones] = await Promise.all([
+      const [progress] = await Promise.all([
+        ensureChapterProgress(user.uid),
+        ensureMilestones(user.uid),
+      ])
+      if (progress.completedProblemIds.length === 8) {
+        await evaluateMastery(user.uid)
+      }
+      const [updatedProgress, updatedMilestones] = await Promise.all([
         ensureChapterProgress(user.uid),
         ensureMilestones(user.uid),
       ])
       setState({
-        progress,
-        milestones,
+        progress: updatedProgress,
+        milestones: updatedMilestones,
         loading: false,
         error: null,
         syncWarning: null,

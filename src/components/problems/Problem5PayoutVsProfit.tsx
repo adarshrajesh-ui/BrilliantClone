@@ -1,30 +1,29 @@
-import { useState } from 'react'
 import { BalanceScale } from '../visuals/BalanceScale'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
+import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { PROBLEM_5 } from '../../data/problems/problem-5'
 import { checkProblem5 } from '../../lib/answerChecker'
 
-export function Problem5PayoutVsProfit() {
-  const session = useProblemSession(PROBLEM_5)
-  const [costPlaced, setCostPlaced] = useState(false)
-  const [profitAnswer, setProfitAnswer] = useState('')
+interface P5State { costPlaced: boolean; profitAnswer: string }
+const DEFAULT: P5State = { costPlaced: false, profitAnswer: '' }
 
-  const submit = async () => {
-    const r = checkProblem5({ formulaSelected: costPlaced, profitAnswer })
-    await session.handleCheck(r, 'final', profitAnswer)
-  }
+export function Problem5PayoutVsProfit() {
+  const { state, setState, loaded } = usePersistedProblemState<P5State>('problem-5', DEFAULT)
+  const session = useProblemSession(PROBLEM_5, state)
+
+  if (!loaded || !session.sessionLoaded) return <div className="loading-screen"><div className="spinner" /><p>Loading…</p></div>
 
   return (
     <ProblemLayout problem={PROBLEM_5} problemNumber={5} feedback={session.feedback} completed={session.completed}
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-6">
       <section className="card problem-section">
-        <BalanceScale payout={4} cost={3} costPlaced={costPlaced} onPlaceCost={() => setCostPlaced(true)} />
-        <label className="field-label">
-          Expected profit
-          <input type="text" value={profitAnswer} onChange={(e) => setProfitAnswer(e.target.value)} placeholder="$1" disabled={!costPlaced} />
+        <BalanceScale payout={4} cost={3} costPlaced={state.costPlaced} onPlaceCost={() => setState((p) => ({ ...p, costPlaced: true }))} />
+        <label className="field-label">Expected profit
+          <input className="touch-input" value={state.profitAnswer} onChange={(e) => setState((p) => ({ ...p, profitAnswer: e.target.value }))} disabled={!state.costPlaced} />
         </label>
-        <button type="button" className="btn-secondary" disabled={!costPlaced || session.submitting} onClick={() => void submit()}>Submit answer</button>
+        <button type="button" className="btn-secondary touch-target" disabled={!state.costPlaced || session.submitting}
+          onClick={() => void session.handleCheck(checkProblem5({ formulaSelected: state.costPlaced, profitAnswer: state.profitAnswer }), 'final', state.profitAnswer, state.profitAnswer)}>Submit answer</button>
       </section>
     </ProblemLayout>
   )

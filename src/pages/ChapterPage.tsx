@@ -8,6 +8,7 @@ import {
 } from '../data/chapter'
 import { useChapterData } from '../hooks/useChapterData'
 import { ChapterSyncBanner } from '../components/SyncWarningBanner'
+import { SuggestedReview } from '../components/SuggestedReview'
 import type { MasteryStatus } from '../types/chapter'
 
 const CHAPTER_PATH = '/chapter/expected-value-intro'
@@ -111,6 +112,7 @@ export function ChapterPage() {
           {!allComplete && (
             <p className="continue-hint">
               Pick up at Problem {CHAPTER_PROBLEMS.findIndex((p) => p.problemId === continueProblemId) + 1}
+              {progress.currentProblemId === continueProblemId && progress.completedProblemIds.length > 0 && ' — your progress is saved'}
             </p>
           )}
         </div>
@@ -148,6 +150,8 @@ export function ChapterPage() {
           })}
         </ol>
       </section>
+
+      <SuggestedReview />
 
       <section className="card">
         <h2>Milestones</h2>

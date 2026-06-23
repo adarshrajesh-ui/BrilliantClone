@@ -90,8 +90,16 @@ export function getProblemById(problemId: string): ChapterProblem | undefined {
 
 export function getContinueProblemId(progress: {
   currentProblemIndex: number
+  currentProblemId?: string
   completedProblemIds: string[]
 }): string {
+  if (
+    progress.currentProblemId &&
+    !progress.completedProblemIds.includes(progress.currentProblemId)
+  ) {
+    return progress.currentProblemId
+  }
+
   const nextIncomplete = CHAPTER_PROBLEMS.find(
     (p) => !progress.completedProblemIds.includes(p.problemId),
   )

@@ -1,61 +1,68 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { ConfigurableSpinner, SPINNER_P1, spinFromSegments } from '../visuals/ConfigurableSpinner'
 import { RunningAverageGraph } from '../visuals/RunningAverageGraph'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
+import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { PROBLEM_1 } from '../../data/problems/problem-1'
 import { checkProblem1Completion, checkProblem1Prediction } from '../../lib/answerChecker'
 import type { Problem1Choice } from '../../types/problem'
 
 const CHOICES: Problem1Choice[] = [0, 5, 10]
 
+interface P1State {
+  prediction: Problem1Choice | null
+  predictionSubmitted: boolean
+  finalAnswer: Problem1Choice | null
+  totalSpins: number
+  totalWinnings: number
+  runningAverages: number[]
+  rotation: number
+  lastOutcome: number | null
+}
+
+const DEFAULT: P1State = {
+  prediction: null,
+  predictionSubmitted: false,
+  finalAnswer: null,
+  totalSpins: 0,
+  totalWinnings: 0,
+  runningAverages: [],
+  rotation: 0,
+  lastOutcome: null,
+}
+
 export function Problem1LongRunAverage() {
-  const session = useProblemSession(PROBLEM_1)
-  const [prediction, setPrediction] = useState<Problem1Choice | null>(null)
-  const [predictionSubmitted, setPredictionSubmitted] = useState(false)
-  const [finalAnswer, setFinalAnswer] = useState<Problem1Choice | null>(null)
-  const [totalSpins, setTotalSpins] = useState(0)
-  const [totalWinnings, setTotalWinnings] = useState(0)
-  const [runningAverages, setRunningAverages] = useState<number[]>([])
-  const [rotation, setRotation] = useState(0)
-  const [spinning, setSpinning] = useState(false)
-  const [lastOutcome, setLastOutcome] = useState<number | null>(null)
+  const { state, setState, loaded } = usePersistedProblemState<P1State>('problem-1', DEFAULT)
+  const session = useProblemSession(PROBLEM_1, state)
 
   const runSpins = useCallback(
     async (count: number) => {
-      if (!predictionSubmitted || spinning) return
-      setSpinning(true)
+      if (!state.predictionSubmitted) return
       await new Promise((r) => setTimeout(r, 350))
-      let spins = totalSpins, winnings = totalWinnings
-      const avgs = [...runningAverages]
-      let last = lastOutcome
-      for (let i = 0; i < count; i += 1) {
-        const o = spinFromSegments(SPINNER_P1)
-        winnings += o; spins += 1; avgs.push(winnings / spins); last = o
-      }
-      setTotalSpins(spins); setTotalWinnings(winnings); setRunningAverages(avgs)
-      setRotation((p) => p + count * 47 + 360); setLastOutcome(last); setSpinning(false)
+      setState((prev) => {
+        let spins = prev.totalSpins, winnings = prev.totalWinnings
+        const avgs = [...prev.runningAverages]
+        let last = prev.lastOutcome
+        for (let i = 0; i < count; i += 1) {
+          const o = spinFromSegments(SPINNER_P1)
+          winnings += o; spins += 1; avgs.push(winnings / spins); last = o
+        }
+        return { ...prev, totalSpins: spins, totalWinnings: winnings, runningAverages: avgs, rotation: prev.rotation + count * 47 + 360, lastOutcome: last }
+      })
     },
-    [predictionSubmitted, spinning, totalSpins, totalWinnings, runningAverages, lastOutcome],
+    [state.predictionSubmitted, setState],
   )
 
-  const submitPrediction = () => {
-    if (prediction === null) { session.setFeedback({ isCorrect: false, mistakeType: null, feedback: 'Choose a prediction.', canComplete: false }); return }
-    const r = checkProblem1Prediction(prediction, totalSpins)
-    setPredictionSubmitted(true)
-    session.setFeedback(r)
-  }
-
-  const submitFinal = async () => {
-    const r = checkProblem1Completion({ predictionSubmitted, totalSpins, finalAnswer })
-    await session.handleCheck(r, 'final', String(finalAnswer))
-  }
-
   const stats = useMemo(() => [
-    { label: 'Total spins', value: String(totalSpins) },
-    { label: 'Total winnings', value: `$${totalWinnings}` },
-    { label: 'Average per spin', value: `$${totalSpins ? (totalWinnings / totalSpins).toFixed(2) : '0'}` },
-  ], [totalSpins, totalWinnings])
+    { label: 'Total spins', value: String(state.totalSpins) },
+    { label: 'Total winnings', value: `$${state.totalWinnings}` },
+    { label: 'Average per spin', value: `$${state.totalSpins ? (state.totalWinnings / state.totalSpins).toFixed(2) : '0'}` },
+  ], [state.totalSpins, state.totalWinnings])
+
+  if (!loaded || !session.sessionLoaded) {
+    return <div className="loading-screen"><div className="spinner" /><p>Loading problem…</p></div>
+  }
 
   return (
     <ProblemLayout problem={PROBLEM_1} problemNumber={1} feedback={session.feedback} completed={session.completed}
@@ -65,39 +72,49 @@ export function Problem1LongRunAverage() {
         <h2>Step 1 — Predict the long-run average</h2>
         <div className="choice-row">
           {CHOICES.map((c) => (
-            <button key={c} type="button" className={`choice-btn${prediction === c ? ' choice-btn-selected' : ''}`}
-              onClick={() => setPrediction(c)} disabled={predictionSubmitted}>${c}</button>
+            <button key={c} type="button" className={`choice-btn touch-target${state.prediction === c ? ' choice-btn-selected' : ''}`}
+              onClick={() => setState((p) => ({ ...p, prediction: c }))} disabled={state.predictionSubmitted}>${c}</button>
           ))}
         </div>
-        {!predictionSubmitted && <button type="button" className="btn-secondary" onClick={submitPrediction}>Submit prediction</button>}
-        {predictionSubmitted && <p className="step-done">Prediction submitted: ${prediction}</p>}
+        {!state.predictionSubmitted && (
+          <button type="button" className="btn-secondary touch-target" onClick={() => {
+            if (state.prediction === null) { session.setFeedback({ isCorrect: false, mistakeType: null, feedback: 'Choose a prediction.', canComplete: false }); return }
+            setState((p) => ({ ...p, predictionSubmitted: true }))
+            session.setFeedback(checkProblem1Prediction(state.prediction, state.totalSpins))
+          }}>Submit prediction</button>
+        )}
+        {state.predictionSubmitted && <p className="step-done">Prediction submitted: ${state.prediction}</p>}
       </section>
-      <section className={`card problem-section${!predictionSubmitted ? ' section-disabled' : ''}`}>
+      <section className={`card problem-section${!state.predictionSubmitted ? ' section-disabled' : ''}`}>
         <h2>Step 2 — Spin and observe</h2>
         <div className="problem-visual-row">
-          <ConfigurableSpinner segments={SPINNER_P1} rotation={rotation} spinning={spinning} lastOutcome={lastOutcome} />
+          <ConfigurableSpinner segments={SPINNER_P1} rotation={state.rotation} spinning={false} lastOutcome={state.lastOutcome} />
           <div className="problem-side-panel">
             <ul className="stat-list">{stats.map((s) => <li key={s.label}><span>{s.label}</span><strong>{s.value}</strong></li>)}</ul>
             <div className="spin-buttons">
-              <button type="button" className="btn-secondary" disabled={!predictionSubmitted || spinning} onClick={() => void runSpins(1)}>Spin once</button>
-              <button type="button" className="btn-secondary" disabled={!predictionSubmitted || spinning} onClick={() => void runSpins(10)}>Spin 10 times</button>
-              <button type="button" className="btn-secondary" disabled={!predictionSubmitted || spinning} onClick={() => void runSpins(100)}>Spin 100 times</button>
+              {[1, 10, 100].map((n) => (
+                <button key={n} type="button" className="btn-secondary touch-target" disabled={!state.predictionSubmitted}
+                  onClick={() => void runSpins(n)}>Spin {n === 1 ? 'once' : `${n} times`}</button>
+              ))}
             </div>
-            {totalSpins < 100 && predictionSubmitted && <p className="spin-requirement">Run at least 100 spins ({totalSpins}/100).</p>}
+            {state.totalSpins < 100 && state.predictionSubmitted && <p className="spin-requirement">Run at least 100 spins ({state.totalSpins}/100).</p>}
           </div>
         </div>
-        <RunningAverageGraph averages={runningAverages} target={5} />
+        <RunningAverageGraph averages={state.runningAverages} target={5} />
       </section>
-      <section className={`card problem-section${totalSpins < 100 ? ' section-disabled' : ''}`}>
+      <section className={`card problem-section${state.totalSpins < 100 ? ' section-disabled' : ''}`}>
         <h2>Step 3 — Identify the long-run average</h2>
         <div className="choice-row">
           {CHOICES.map((c) => (
-            <button key={c} type="button" className={`choice-btn${finalAnswer === c ? ' choice-btn-selected' : ''}`}
-              onClick={() => setFinalAnswer(c)} disabled={totalSpins < 100}>${c}</button>
+            <button key={c} type="button" className={`choice-btn touch-target${state.finalAnswer === c ? ' choice-btn-selected' : ''}`}
+              onClick={() => setState((p) => ({ ...p, finalAnswer: c }))} disabled={state.totalSpins < 100}>${c}</button>
           ))}
         </div>
-        <button type="button" className="btn-secondary" disabled={totalSpins < 100 || finalAnswer === null || session.submitting}
-          onClick={() => void submitFinal()}>{session.submitting ? 'Saving…' : 'Submit answer'}</button>
+        <button type="button" className="btn-secondary touch-target" disabled={state.totalSpins < 100 || state.finalAnswer === null || session.submitting}
+          onClick={() => void session.handleCheck(
+            checkProblem1Completion({ predictionSubmitted: state.predictionSubmitted, totalSpins: state.totalSpins, finalAnswer: state.finalAnswer }),
+            'final', String(state.finalAnswer), state.finalAnswer ?? '',
+          )}>{session.submitting ? 'Saving…' : 'Submit answer'}</button>
       </section>
     </ProblemLayout>
   )

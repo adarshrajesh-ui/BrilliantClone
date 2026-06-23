@@ -17,11 +17,21 @@ export interface ChapterProgress {
   userId: string
   chapterId: typeof CHAPTER_ID
   currentProblemIndex: number
+  currentProblemId?: string
   completedProblemIds: string[]
   completionPercentage: number
   masteryStatus: MasteryStatus
   streakCount: number
   lastActiveDate: string
+  updatedAt: string
+}
+
+export interface ProblemSession {
+  userId: string
+  chapterId: typeof CHAPTER_ID
+  problemId: string
+  state: Record<string, unknown>
+  revealedHintIds: string[]
   updatedAt: string
 }
 

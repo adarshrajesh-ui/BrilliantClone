@@ -1,30 +1,27 @@
-import { useState } from 'react'
-import { ConfigurableSpinner, SPINNER_P2 } from '../visuals/ConfigurableSpinner'
 import { FormulaBuilder } from '../visuals/FormulaBuilder'
+import { ConfigurableSpinner, SPINNER_P2 } from '../visuals/ConfigurableSpinner'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
+import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { PROBLEM_2 } from '../../data/problems/problem-2'
 import { checkProblem2 } from '../../lib/answerChecker'
 
 const CARDS = ['$20', '$0', '25%', '75%']
 
+interface P2State {
+  slots: [string, string, string, string]
+  selectedCard: string | null
+  evAnswer: string
+}
+
+const DEFAULT: P2State = { slots: ['', '', '', ''], selectedCard: null, evAnswer: '' }
+
 export function Problem2WeightedAverage() {
-  const session = useProblemSession(PROBLEM_2)
-  const [slots, setSlots] = useState<[string, string, string, string]>(['', '', '', ''])
-  const [selectedCard, setSelectedCard] = useState<string | null>(null)
-  const [evAnswer, setEvAnswer] = useState('')
+  const { state, setState, loaded } = usePersistedProblemState<P2State>('problem-2', DEFAULT)
+  const session = useProblemSession(PROBLEM_2, state)
 
-  const placeSlot = (index: 0 | 1 | 2 | 3) => {
-    if (!selectedCard) return
-    const next = [...slots] as [string, string, string, string]
-    next[index] = selectedCard
-    setSlots(next)
-    setSelectedCard(null)
-  }
-
-  const submit = async () => {
-    const r = checkProblem2({ slots, evAnswer })
-    await session.handleCheck(r, 'final', JSON.stringify({ slots, evAnswer }))
+  if (!loaded || !session.sessionLoaded) {
+    return <div className="loading-screen"><div className="spinner" /><p>Loading problem…</p></div>
   }
 
   return (
@@ -35,14 +32,18 @@ export function Problem2WeightedAverage() {
       </section>
       <section className="card problem-section">
         <h2>Build the formula</h2>
-        <FormulaBuilder slots={slots} selectedCard={selectedCard} cards={CARDS}
-          onSelectCard={(c) => setSelectedCard(selectedCard === c ? null : c)}
-          onPlaceSlot={placeSlot} onClearSlot={(i) => { const n = [...slots] as typeof slots; n[i] = ''; setSlots(n) }} />
-        <label className="field-label">
-          Expected value
-          <input type="text" value={evAnswer} onChange={(e) => setEvAnswer(e.target.value)} placeholder="$5" />
+        <FormulaBuilder slots={state.slots} selectedCard={state.selectedCard} cards={CARDS}
+          onSelectCard={(c) => setState((p) => ({ ...p, selectedCard: p.selectedCard === c ? null : c }))}
+          onPlaceSlot={(index) => {
+            if (!state.selectedCard) return
+            setState((p) => { const n = [...p.slots] as typeof p.slots; n[index] = p.selectedCard!; return { ...p, slots: n, selectedCard: null } })
+          }}
+          onClearSlot={(i) => setState((p) => { const n = [...p.slots] as typeof p.slots; n[i] = ''; return { ...p, slots: n } })} />
+        <label className="field-label">Expected value
+          <input type="text" className="touch-input" value={state.evAnswer} onChange={(e) => setState((p) => ({ ...p, evAnswer: e.target.value }))} placeholder="$5" />
         </label>
-        <button type="button" className="btn-secondary" disabled={session.submitting} onClick={() => void submit()}>Submit answer</button>
+        <button type="button" className="btn-secondary touch-target" disabled={session.submitting}
+          onClick={() => void session.handleCheck(checkProblem2({ slots: state.slots, evAnswer: state.evAnswer }), 'final', state.evAnswer, state.evAnswer)}>Submit answer</button>
       </section>
     </ProblemLayout>
   )

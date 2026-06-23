@@ -1010,5 +1010,42 @@ code {
 @media (max-width: 640px) {
   .mystery-box-grid { grid-template-columns: repeat(2, 1fr); }
   .bucket-row, .risk-cards, .risk-comparison { grid-template-columns: 1fr; }
-  .wheel-sections { grid-template-columns: repeat(5, 1fr); }
 }
+
+/* Mobile touch targets (PRD build order 7) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+.touch-input {
+  min-height: 44px;
+  font-size: 16px;
+}
+.btn-secondary.touch-target,
+.btn-hint {
+  min-height: 44px;
+  padding: 0.75rem 1.25rem;
+}
+
+.wheel-section-selected {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.game-card {
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 0.85rem;
+  cursor: pointer;
+  background: #fafafa;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+}
+
+.review-section { border-left: 4px solid var(--primary); }
+.review-list { list-style: none; margin: 0; padding: 0; }
+.review-item { padding: 0.65rem 0; border-bottom: 1px solid var(--border); }
+.review-item:last-child { border-bottom: none; }
+.review-link { font-weight: 600; color: var(--text-heading); }
+.review-item p { margin: 0.25rem 0 0; font-size: 0.9rem; color: #6b7280; }

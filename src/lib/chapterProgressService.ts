@@ -198,3 +198,22 @@ export async function markProblemComplete(
 
   return saveProgress(progress)
 }
+
+export async function saveProgressDirect(progress: ChapterProgress): Promise<ChapterProgress> {
+  return saveProgress(progress)
+}
+
+export async function setCurrentProblem(
+  userId: string,
+  problemId: string,
+): Promise<void> {
+  const base = (await getChapterProgress(userId)) ?? createDefaultProgress(userId)
+  const problemIndex = CHAPTER_PROBLEMS.findIndex((p) => p.problemId === problemId)
+  const progress: ChapterProgress = {
+    ...base,
+    currentProblemId: problemId,
+    currentProblemIndex: problemIndex >= 0 ? problemIndex : base.currentProblemIndex,
+    updatedAt: new Date().toISOString(),
+  }
+  await saveProgress(progress)
+}

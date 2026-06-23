@@ -1,42 +1,44 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { RiskComparisonGraph } from '../visuals/RiskComparisonGraph'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
+import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { PROBLEM_8 } from '../../data/problems/problem-8'
 import { checkProblem8 } from '../../lib/answerChecker'
 
+interface P8State {
+  gameASimulated: boolean
+  gameBSimulated: boolean
+  gameAAverages: number[]
+  gameBAverages: number[]
+  evA: string
+  evB: string
+  higherRisk: string
+  reason: string
+}
+
+const DEFAULT: P8State = {
+  gameASimulated: false, gameBSimulated: false, gameAAverages: [], gameBAverages: [],
+  evA: '', evB: '', higherRisk: '', reason: '',
+}
+
 export function Problem8SameEVDifferentRisk() {
-  const session = useProblemSession(PROBLEM_8)
-  const [gameASimulated, setGameASimulated] = useState(false)
-  const [gameBSimulated, setGameBSimulated] = useState(false)
-  const [gameAAverages, setGameAAverages] = useState<number[]>([])
-  const [gameBAverages, setGameBAverages] = useState<number[]>([])
-  const [evA, setEvA] = useState('')
-  const [evB, setEvB] = useState('')
-  const [higherRisk, setHigherRisk] = useState('')
-  const [reason, setReason] = useState('')
+  const { state, setState, loaded } = usePersistedProblemState<P8State>('problem-8', DEFAULT)
+  const session = useProblemSession(PROBLEM_8, state)
 
   const runA = useCallback(() => {
-    const avgs: number[] = []
-    let total = 0
+    const avgs: number[] = []; let total = 0
     for (let i = 1; i <= 20; i += 1) { total += 5; avgs.push(total / i) }
-    setGameAAverages(avgs); setGameASimulated(true)
-  }, [])
+    setState((p) => ({ ...p, gameAAverages: avgs, gameASimulated: true }))
+  }, [setState])
 
   const runB = useCallback(() => {
-    const avgs: number[] = []
-    let total = 0
-    for (let i = 1; i <= 20; i += 1) {
-      total += Math.random() < 0.5 ? 10 : 0
-      avgs.push(total / i)
-    }
-    setGameBAverages(avgs); setGameBSimulated(true)
-  }, [])
+    const avgs: number[] = []; let total = 0
+    for (let i = 1; i <= 20; i += 1) { total += Math.random() < 0.5 ? 10 : 0; avgs.push(total / i) }
+    setState((p) => ({ ...p, gameBAverages: avgs, gameBSimulated: true }))
+  }, [setState])
 
-  const submit = async () => {
-    const r = checkProblem8({ gameASimulated, gameBSimulated, evA, evB, higherRisk, reason })
-    await session.handleCheck(r, 'final', JSON.stringify({ evA, evB, higherRisk, reason }))
-  }
+  if (!loaded || !session.sessionLoaded) return <div className="loading-screen"><div className="spinner" /><p>Loading…</p></div>
 
   return (
     <ProblemLayout problem={PROBLEM_8} problemNumber={8} feedback={session.feedback} completed={session.completed}
@@ -46,30 +48,28 @@ export function Problem8SameEVDifferentRisk() {
         <div className="risk-cards">
           <div className="risk-card">
             <h3>Game A — guaranteed $5</h3>
-            <div className="solid-bar" style={{ width: '50%' }}>$5 every trial</div>
-            <button type="button" className="btn-secondary" onClick={runA} disabled={gameASimulated}>Run 20 trials</button>
+            <div className="solid-bar">$5 every trial</div>
+            <button type="button" className="btn-secondary touch-target" onClick={runA} disabled={state.gameASimulated}>Run 20 trials</button>
           </div>
           <div className="risk-card">
             <h3>Game B — 50/50 $10 or $0</h3>
             <div className="split-bar"><span>$10</span><span>$0</span></div>
-            <button type="button" className="btn-secondary" onClick={runB} disabled={gameBSimulated}>Run 20 trials</button>
+            <button type="button" className="btn-secondary touch-target" onClick={runB} disabled={state.gameBSimulated}>Run 20 trials</button>
           </div>
         </div>
-        <RiskComparisonGraph gameAAverages={gameAAverages} gameBAverages={gameBAverages} />
+        <RiskComparisonGraph gameAAverages={state.gameAAverages} gameBAverages={state.gameBAverages} />
       </section>
       <section className="card problem-section">
         <div className="field-grid">
-          <label className="field-label">EV for Game A <input value={evA} onChange={(e) => setEvA(e.target.value)} /></label>
-          <label className="field-label">EV for Game B <input value={evB} onChange={(e) => setEvB(e.target.value)} /></label>
-          <label className="field-label">Higher risk game
-            <select value={higherRisk} onChange={(e) => setHigherRisk(e.target.value)}>
-              <option value="">Choose…</option>
-              <option value="A">Game A</option>
-              <option value="B">Game B</option>
+          <label className="field-label">EV Game A<input className="touch-input" value={state.evA} onChange={(e) => setState((p) => ({ ...p, evA: e.target.value }))} /></label>
+          <label className="field-label">EV Game B<input className="touch-input" value={state.evB} onChange={(e) => setState((p) => ({ ...p, evB: e.target.value }))} /></label>
+          <label className="field-label">Higher risk
+            <select className="touch-input" value={state.higherRisk} onChange={(e) => setState((p) => ({ ...p, higherRisk: e.target.value }))}>
+              <option value="">Choose…</option><option value="A">Game A</option><option value="B">Game B</option>
             </select>
           </label>
           <label className="field-label">Why?
-            <select value={reason} onChange={(e) => setReason(e.target.value)}>
+            <select className="touch-input" value={state.reason} onChange={(e) => setState((p) => ({ ...p, reason: e.target.value }))}>
               <option value="">Choose…</option>
               <option value="variable-outcomes">Variable outcomes despite same long-run average</option>
               <option value="higher-ev">Game B has higher EV</option>
@@ -77,7 +77,11 @@ export function Problem8SameEVDifferentRisk() {
             </select>
           </label>
         </div>
-        <button type="button" className="btn-secondary" disabled={session.submitting} onClick={() => void submit()}>Submit answer</button>
+        <button type="button" className="btn-secondary touch-target" disabled={session.submitting}
+          onClick={() => void session.handleCheck(checkProblem8({
+            gameASimulated: state.gameASimulated, gameBSimulated: state.gameBSimulated,
+            evA: state.evA, evB: state.evB, higherRisk: state.higherRisk, reason: state.reason,
+          }), 'final', JSON.stringify(state), state.reason)}>Submit answer</button>
       </section>
     </ProblemLayout>
   )
