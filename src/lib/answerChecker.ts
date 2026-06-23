@@ -1,8 +1,13 @@
 import {
   approxEqual,
+  areNumbersClose,
+  areProbabilitiesEquivalent,
+  detectMistakeType,
   matchesNumeric,
-  matchesProbability,
-  parseNumber,
+  normalizeClassificationAnswer,
+  normalizeMoneyAnswer,
+  normalizeNumericAnswer,
+  parseProbabilityAnswer,
 } from './answerParser'
 import type {
   CheckResult,
@@ -80,8 +85,12 @@ export function checkProblem1Prediction(
 
 export function checkProblem2(input: Problem2CheckInput): CheckResult {
   const [a, b, c, d] = input.slots
-  if (!a || !b || !c || !d) {
-    return fail('omitted-probability', 'Fill all four formula slots.')
+  const filledCount = [a, b, c, d].filter(Boolean).length
+  if (filledCount === 0) {
+    return fail('', 'Select a card, then tap an empty formula slot to place it.')
+  }
+  if (filledCount < 4) {
+    return fail('omitted-probability', 'Every outcome needs a probability. Fill all four slots.')
   }
 
   const correctPairs =
@@ -133,58 +142,56 @@ export function checkProblem3(input: Problem3CheckInput): CheckResult {
 
   for (let i = 0; i < expected.length; i += 1) {
     const row = input.rows[i]
-    const count = parseNumber(row.count)
-    if (count !== expected[i].count) {
-      if (approxEqual(parseNumber(row.probability) ?? -1, expected[i].count / 6)) {
-        return fail('counts-as-probabilities', 'You entered counts in the probability column. Probabilities are counts divided by total boxes (6).')
+    const count = normalizeNumericAnswer(row.count)
+    if (count === null || !areNumbersClose(count, expected[i].count, 0.001)) {
+      // Mistake: the learner typed the raw box count into the probability cell.
+      const rawProbAsCount = normalizeNumericAnswer(row.probability)
+      if (rawProbAsCount !== null && areNumbersClose(rawProbAsCount, expected[i].count, 0.001)) {
+        return fail('counts-as-probabilities', `You entered ${expected[i].count} as the probability — that is the number of $${expected[i].outcome} boxes. Probability should be count divided by total boxes: ${expected[i].count}/6.`)
       }
-      return fail('unknown', `Check the count for $${expected[i].outcome}.`)
+      return fail('unknown', `Check the count for $${expected[i].outcome}. There ${expected[i].count === 1 ? 'is' : 'are'} ${expected[i].count} box${expected[i].count === 1 ? '' : 'es'} with that prize.`)
     }
-    if (!matchesProbability(row.probability, [expected[i].prob])) {
-      return fail('unknown', `Check the probability for $${expected[i].outcome}.`)
+    if (!areProbabilitiesEquivalent(row.probability, expected[i].prob)) {
+      // Mistake: typed the raw count (e.g. "2") into the probability cell.
+      const rawProb = normalizeNumericAnswer(row.probability)
+      if (rawProb !== null && areNumbersClose(rawProb, expected[i].count, 0.001)) {
+        return fail('counts-as-probabilities', `You entered ${expected[i].count} as the probability — that is the box count. Probability should be count divided by total boxes: ${expected[i].count}/6.`)
+      }
+      return fail('unknown', `Check the probability for $${expected[i].outcome}: ${expected[i].count} of 6 boxes = ${expected[i].count}/6.`)
     }
   }
 
-  const probSum = input.rows.reduce((s, r) => s + (parseNumber(r.probability.replace('%', '')) ?? parseProbabilitySafe(r.probability)), 0)
-  if (probSum > 0 && !approxEqual(probSum, 1) && !approxEqual(probSum, 100)) {
-    return fail('probabilities-not-one', 'Probabilities must sum to 1.')
+  const probSum = input.rows.reduce((s, r) => {
+    const p = parseProbabilityAnswer(r.probability)
+    return s + (p ?? 0)
+  }, 0)
+  if (probSum > 0 && !approxEqual(probSum, 1)) {
+    return fail('probabilities-not-one', 'Your probabilities do not sum to 1. Each is count/6, and the three counts add up to 6.')
   }
 
   return ok('Correct! $12 → 1/6, $6 → 2/6, $0 → 3/6.', true)
 }
 
-function parseProbabilitySafe(v: string) {
-  const p = parseNumber(v)
-  if (v.includes('/')) {
-    const [a, b] = v.split('/').map(Number)
-    return a / b
-  }
-  return p ?? 0
-}
-
 export function checkProblem4(input: Problem4CheckInput): CheckResult {
-  const contribs = input.contributions.map((c) => parseNumber(c))
+  const contribs = input.contributions.map((c) => normalizeMoneyAnswer(c))
   if (contribs.some((c) => c === null)) {
-    return fail('', 'Fill all three contribution cells.')
+    return fail('', 'Fill all three contribution cells (outcome × probability).')
   }
 
   const [c1, c2, c3] = contribs as number[]
   const expected = [2, 2, 0]
 
-  if (c3 !== 0 && c1 === null && c2 === null) {
-    return fail('omitted-zero-row', 'Include the $0 row — it contributes 0 but belongs in the sum.')
+  // Mistake: summed raw payouts (12 + 6 + 0) without weighting by probability.
+  if (areNumbersClose(c1, 12) && areNumbersClose(c2, 6)) {
+    return fail('unweighted-sum', 'You used the raw payouts. Each contribution is outcome × probability, e.g. 12 × 1/6 = 2.')
   }
 
-  if (c1 + c2 + c3 === 18 && c1 === 12 && c2 === 6) {
-    return fail('unweighted-sum', 'You summed payouts without weighting by probability.')
-  }
-
-  if (!approxEqual(c1, expected[0]) || !approxEqual(c2, expected[1]) || !approxEqual(c3, expected[2])) {
-    return fail('arithmetic-error', 'Check each row: multiply outcome × probability.')
+  if (!areNumbersClose(c1, expected[0]) || !areNumbersClose(c2, expected[1]) || !areNumbersClose(c3, expected[2])) {
+    return fail('arithmetic-error', 'Check each row: multiply outcome × probability. 12 × 1/6 = 2, 6 × 2/6 = 2, 0 × 3/6 = 0.')
   }
 
   if (!matchesNumeric(input.evAnswer, [4])) {
-    return fail('arithmetic-error', 'Add the three contributions for the final EV.')
+    return fail('arithmetic-error', 'Add the three contributions: 2 + 2 + 0 = $4.')
   }
 
   return ok('Correct! 12×1/6=2, 6×2/6=2, 0×3/6=0, so EV = $4.', true)
@@ -195,16 +202,24 @@ export function checkProblem5(input: Problem5CheckInput): CheckResult {
     return fail('', 'Tap the cost block to build the payout − cost equation.')
   }
 
-  if (matchesNumeric(input.profitAnswer, [4])) {
-    return fail('answered-payout', 'You answered expected payout ($4), not expected profit. Subtract the cost.')
+  const profit = normalizeMoneyAnswer(input.profitAnswer)
+  if (profit === null) {
+    return fail('', 'Enter the expected profit in dollars.')
   }
 
-  if (matchesNumeric(input.profitAnswer, [7])) {
-    return fail('added-cost', 'Cost reduces profit. Use payout − cost, not payout + cost.')
+  const mistake = detectMistakeType(profit, [
+    { value: 4, mistakeType: 'answered-payout' },
+    { value: 7, mistakeType: 'added-cost' },
+  ])
+  if (mistake === 'answered-payout') {
+    return fail('answered-payout', 'You answered expected payout ($4), not expected profit. Subtract the $3 cost.')
+  }
+  if (mistake === 'added-cost') {
+    return fail('added-cost', 'Cost reduces profit. Use payout − cost ($4 − $3), not payout + cost.')
   }
 
-  if (!matchesNumeric(input.profitAnswer, [1])) {
-    return fail('unknown', 'Expected profit = expected payout − cost = 4 − 3.')
+  if (!areNumbersClose(profit, 1)) {
+    return fail('unknown', 'Expected profit = expected payout − cost = $4 − $3 = $1.')
   }
 
   return ok('Correct! Expected profit = $4 − $3 = $1.', true)
@@ -219,14 +234,15 @@ export function checkProblem6(input: Problem6CheckInput): CheckResult {
 
   const correct = { A: 'fair', B: 'favorable', C: 'unfavorable' }
   for (const g of required) {
-    if (assignments[g] !== correct[g as keyof typeof correct]) {
-      if (assignments[g] === 'favorable' && g === 'A') {
-        return fail('confused-fair-favorable', 'Fair means expected profit = $0 exactly, not just "not bad".')
+    const placed = normalizeClassificationAnswer(assignments[g])
+    if (placed !== correct[g as keyof typeof correct]) {
+      if (placed === 'favorable' && g === 'A') {
+        return fail('confused-fair-favorable', 'Game A: payout $5 − cost $5 = $0. Fair means expected profit is exactly $0, not favorable.')
       }
-      if (assignments[g] === 'favorable' && g === 'C') {
-        return fail('positive-payout-favorable', 'A positive payout alone does not mean favorable. Subtract cost to get expected profit.')
+      if (placed === 'favorable' && g === 'C') {
+        return fail('positive-payout-favorable', 'Game C: payout $3 − cost $5 = −$2. A positive payout alone is not favorable — subtract the cost.')
       }
-      return fail('forgot-subtract-cost', 'Expected profit = payout − cost. A=$0, B=+$2, C=−$2.')
+      return fail('forgot-subtract-cost', 'Expected profit = payout − cost. A = $0 (fair), B = +$2 (favorable), C = −$2 (unfavorable).')
     }
   }
 
@@ -234,45 +250,67 @@ export function checkProblem6(input: Problem6CheckInput): CheckResult {
 }
 
 export function checkProblem7(input: Problem7CheckInput): CheckResult {
-  const probs = input.probabilities.map((p) => parseProbabilitySafe(p))
-  const contribs = input.contributions.map((c) => parseNumber(c))
+  const probs = input.probabilities.map((p) => parseProbabilityAnswer(p))
+  const contribs = input.contributions.map((c) => normalizeMoneyAnswer(c))
+  const rawProbNumbers = input.probabilities.map((p) => normalizeNumericAnswer(p))
 
-  if (probs.some((p) => Number.isNaN(p)) || contribs.some((c) => c === null)) {
-    return fail('', 'Fill all table fields.')
+  if (probs.some((p) => p === null) || contribs.some((c) => c === null)) {
+    return fail('', 'Fill in every probability and contribution in the table.')
   }
 
   const expectedProbs = [0.1, 0.2, 0.7]
   const expectedContribs = [3, 2, 0]
+  const sectionCounts = [1, 2, 7]
+  const outcomes = [30, 10, 0]
 
   for (let i = 0; i < 3; i += 1) {
-    if (!approxEqual(probs[i], expectedProbs[i])) {
-      if (probs[i] === 1 || probs[i] === 2 || probs[i] === 7) {
-        return fail('count-not-probability', 'You used the number of sections as the probability. Since the wheel has 10 total sections, divide by 10.')
+    if (!areNumbersClose(probs[i] as number, expectedProbs[i])) {
+      // Mistake: typed the raw section count (1, 2, 7) instead of a probability.
+      const raw = rawProbNumbers[i]
+      if (raw !== null && areNumbersClose(raw, sectionCounts[i], 0.001)) {
+        return fail('count-not-probability', `You used ${sectionCounts[i]} (the number of sections) as the probability. The wheel has 10 total sections, so divide by 10: ${sectionCounts[i]}/10.`)
       }
-      return fail('wrong-denominator', 'Since the wheel has 10 total sections, divide by 10.')
+      return fail('wrong-denominator', `Probability = sections with that payout ÷ 10 total sections. $${outcomes[i]} appears on ${sectionCounts[i]} of 10 sections.`)
     }
-    if (!approxEqual(contribs[i] as number, expectedContribs[i])) {
-      return fail('unknown', 'Contribution = outcome × probability for each row.')
+    if (!areNumbersClose(contribs[i] as number, expectedContribs[i])) {
+      return fail('unknown', `Contribution = outcome × probability. $${outcomes[i]} × ${sectionCounts[i]}/10 = ${expectedContribs[i]}.`)
     }
   }
 
   if (!matchesNumeric(input.expectedPayout, [5])) {
-    return fail('unknown', 'Sum the contributions for expected payout.')
+    return fail('unknown', 'Expected payout is the sum of the contributions: 3 + 2 + 0 = $5.')
   }
 
   if (!matchesNumeric(input.expectedProfit, [0])) {
-    return fail('payout-not-profit', 'Expected profit = expected payout ($5) − cost ($5).')
+    return fail('payout-not-profit', 'Expected profit = expected payout ($5) − cost ($5) = $0.')
   }
 
-  const decision = input.decision.trim().toLowerCase()
+  const decision = normalizeClassificationAnswer(input.decision)
   if (decision === 'favorable') {
-    return fail('fair-marked-favorable', 'Expected profit is $0, so the game is fair — not favorable just because payout is positive.')
+    return fail('fair-marked-favorable', 'Expected profit is $0, so the game is fair — not favorable just because the payout is positive.')
   }
   if (decision !== 'fair') {
-    return fail('unknown', 'With zero expected profit, the game is fair.')
+    return fail('unknown', 'With $0 expected profit, the game is fair.')
   }
 
   return ok('Correct! EV payout = $5, profit = $0, decision = fair.', true)
+}
+
+// Deterministic keyword match for the (multiple-choice or free-text) risk reason.
+function reasonIsCorrect(reason: string): boolean {
+  const r = reason.trim().toLowerCase()
+  if (r === '') {
+    return false
+  }
+  if (r === 'variable-outcomes') {
+    return true
+  }
+  if (r === 'higher-ev' || r === 'identical') {
+    return false
+  }
+  const correctKeywords = ['variable', 'spread', 'jump', 'vary', 'varies', '0 or 10', 'different risk']
+  const sameAverage = r.includes('same') && (r.includes('average') || r.includes('ev') || r.includes('expected'))
+  return correctKeywords.some((k) => r.includes(k)) || (sameAverage && r.includes('risk'))
 }
 
 export function checkProblem8(input: Problem8CheckInput): CheckResult {
@@ -294,16 +332,15 @@ export function checkProblem8(input: Problem8CheckInput): CheckResult {
 
   const risk = input.higherRisk.trim().toLowerCase()
   if (!risk.includes('b')) {
-    return fail('identical-games', 'Same EV does not mean identical experience. Game B has variable outcomes.')
+    return fail('identical-games', 'Same EV does not mean identical experience. Game B has variable outcomes between $0 and $10.')
   }
 
-  const reason = input.reason.trim().toLowerCase()
-  if (!reason.includes('variable') && !reason.includes('spread') && !reason.includes('jump')) {
-    return fail('identical-games', 'Game B is riskier because outcomes vary even though the long-run average matches Game A.')
+  if (!reasonIsCorrect(input.reason)) {
+    return fail('identical-games', 'Game B is riskier because its outcomes vary between $0 and $10, even though the long-run average matches Game A.')
   }
 
   return ok(
-    'Correct! Both have EV = $5, but Game B is riskier because outcomes vary even though the long-run average matches.',
+    'Correct! Both have EV = $5, but Game B is riskier because its outcomes vary even though the long-run average matches.',
     true,
   )
 }

@@ -1,58 +1,204 @@
-const FRACTION_MAP: Record<string, number> = {
-  '1/6': 1 / 6,
-  '2/6': 2 / 6,
-  '3/6': 3 / 6,
-  '1/3': 1 / 3,
-  '1/2': 1 / 2,
-  '1/10': 0.1,
-  '2/10': 0.2,
-  '7/10': 0.7,
+// Deterministic answer normalization. No AI / no semantic matching.
+// Every function returns predictable numeric/string results so answer checking
+// stays correct and runs well under 100ms.
+
+const MONEY_WORDS = /\b(dollars?|bucks?|usd)\b/g
+const RATE_WORDS = /\b(per\s*spin|per\s*play|per\s*trial|each|a\s*spin|on\s*average)\b/g
+
+function preClean(value: unknown): string {
+  if (value === null || value === undefined) {
+    return ''
+  }
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[$,]/g, '')
+    .replace(MONEY_WORDS, '')
+    .replace(RATE_WORDS, '')
+    .trim()
 }
 
-export function parseMoney(value: string): number | null {
-  const cleaned = value.trim().replace(/^\$/, '')
+/** Accepts 5, 5.0, 5.00, $5, $5.00, "5 dollars", "5 per spin", whitespace variants. */
+export function normalizeMoneyAnswer(value: unknown): number | null {
+  const cleaned = preClean(value)
+  if (cleaned === '') {
+    return null
+  }
   const num = Number(cleaned)
   return Number.isFinite(num) ? num : null
 }
 
-export function parseNumber(value: string): number | null {
-  const cleaned = value.trim().replace(/^\$/, '')
+/** Accepts money/decimal/percent/fraction forms and returns the literal numeric value. */
+export function normalizeNumericAnswer(value: unknown): number | null {
+  const cleaned = preClean(value)
+  if (cleaned === '') {
+    return null
+  }
   if (cleaned.includes('/')) {
-    const [a, b] = cleaned.split('/').map(Number)
+    const parts = cleaned.split('/')
+    if (parts.length !== 2) {
+      return null
+    }
+    const a = Number(parts[0].trim())
+    const b = Number(parts[1].trim())
     if (Number.isFinite(a) && Number.isFinite(b) && b !== 0) {
       return a / b
     }
     return null
   }
-  const num = Number(cleaned.replace('%', ''))
-  return Number.isFinite(num) ? num : null
+  const isPercent = cleaned.endsWith('%')
+  const core = isPercent ? cleaned.slice(0, -1).trim() : cleaned
+  const num = Number(core)
+  if (!Number.isFinite(num)) {
+    return null
+  }
+  return isPercent ? num / 100 : num
+}
+
+/**
+ * Parses a probability into the 0..1 range.
+ * Accepts 25%, 0.25, .25, 1/4, "25 / 100", equivalent fractions, whitespace variants.
+ * A bare number > 1 (e.g. "25") is treated as a percent (25% -> 0.25).
+ */
+export function parseProbabilityAnswer(value: unknown): number | null {
+  const cleaned = preClean(value)
+  if (cleaned === '') {
+    return null
+  }
+  if (cleaned.endsWith('%')) {
+    const n = Number(cleaned.slice(0, -1).trim())
+    return Number.isFinite(n) ? n / 100 : null
+  }
+  if (cleaned.includes('/')) {
+    const parts = cleaned.split('/')
+    if (parts.length !== 2) {
+      return null
+    }
+    const a = Number(parts[0].trim())
+    const b = Number(parts[1].trim())
+    if (Number.isFinite(a) && Number.isFinite(b) && b !== 0) {
+      return a / b
+    }
+    return null
+  }
+  const n = Number(cleaned)
+  if (!Number.isFinite(n)) {
+    return null
+  }
+  return n > 1 ? n / 100 : n
+}
+
+export function areNumbersClose(a: number, b: number, tolerance = 0.01): boolean {
+  return Math.abs(a - b) <= tolerance
+}
+
+/** True when value is equivalent to target probability within tolerance (default 0.01). */
+export function areProbabilitiesEquivalent(
+  value: unknown,
+  target: number,
+  tolerance = 0.01,
+): boolean {
+  const parsed = parseProbabilityAnswer(value)
+  if (parsed === null) {
+    return false
+  }
+  return Math.abs(parsed - target) <= tolerance
+}
+
+export type Classification = 'fair' | 'favorable' | 'unfavorable'
+
+const FAIR_TERMS = new Set([
+  'fair',
+  'even',
+  'break even',
+  'breakeven',
+  'break-even',
+  'neutral',
+  'zero',
+])
+const FAVORABLE_TERMS = new Set([
+  'favorable',
+  'favourable',
+  'fav',
+  'positive',
+  'good',
+  'good for player',
+  'good for the player',
+  'advantageous',
+])
+const UNFAVORABLE_TERMS = new Set([
+  'unfavorable',
+  'unfavourable',
+  'unfav',
+  'negative',
+  'bad',
+  'bad for player',
+  'bad for the player',
+  'disadvantageous',
+])
+
+/** Case-insensitive classification normalization with unambiguous synonyms only. */
+export function normalizeClassificationAnswer(value: unknown): Classification | null {
+  const s = String(value ?? '').trim().toLowerCase()
+  if (s === '') {
+    return null
+  }
+  if (FAIR_TERMS.has(s)) {
+    return 'fair'
+  }
+  if (FAVORABLE_TERMS.has(s)) {
+    return 'favorable'
+  }
+  if (UNFAVORABLE_TERMS.has(s)) {
+    return 'unfavorable'
+  }
+  return null
+}
+
+export interface MistakeCandidate {
+  value: number
+  mistakeType: string
+}
+
+/**
+ * Deterministic mistake detection: returns the mistakeType whose value matches the
+ * parsed answer within tolerance, or null. Used for money-style problems.
+ */
+export function detectMistakeType(
+  parsed: number | null,
+  candidates: MistakeCandidate[],
+  tolerance = 0.01,
+): string | null {
+  if (parsed === null) {
+    return null
+  }
+  for (const candidate of candidates) {
+    if (areNumbersClose(parsed, candidate.value, tolerance)) {
+      return candidate.mistakeType
+    }
+  }
+  return null
+}
+
+// ---------------------------------------------------------------------------
+// Backwards-compatible wrappers (kept so existing imports keep working).
+// ---------------------------------------------------------------------------
+
+export function parseMoney(value: string): number | null {
+  return normalizeMoneyAnswer(value)
+}
+
+export function parseNumber(value: string): number | null {
+  return normalizeNumericAnswer(value)
 }
 
 export function parseProbability(value: string): number | null {
-  const trimmed = value.trim()
-  if (FRACTION_MAP[trimmed] !== undefined) {
-    return FRACTION_MAP[trimmed]
-  }
-  if (trimmed.endsWith('%')) {
-    const num = Number(trimmed.replace('%', ''))
-    return Number.isFinite(num) ? num / 100 : null
-  }
-  return parseNumber(trimmed)
+  return parseProbabilityAnswer(value)
 }
 
 export function parsePercent(value: string): number | null {
-  const trimmed = value.trim()
-  if (trimmed.endsWith('%')) {
-    return parseNumber(trimmed)
-  }
-  const asNum = parseNumber(trimmed)
-  if (asNum === null) {
-    return null
-  }
-  if (asNum <= 1) {
-    return asNum * 100
-  }
-  return asNum
+  const prob = parseProbabilityAnswer(value)
+  return prob === null ? null : prob * 100
 }
 
 export function matchesAccepted(value: string, accepted: string[]): boolean {
@@ -61,19 +207,15 @@ export function matchesAccepted(value: string, accepted: string[]): boolean {
 }
 
 export function matchesNumeric(value: string, targets: number[], tolerance = 0.01): boolean {
-  const parsed = parseNumber(value)
+  const parsed = normalizeMoneyAnswer(value)
   if (parsed === null) {
     return false
   }
   return targets.some((t) => Math.abs(parsed - t) <= tolerance)
 }
 
-export function matchesProbability(value: string, targets: number[], tolerance = 0.02): boolean {
-  const parsed = parseProbability(value)
-  if (parsed === null) {
-    return false
-  }
-  return targets.some((t) => Math.abs(parsed - t) <= tolerance)
+export function matchesProbability(value: string, targets: number[], tolerance = 0.01): boolean {
+  return targets.some((t) => areProbabilitiesEquivalent(value, t, tolerance))
 }
 
 export function approxEqual(a: number, b: number, tolerance = 0.02) {
