@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import { FirebaseError } from 'firebase/app'
 import { useAuth } from './useAuth'
 import { ensureChapterProgress } from '../lib/chapterProgressService'
 import { ensureMilestones } from '../lib/milestonesService'
+import { getFirestoreErrorMessage } from '../lib/authErrors'
 import type { ChapterProgress, Milestones } from '../types/chapter'
 
 interface ChapterState {
@@ -9,6 +11,7 @@ interface ChapterState {
   milestones: Milestones | null
   loading: boolean
   error: string | null
+  syncWarning: string | null
 }
 
 export function useChapterData() {
@@ -18,11 +21,18 @@ export function useChapterData() {
     milestones: null,
     loading: true,
     error: null,
+    syncWarning: null,
   })
 
   const load = useCallback(async () => {
     if (!user) {
-      setState({ progress: null, milestones: null, loading: false, error: null })
+      setState({
+        progress: null,
+        milestones: null,
+        loading: false,
+        error: null,
+        syncWarning: null,
+      })
       return
     }
 
@@ -33,13 +43,22 @@ export function useChapterData() {
         ensureChapterProgress(user.uid),
         ensureMilestones(user.uid),
       ])
-      setState({ progress, milestones, loading: false, error: null })
+      setState({
+        progress,
+        milestones,
+        loading: false,
+        error: null,
+        syncWarning: null,
+      })
     } catch (error) {
+      const isPermission =
+        error instanceof FirebaseError && error.code === 'permission-denied'
       setState({
         progress: null,
         milestones: null,
         loading: false,
-        error: error instanceof Error ? error.message : 'Failed to load chapter data',
+        error: isPermission ? null : getFirestoreErrorMessage(error),
+        syncWarning: isPermission ? getFirestoreErrorMessage(error) : null,
       })
     }
   }, [user])

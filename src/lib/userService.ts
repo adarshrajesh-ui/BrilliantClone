@@ -11,28 +11,40 @@ function requireDb() {
 }
 
 export async function ensureUserProfile(firebaseUser: User): Promise<UserProfile> {
-  const firestore = requireDb()
-  const userRef = doc(firestore, 'users', firebaseUser.uid)
   const now = new Date().toISOString()
+  const profileFields = {
+    displayName: firebaseUser.displayName ?? '',
+    email: firebaseUser.email ?? '',
+    lastLoginAt: now,
+  }
+
+  if (!db) {
+    return {
+      userId: firebaseUser.uid,
+      ...profileFields,
+      createdAt: now,
+    }
+  }
+
+  const firestore = db
+  const userRef = doc(firestore, 'users', firebaseUser.uid)
   const snapshot = await getDoc(userRef)
 
   if (!snapshot.exists()) {
     const profile: UserProfile = {
       userId: firebaseUser.uid,
-      displayName: firebaseUser.displayName ?? '',
-      email: firebaseUser.email ?? '',
+      ...profileFields,
       createdAt: now,
-      lastLoginAt: now,
     }
     await setDoc(userRef, profile)
     return profile
   }
 
-  await updateDoc(userRef, { lastLoginAt: now })
+  await updateDoc(userRef, profileFields)
 
   return {
     ...(snapshot.data() as UserProfile),
-    lastLoginAt: now,
+    ...profileFields,
   }
 }
 

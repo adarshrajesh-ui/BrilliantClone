@@ -1,4 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { FirebaseError } from 'firebase/app'
 import {
   CHAPTER_ID,
   type ChapterProgress,
@@ -6,6 +7,11 @@ import {
 } from '../types/chapter'
 import { CHAPTER_PROBLEMS } from '../data/chapter'
 import { db } from './firebase'
+import {
+  createDefaultLocalProgress,
+  readLocalProgress,
+  writeLocalProgress,
+} from './localProgressStore'
 
 const TOTAL_PROBLEMS = CHAPTER_PROBLEMS.length
 
@@ -59,7 +65,6 @@ function deriveMasteryStatus(
 
 function createDefaultProgress(userId: string): ChapterProgress {
   const now = new Date().toISOString()
-  const today = todayDateString()
   return {
     userId,
     chapterId: CHAPTER_ID,
@@ -68,54 +73,97 @@ function createDefaultProgress(userId: string): ChapterProgress {
     completionPercentage: 0,
     masteryStatus: 'Not Started',
     streakCount: 1,
-    lastActiveDate: today,
+    lastActiveDate: todayDateString(),
     updatedAt: now,
   }
 }
 
+async function saveProgress(progress: ChapterProgress): Promise<ChapterProgress> {
+  writeLocalProgress(progress)
+
+  try {
+    const firestore = requireDb()
+    const ref = doc(firestore, 'chapterProgress', progressDocId(progress.userId))
+    const snapshot = await getDoc(ref)
+    if (snapshot.exists()) {
+      await updateDoc(ref, { ...progress })
+    } else {
+      await setDoc(ref, progress)
+    }
+  } catch (error) {
+    if (!(error instanceof FirebaseError && error.code === 'permission-denied')) {
+      throw error
+    }
+  }
+
+  return progress
+}
+
 export async function ensureChapterProgress(userId: string): Promise<ChapterProgress> {
-  const firestore = requireDb()
-  const ref = doc(firestore, 'chapterProgress', progressDocId(userId))
-  const snapshot = await getDoc(ref)
   const now = new Date().toISOString()
   const today = todayDateString()
 
-  if (!snapshot.exists()) {
-    const progress = createDefaultProgress(userId)
-    await setDoc(ref, progress)
+  if (!db) {
+    const local = readLocalProgress(userId) ?? createDefaultLocalProgress(userId)
+    writeLocalProgress(local)
+    return local
+  }
+
+  try {
+    const firestore = requireDb()
+    const ref = doc(firestore, 'chapterProgress', progressDocId(userId))
+    const snapshot = await getDoc(ref)
+
+    if (!snapshot.exists()) {
+      const local = readLocalProgress(userId)
+      const progress = local ?? createDefaultProgress(userId)
+      return saveProgress(progress)
+    }
+
+    const existing = snapshot.data() as ChapterProgress
+    const streakCount = computeStreak(existing.lastActiveDate, existing.streakCount)
+    const progress: ChapterProgress = {
+      ...existing,
+      updatedAt: now,
+    }
+
+    if (existing.lastActiveDate !== today) {
+      progress.lastActiveDate = today
+      progress.streakCount = streakCount
+      return saveProgress(progress)
+    }
+
+    writeLocalProgress(progress)
     return progress
-  }
+  } catch (error) {
+    const local = readLocalProgress(userId) ?? createDefaultLocalProgress(userId)
+    if (local.lastActiveDate !== today) {
+      local.streakCount = computeStreak(local.lastActiveDate, local.streakCount)
+      local.lastActiveDate = today
+      local.updatedAt = now
+    }
+    writeLocalProgress(local)
 
-  const existing = snapshot.data() as ChapterProgress
-  const streakCount = computeStreak(existing.lastActiveDate, existing.streakCount)
-  const updates: Partial<ChapterProgress> = {
-    updatedAt: now,
-  }
-
-  if (existing.lastActiveDate !== today) {
-    updates.lastActiveDate = today
-    updates.streakCount = streakCount
-  }
-
-  if (Object.keys(updates).length > 1) {
-    await updateDoc(ref, updates)
-  }
-
-  return {
-    ...existing,
-    ...updates,
+    if (error instanceof FirebaseError && error.code === 'permission-denied') {
+      return local
+    }
+    throw error
   }
 }
 
 export async function getChapterProgress(
   userId: string,
 ): Promise<ChapterProgress | null> {
-  const firestore = requireDb()
-  const snapshot = await getDoc(doc(firestore, 'chapterProgress', progressDocId(userId)))
-  if (!snapshot.exists()) {
-    return null
+  try {
+    const firestore = requireDb()
+    const snapshot = await getDoc(doc(firestore, 'chapterProgress', progressDocId(userId)))
+    if (!snapshot.exists()) {
+      return readLocalProgress(userId)
+    }
+    return snapshot.data() as ChapterProgress
+  } catch {
+    return readLocalProgress(userId)
   }
-  return snapshot.data() as ChapterProgress
 }
 
 export function computeCompletionPercentage(completedProblemIds: string[]) {
@@ -126,12 +174,8 @@ export async function markProblemComplete(
   userId: string,
   problemId: string,
 ): Promise<ChapterProgress> {
-  const firestore = requireDb()
-  const ref = doc(firestore, 'chapterProgress', progressDocId(userId))
-  const snapshot = await getDoc(ref)
-  const base = snapshot.exists()
-    ? (snapshot.data() as ChapterProgress)
-    : createDefaultProgress(userId)
+  const base =
+    (await getChapterProgress(userId)) ?? createDefaultProgress(userId)
 
   if (base.completedProblemIds.includes(problemId)) {
     return base
@@ -152,17 +196,5 @@ export async function markProblemComplete(
     updatedAt: new Date().toISOString(),
   }
 
-  if (snapshot.exists()) {
-    await updateDoc(ref, {
-      completedProblemIds: progress.completedProblemIds,
-      completionPercentage: progress.completionPercentage,
-      currentProblemIndex: progress.currentProblemIndex,
-      masteryStatus: progress.masteryStatus,
-      updatedAt: progress.updatedAt,
-    })
-  } else {
-    await setDoc(ref, progress)
-  }
-
-  return progress
+  return saveProgress(progress)
 }

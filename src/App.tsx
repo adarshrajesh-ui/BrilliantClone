@@ -5,7 +5,7 @@ import { PublicRoute } from './components/PublicRoute'
 import { ChapterPage } from './pages/ChapterPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
-import { ProblemPlaceholderPage } from './pages/ProblemPlaceholderPage'
+import { ProblemPage } from './pages/ProblemPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { RootRedirect } from './pages/RootRedirect'
 
@@ -34,7 +34,7 @@ function App() {
         <Route path="/chapter/expected-value-intro" element={<ChapterPage />} />
         <Route
           path="/chapter/expected-value-intro/problem/:problemId"
-          element={<ProblemPlaceholderPage />}
+          element={<ProblemPage />}
         />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>

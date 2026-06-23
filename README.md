@@ -87,4 +87,6 @@ Mastery states: Not Started, Learning, Developing, Mastered.
 
 **Checkpoint 2:** Chapter path, 8-problem list, completion percentage, Continue button, mastery placeholder, streak and milestone display.
 
-**Not yet included:** Interactive problem UIs, answer checking, problem attempts, deployment.
+**Problem 1:** The Long-Run Average — 50/50 spinner, spin buttons, running average graph, prediction + final answer with deterministic feedback.
+
+**Not yet included:** Problems 2–8 interactive UIs, full lesson engine, deployment.

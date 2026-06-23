@@ -14,6 +14,7 @@ import {
   type User,
 } from 'firebase/auth'
 import { auth, isFirebaseConfigured } from '../lib/firebase'
+import { getAuthErrorMessage, getFirestoreErrorMessage } from '../lib/authErrors'
 import { ensureUserProfile } from '../lib/userService'
 import type { UserProfile } from '../types/user'
 
@@ -23,6 +24,7 @@ export interface AuthContextValue {
   loading: boolean
   firebaseConfigured: boolean
   authError: string | null
+  profileSyncWarning: string | null
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
   clearAuthError: () => void
@@ -30,11 +32,23 @@ export interface AuthContextValue {
 
 export const AuthContext = createContext<AuthContextValue | null>(null)
 
+function profileFromUser(firebaseUser: User): UserProfile {
+  const now = new Date().toISOString()
+  return {
+    userId: firebaseUser.uid,
+    displayName: firebaseUser.displayName ?? '',
+    email: firebaseUser.email ?? '',
+    createdAt: now,
+    lastLoginAt: now,
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [profileSyncWarning, setProfileSyncWarning] = useState<string | null>(null)
 
   useEffect(() => {
     if (!auth) {
@@ -46,18 +60,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(firebaseUser)
 
       if (firebaseUser) {
+        setAuthError(null)
         try {
           const userProfile = await ensureUserProfile(firebaseUser)
           setProfile(userProfile)
+          setProfileSyncWarning(null)
         } catch (error) {
           console.error('Failed to sync user profile:', error)
-          setAuthError(
-            error instanceof Error ? error.message : 'Failed to load profile',
-          )
-          setProfile(null)
+          setProfile(profileFromUser(firebaseUser))
+          setProfileSyncWarning(getFirestoreErrorMessage(error))
         }
       } else {
         setProfile(null)
+        setProfileSyncWarning(null)
       }
 
       setLoading(false)
@@ -76,9 +91,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const provider = new GoogleAuthProvider()
+      provider.setCustomParameters({ prompt: 'select_account' })
       await signInWithPopup(auth, provider)
     } catch (error) {
-      setAuthError(error instanceof Error ? error.message : 'Sign in failed')
+      const message = getAuthErrorMessage(error)
+      if (message) {
+        setAuthError(message)
+      }
     }
   }, [])
 
@@ -88,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setAuthError(null)
+    setProfileSyncWarning(null)
     await firebaseSignOut(auth)
   }, [])
 
@@ -102,11 +122,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       firebaseConfigured: isFirebaseConfigured(),
       authError,
+      profileSyncWarning,
       signInWithGoogle,
       signOut,
       clearAuthError,
     }),
-    [user, profile, loading, authError, signInWithGoogle, signOut, clearAuthError],
+    [
+      user,
+      profile,
+      loading,
+      authError,
+      profileSyncWarning,
+      signInWithGoogle,
+      signOut,
+      clearAuthError,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -1,4 +1,5 @@
 import { Link, Outlet } from 'react-router-dom'
+import { SyncWarningBanner } from './SyncWarningBanner'
 import { useAuth } from '../hooks/useAuth'
 
 export function Layout() {
@@ -6,6 +7,7 @@ export function Layout() {
 
   return (
     <div className="layout">
+      <SyncWarningBanner />
       <header className="header">
         <Link to="/home" className="brand">
           Expected Value Lab

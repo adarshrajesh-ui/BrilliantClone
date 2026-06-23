@@ -7,6 +7,7 @@ import {
   MILESTONE_DEFINITIONS,
 } from '../data/chapter'
 import { useChapterData } from '../hooks/useChapterData'
+import { ChapterSyncBanner } from '../components/SyncWarningBanner'
 import type { MasteryStatus } from '../types/chapter'
 
 const CHAPTER_PATH = '/chapter/expected-value-intro'
@@ -25,7 +26,7 @@ function masteryClass(status: MasteryStatus) {
 }
 
 export function ChapterPage() {
-  const { progress, milestones, loading, error } = useChapterData()
+  const { progress, milestones, loading, error, syncWarning } = useChapterData()
 
   if (loading) {
     return (
@@ -55,6 +56,12 @@ export function ChapterPage() {
 
   return (
     <div className="page chapter-page">
+      <ChapterSyncBanner message={syncWarning} />
+      {error && (
+        <div className="sync-banner sync-banner-error" role="alert">
+          {error}
+        </div>
+      )}
       <header className="chapter-header">
         <div>
           <p className="chapter-eyebrow">Chapter</p>
