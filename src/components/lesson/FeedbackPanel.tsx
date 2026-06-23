@@ -5,10 +5,18 @@ interface FeedbackPanelProps {
   type: 'info' | 'success' | 'error'
 }
 
+const META: Record<FeedbackPanelProps['type'], { icon: string; title: string }> = {
+  success: { icon: '✓', title: 'Nice work!' },
+  error: { icon: '!', title: "Let's fix this" },
+  info: { icon: 'i', title: 'Keep going' },
+}
+
 export function FeedbackPanel({ message, type }: FeedbackPanelProps) {
   if (!message) {
     return null
   }
+
+  const { icon, title } = META[type]
 
   return (
     <section
@@ -16,7 +24,13 @@ export function FeedbackPanel({ message, type }: FeedbackPanelProps) {
       role="status"
       aria-live="polite"
     >
-      {message}
+      <span className="feedback-icon" aria-hidden="true">
+        {icon}
+      </span>
+      <div className="feedback-body">
+        <p className="feedback-title">{title}</p>
+        <p className="feedback-message">{message}</p>
+      </div>
     </section>
   )
 }

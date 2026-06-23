@@ -834,22 +834,46 @@ code {
 
 .feedback-panel {
   border-width: 2px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
 }
+
+.feedback-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  font-weight: 800;
+  flex-shrink: 0;
+  color: #fff;
+}
+.feedback-body { flex: 1; }
+.feedback-title { margin: 0 0 0.2rem; font-weight: 700; }
+.feedback-message { margin: 0; }
 
 .feedback-info {
   border-color: #93c5fd;
   background: #eff6ff;
 }
+.feedback-info .feedback-icon { background: var(--primary); }
+.feedback-info .feedback-title { color: var(--primary-hover); }
 
 .feedback-success {
   border-color: #86efac;
   background: #f0fdf4;
 }
+.feedback-success .feedback-icon { background: #16a34a; }
+.feedback-success .feedback-title { color: #15803d; }
 
 .feedback-error {
   border-color: #fca5a5;
   background: #fef2f2;
 }
+.feedback-error .feedback-icon { background: var(--error); }
+.feedback-error .feedback-title { color: #b91c1c; }
 
 .btn-text-link {
   display: inline-block;
@@ -889,9 +913,40 @@ code {
   font: inherit;
   margin-bottom: 0.75rem;
 }
+.hint-header { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+.hint-progress { font-size: 0.8rem; color: #6b7280; }
+.hint-cue {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.9rem;
+  color: #92400e;
+  margin: 0 0 0.75rem;
+}
 .hint-list { list-style: none; margin: 0; padding: 0; }
-.hint-item { padding: 0.65rem; background: #f9fafb; border-radius: 8px; margin-bottom: 0.5rem; }
+.hint-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
 .hint-item p { margin: 0.25rem 0 0; font-size: 0.9rem; color: #4b5563; }
+.hint-level-chip {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #92400e;
+  background: #fef3c7;
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  margin-top: 0.1rem;
+}
 
 .field-label { display: flex; flex-direction: column; gap: 0.35rem; font-weight: 600; margin: 0.75rem 0; }
 .field-label input, .field-label select {

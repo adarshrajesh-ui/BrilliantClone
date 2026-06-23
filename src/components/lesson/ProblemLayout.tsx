@@ -6,6 +6,23 @@ import { HintPanel } from './HintPanel'
 
 const CHAPTER_PATH = '/chapter/expected-value-intro'
 
+const VISUAL_CUES: Record<string, string> = {
+  spinner: 'the running-average graph',
+  'spinner-graph': 'the running-average graph',
+  'formula-builder': 'the formula you built',
+  'weighted-average': 'the formula you built',
+  'mystery-boxes': 'the revealed boxes',
+  'ev-table': 'the contribution column',
+  'balance-scale': 'the balance scale',
+  'fairness-buckets': 'the fairness number line',
+  'wheel-table': 'the wheel and the probability table',
+  'risk-graph': 'the flat line versus the jagged line',
+}
+
+function visualCueFor(visualType: string): string {
+  return VISUAL_CUES[visualType] ?? 'the diagram above'
+}
+
 interface ProblemLayoutProps {
   problem: ProblemDefinition
   problemNumber: number
@@ -77,6 +94,7 @@ export function ProblemLayout({
               hints={problem.hints}
               revealedHintIds={revealedHintIds}
               onRevealHint={onRevealHint}
+              visualCue={visualCueFor(problem.visualType)}
             />
           )}
         </>
