@@ -1,92 +1,52 @@
 # Expected Value Lab
 
-A learn-by-doing web app that teaches expected value through visual, interactive problems. Checkpoints 1–2 include auth, user profiles, and the chapter progress shell.
+A learn-by-doing web app that teaches expected value through 8 visual, interactive problems. Built per the MVP PRD — no AI, all hand-built feedback.
 
-## Tech stack
+## Build order status
 
-- React + TypeScript (Vite)
-- React Router
-- Firebase Authentication (Google sign-in)
-- Firestore (users, chapter progress, milestones)
+| Order | Scope | Status |
+|-------|--------|--------|
+| 1 | App skeleton, routes, Firebase, Google sign-in, user profiles | Done |
+| 2 | Chapter path, problem list, completion %, Continue, mastery, streak, milestones | Done |
+| 3 | Lesson engine: problem data, answer parser, feedback & hint panels | Done |
+| 4 | Core visuals: spinner, graph, mystery boxes, table, formula, balance, fairness line, risk graph | Done |
+| 5 | Problems 1–8 with completion rules, mistake types, hints, feedback | Done |
 
 ## Getting started
 
-### 1. Install dependencies
-
 ```bash
 npm install
-```
-
-### 2. Firebase console setup (one-time)
-
-1. Go to [Firebase Console](https://console.firebase.google.com) and **Create a project** (e.g. `expected-value-lab`).
-2. Open **Build → Authentication → Sign-in method** and **Enable Google**.
-3. Open **Build → Firestore Database → Create database**.
-4. Open **Project settings → Your apps → Add app → Web** and register the app.
-5. Copy the Firebase config values into a local `.env` file:
-
-```bash
-cp .env.example .env
-```
-
-Fill in the `VITE_FIREBASE_*` values from the Firebase console.
-
-6. Under **Authentication → Settings → Authorized domains**, confirm `localhost` is listed.
-
-### 3. Deploy Firestore rules
-
-```bash
-npm install -g firebase-tools
-firebase login
-firebase use <your-project-id>
+cp .env.example .env   # add Firebase config
 firebase deploy --only firestore:rules
-```
-
-Rules allow each signed-in user to read/write only their own `users/{userId}`, `chapterProgress/{userId}_expected_value_intro`, and `milestones/{userId}_expected_value_intro` documents.
-
-### 4. Run the app
-
-```bash
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Open `http://localhost:5173` → sign in → **Start chapter**.
 
 ## Routes
 
-| Path | Description |
-|------|-------------|
-| `/login` | Google sign-in |
-| `/home` | Dashboard with chapter card |
-| `/chapter/expected-value-intro` | Problem list, completion %, streak, milestones |
-| `/chapter/expected-value-intro/problem/:problemId` | Problem placeholder (interactive UI later) |
-| `/profile` | User profile |
+- `/home` — dashboard
+- `/chapter/expected-value-intro` — problem list & progress
+- `/chapter/expected-value-intro/problem/problem-1` … `problem-8` — interactive problems
 
-## Data schema (PRD)
+## Architecture
 
-**users/{userId}** — `userId`, `displayName`, `email`, `createdAt`, `lastLoginAt`
-
-**chapterProgress/{userId}_expected_value_intro** — `userId`, `chapterId`, `currentProblemIndex`, `completedProblemIds`, `completionPercentage`, `masteryStatus`, `streakCount`, `lastActiveDate`, `updatedAt`
-
-**milestones/{userId}_expected_value_intro** — `userId`, `unlockedMilestones`, `chapterCompleted`, `chapterMastered`, `updatedAt`
-
-Mastery states: Not Started, Learning, Developing, Mastered.
+```
+src/
+  data/problems/     PRD problem JSON (1–8)
+  lib/
+    answerParser.ts  Normalize $, fractions, decimals
+    answerChecker.ts Deterministic per-problem checking
+  components/
+    lesson/          ProblemLayout, FeedbackPanel, HintPanel
+    visuals/         Spinner, graph, boxes, table, formula, scale, etc.
+    problems/        Problem 1–8 UI components
+```
 
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start dev server |
-| `npm run build` | Type-check and production build |
-| `npm run preview` | Preview production build |
-| `npm run lint` | Run oxlint |
-
-## Checkpoint scope
-
-**Checkpoint 1:** React skeleton, routes, Firebase config, Google sign-in, user profile creation.
-
-**Checkpoint 2:** Chapter path, 8-problem list, completion percentage, Continue button, mastery placeholder, streak and milestone display.
-
-**Problem 1:** The Long-Run Average — 50/50 spinner, spin buttons, running average graph, prediction + final answer with deterministic feedback.
-
-**Not yet included:** Problems 2–8 interactive UIs, full lesson engine, deployment.
+| `npm run dev` | Dev server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview build |

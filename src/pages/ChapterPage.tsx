@@ -152,7 +152,7 @@ export function ChapterPage() {
       <section className="card">
         <h2>Milestones</h2>
         <p className="section-note">
-          Milestones unlock as you progress. Full mastery rules apply once all problems are built.
+          Milestones unlock as you progress through the chapter.
         </p>
         <ul className="milestone-list">
           {MILESTONE_DEFINITIONS.map((milestone) => {
