@@ -1,9 +1,17 @@
-import type { ChapterProgress, Milestones, ProblemSession } from '../types/chapter'
+import type {
+  ChapterProgress,
+  LessonProgress,
+  Milestones,
+  ProblemProgress,
+  ProblemSession,
+} from '../types/chapter'
 import { CHAPTER_ID } from '../types/chapter'
 
 const PROGRESS_PREFIX = 'evl_chapter_progress_'
 const MILESTONES_PREFIX = 'evl_milestones_'
 const SESSION_PREFIX = 'evl_problem_session_'
+const LESSON_PROGRESS_PREFIX = 'evl_lesson_progress_'
+const PROBLEM_PROGRESS_PREFIX = 'evl_problem_progress_'
 
 function progressKey(userId: string) {
   return `${PROGRESS_PREFIX}${userId}`
@@ -100,4 +108,54 @@ export function createEmptySession(userId: string, problemId: string): ProblemSe
     revealedHintIds: [],
     updatedAt: new Date().toISOString(),
   }
+}
+
+// --- Lesson progress (local fallback). ---
+
+function lessonProgressKey(userId: string, lessonId: string) {
+  return `${LESSON_PROGRESS_PREFIX}${userId}_${lessonId}`
+}
+
+export function readLocalLessonProgress(
+  userId: string,
+  lessonId: string,
+): LessonProgress | null {
+  try {
+    const raw = localStorage.getItem(lessonProgressKey(userId, lessonId))
+    return raw ? (JSON.parse(raw) as LessonProgress) : null
+  } catch {
+    return null
+  }
+}
+
+export function writeLocalLessonProgress(progress: LessonProgress) {
+  localStorage.setItem(
+    lessonProgressKey(progress.userId, progress.lessonId),
+    JSON.stringify(progress),
+  )
+}
+
+// --- Problem progress (local fallback). ---
+
+function problemProgressKey(userId: string, problemId: string) {
+  return `${PROBLEM_PROGRESS_PREFIX}${userId}_${problemId}`
+}
+
+export function readLocalProblemProgress(
+  userId: string,
+  problemId: string,
+): ProblemProgress | null {
+  try {
+    const raw = localStorage.getItem(problemProgressKey(userId, problemId))
+    return raw ? (JSON.parse(raw) as ProblemProgress) : null
+  } catch {
+    return null
+  }
+}
+
+export function writeLocalProblemProgress(progress: ProblemProgress) {
+  localStorage.setItem(
+    problemProgressKey(progress.userId, progress.problemId),
+    JSON.stringify(progress),
+  )
 }

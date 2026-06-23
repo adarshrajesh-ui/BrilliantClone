@@ -1,3 +1,13 @@
+/**
+ * How an attempt should be counted:
+ * - `graded`: a first-pass graded submission.
+ * - `corrected_resubmission`: a graded resubmission after a direct correction.
+ * - `practice_restart`: a post-completion practice attempt; excluded from
+ *   mastery penalties and never moves progression backward.
+ * Attempts persisted before this field existed default to `graded` on read.
+ */
+export type AttemptMode = 'graded' | 'corrected_resubmission' | 'practice_restart'
+
 export interface ProblemAttempt {
   attemptId: string
   userId: string
@@ -8,6 +18,8 @@ export interface ProblemAttempt {
   normalizedAnswer: number | string | Record<string, unknown>
   isCorrect: boolean
   attemptNumber: number
+  /** Optional for backward compatibility; defaults to `graded` when absent. */
+  attemptMode?: AttemptMode
   hintUsed: boolean
   mistakeType: string | null
   masteryTagsTested: string[]

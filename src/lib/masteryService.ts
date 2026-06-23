@@ -1,14 +1,15 @@
 import { CHAPTER_PROBLEMS } from '../data/chapter'
 import type { MasteryStatus } from '../types/chapter'
 import {
+  buildCorrectByProblemGraded,
+  buildGradedFinalAttemptCounts,
   countFinalAttempts,
   getChapterAttempts,
-  wasProblemCompletedCorrectly,
 } from './problemAttemptService'
 import { getChapterProgress, saveProgressDirect } from './chapterProgressService'
 import { syncMilestonesForCompletion, setChapterMastered } from './milestonesService'
-
-const TOTAL = CHAPTER_PROBLEMS.length
+import { deriveMasteryStatus, evaluateChapterMastery } from '../core/mastery/mastery'
+import { uniqueCompletedCount } from '../core/progression/selectors'
 
 export async function evaluateMastery(userId: string): Promise<{
   masteryStatus: MasteryStatus
@@ -19,54 +20,34 @@ export async function evaluateMastery(userId: string): Promise<{
     return { masteryStatus: 'Not Started', chapterMastered: false }
   }
 
-  const completedCount = progress.completedProblemIds.length
-
+  const completedCount = uniqueCompletedCount(progress.completedProblemIds)
   if (completedCount === 0) {
     return { masteryStatus: 'Not Started', chapterMastered: false }
   }
 
-  if (completedCount < TOTAL) {
-    if (completedCount >= 4) {
-      return { masteryStatus: 'Developing', chapterMastered: false }
-    }
-    return { masteryStatus: 'Learning', chapterMastered: false }
-  }
-
   const attempts = await getChapterAttempts(userId)
 
-  const p7Correct = wasProblemCompletedCorrectly(attempts, 'problem-7')
-  const p8Correct = wasProblemCompletedCorrectly(attempts, 'problem-8')
-  const p5Correct = wasProblemCompletedCorrectly(attempts, 'problem-5')
+  // Practice restarts are excluded by buildGradedFinalAttemptCounts /
+  // buildCorrectByProblemGraded, so they never reduce earned mastery.
+  const { mastered } = evaluateChapterMastery({
+    completedProblemIds: progress.completedProblemIds,
+    correctByProblem: buildCorrectByProblemGraded(attempts),
+    gradedFinalAttemptsByProblem: buildGradedFinalAttemptCounts(attempts),
+  })
 
-  let withinTwoAttempts = 0
-  for (const problem of CHAPTER_PROBLEMS) {
-    if (progress.completedProblemIds.includes(problem.problemId)) {
-      if (countFinalAttempts(attempts, problem.problemId) <= 2) {
-        withinTwoAttempts += 1
-      }
-    }
-  }
-
-  const chapterMastered =
-    completedCount === TOTAL &&
-    p7Correct &&
-    p8Correct &&
-    p5Correct &&
-    withinTwoAttempts >= 6
-
-  const masteryStatus: MasteryStatus = chapterMastered ? 'Mastered' : 'Developing'
+  const masteryStatus = deriveMasteryStatus({ completedCount, mastered })
 
   if (progress.masteryStatus !== masteryStatus) {
     await saveProgressDirect({ ...progress, masteryStatus })
   }
 
-  if (chapterMastered) {
+  if (mastered) {
     await setChapterMastered(userId)
   } else {
     await syncMilestonesForCompletion(userId, completedCount)
   }
 
-  return { masteryStatus, chapterMastered }
+  return { masteryStatus, chapterMastered: mastered }
 }
 
 export interface ReviewSuggestion {

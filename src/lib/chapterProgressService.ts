@@ -1,29 +1,29 @@
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { FirebaseError } from 'firebase/app'
-import {
-  CHAPTER_ID,
-  type ChapterProgress,
-  type MasteryStatus,
-} from '../types/chapter'
-import { CHAPTER_PROBLEMS, getNextIncompleteProblemIndex } from '../data/chapter'
+import { type ChapterProgress } from '../types/chapter'
+import { getNextIncompleteProblemIndex } from '../data/chapter'
 import { db } from './firebase'
 import {
   createDefaultLocalProgress,
   readLocalProgress,
   writeLocalProgress,
 } from './localProgressStore'
-
-const TOTAL_PROBLEMS = CHAPTER_PROBLEMS.length
+import {
+  chapterScopedDocId,
+  legacyChapterScopedDocId,
+} from '../core/persistence/docIds'
+import {
+  mergeChapterProgress,
+  normalizeChapterProgress,
+} from '../core/persistence/migration'
+import { getChapterCompletionPercentage } from '../core/progression/selectors'
+import { deriveMasteryStatus } from '../core/mastery/mastery'
 
 function requireDb() {
   if (!db) {
     throw new Error('Firestore is not configured')
   }
   return db
-}
-
-function progressDocId(userId: string) {
-  return `${userId}_${CHAPTER_ID}`
 }
 
 function todayDateString() {
@@ -47,49 +47,65 @@ function computeStreak(lastActiveDate: string | undefined, currentStreak: number
   return 1
 }
 
-function deriveMasteryStatus(
-  completedCount: number,
-  current: MasteryStatus,
-): MasteryStatus {
-  if (completedCount === 0) {
-    return 'Not Started'
-  }
-  if (completedCount >= TOTAL_PROBLEMS) {
-    return current === 'Mastered' ? 'Mastered' : 'Developing'
-  }
-  if (completedCount >= 4) {
-    return 'Developing'
-  }
-  return 'Learning'
-}
-
 function createDefaultProgress(userId: string): ChapterProgress {
-  const now = new Date().toISOString()
-  return {
-    userId,
-    chapterId: CHAPTER_ID,
-    currentProblemIndex: 0,
-    completedProblemIds: [],
-    completionPercentage: 0,
-    masteryStatus: 'Not Started',
-    streakCount: 1,
-    lastActiveDate: todayDateString(),
-    updatedAt: now,
+  return normalizeChapterProgress(null, userId)
+}
+
+async function readFirestoreProgress(
+  docId: string,
+): Promise<Partial<ChapterProgress> | null> {
+  try {
+    const ref = doc(requireDb(), 'chapterProgress', docId)
+    const snap = await getDoc(ref)
+    return snap.exists() ? (snap.data() as Partial<ChapterProgress>) : null
+  } catch (error) {
+    if (error instanceof FirebaseError && error.code === 'permission-denied') {
+      return null
+    }
+    throw error
   }
 }
 
-async function saveProgress(progress: ChapterProgress): Promise<ChapterProgress> {
+/**
+ * Read the best chapter progress from all sources: the PRD-correct underscore
+ * Firestore doc, the legacy hyphenated doc (tolerant read), and local storage.
+ * Merges by farthest progress (see mergeChapterProgress). Returns null only
+ * when no progress exists anywhere.
+ */
+async function loadBestChapterProgress(
+  userId: string,
+): Promise<ChapterProgress | null> {
+  const local = readLocalProgress(userId)
+
+  if (!db) {
+    return local ? normalizeChapterProgress(local, userId) : null
+  }
+
+  const current = await readFirestoreProgress(chapterScopedDocId(userId))
+  const legacy = await readFirestoreProgress(legacyChapterScopedDocId(userId))
+
+  const candidates: Array<Partial<ChapterProgress> | null> = [current, legacy, local]
+  let best: Partial<ChapterProgress> | null = null
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue
+    }
+    best = best ? mergeChapterProgress(best, candidate, userId) : candidate
+  }
+  return best ? normalizeChapterProgress(best, userId) : null
+}
+
+async function saveProgress(input: ChapterProgress): Promise<ChapterProgress> {
+  // Recompute derived PRD fields so they never drift from completedProblemIds.
+  const progress = normalizeChapterProgress(
+    { ...input, updatedAt: new Date().toISOString() },
+    input.userId,
+  )
   writeLocalProgress(progress)
 
   try {
-    const firestore = requireDb()
-    const ref = doc(firestore, 'chapterProgress', progressDocId(progress.userId))
-    const snapshot = await getDoc(ref)
-    if (snapshot.exists()) {
-      await updateDoc(ref, { ...progress })
-    } else {
-      await setDoc(ref, progress)
-    }
+    const ref = doc(requireDb(), 'chapterProgress', chapterScopedDocId(progress.userId))
+    await setDoc(ref, progress)
   } catch (error) {
     if (!(error instanceof FirebaseError && error.code === 'permission-denied')) {
       throw error
@@ -100,52 +116,43 @@ async function saveProgress(progress: ChapterProgress): Promise<ChapterProgress>
 }
 
 export async function ensureChapterProgress(userId: string): Promise<ChapterProgress> {
-  const now = new Date().toISOString()
   const today = todayDateString()
 
   if (!db) {
     const local = readLocalProgress(userId) ?? createDefaultLocalProgress(userId)
-    writeLocalProgress(local)
-    return local
+    const normalized = normalizeChapterProgress(local, userId)
+    writeLocalProgress(normalized)
+    return normalized
   }
 
   try {
-    const firestore = requireDb()
-    const ref = doc(firestore, 'chapterProgress', progressDocId(userId))
-    const snapshot = await getDoc(ref)
+    const best = await loadBestChapterProgress(userId)
 
-    if (!snapshot.exists()) {
-      const local = readLocalProgress(userId)
-      const progress = local ?? createDefaultProgress(userId)
-      return saveProgress(progress)
+    if (!best) {
+      return saveProgress(createDefaultProgress(userId))
     }
 
-    const existing = snapshot.data() as ChapterProgress
-    const streakCount = computeStreak(existing.lastActiveDate, existing.streakCount)
-    const progress: ChapterProgress = {
-      ...existing,
-      updatedAt: now,
+    if (best.lastActiveDate !== today) {
+      return saveProgress({
+        ...best,
+        lastActiveDate: today,
+        streakCount: computeStreak(best.lastActiveDate, best.streakCount),
+      })
     }
 
-    if (existing.lastActiveDate !== today) {
-      progress.lastActiveDate = today
-      progress.streakCount = streakCount
-      return saveProgress(progress)
-    }
-
-    writeLocalProgress(progress)
-    return progress
+    // Always write forward so the underscore doc + derived fields are current.
+    return saveProgress(best)
   } catch (error) {
     const local = readLocalProgress(userId) ?? createDefaultLocalProgress(userId)
     if (local.lastActiveDate !== today) {
       local.streakCount = computeStreak(local.lastActiveDate, local.streakCount)
       local.lastActiveDate = today
-      local.updatedAt = now
     }
-    writeLocalProgress(local)
+    const normalized = normalizeChapterProgress(local, userId)
+    writeLocalProgress(normalized)
 
     if (error instanceof FirebaseError && error.code === 'permission-denied') {
-      return local
+      return normalized
     }
     throw error
   }
@@ -155,49 +162,44 @@ export async function getChapterProgress(
   userId: string,
 ): Promise<ChapterProgress | null> {
   try {
-    const firestore = requireDb()
-    const snapshot = await getDoc(doc(firestore, 'chapterProgress', progressDocId(userId)))
-    if (!snapshot.exists()) {
-      return readLocalProgress(userId)
-    }
-    return snapshot.data() as ChapterProgress
+    return await loadBestChapterProgress(userId)
   } catch {
-    return readLocalProgress(userId)
+    const local = readLocalProgress(userId)
+    return local ? normalizeChapterProgress(local, userId) : null
   }
 }
 
+/** Chapter completion percentage over the full 20-problem model. */
 export function computeCompletionPercentage(completedProblemIds: string[]) {
-  return Math.round((completedProblemIds.length / TOTAL_PROBLEMS) * 100)
+  return getChapterCompletionPercentage(completedProblemIds)
 }
 
 export async function markProblemComplete(
   userId: string,
   problemId: string,
 ): Promise<ChapterProgress> {
-  const base =
-    (await getChapterProgress(userId)) ?? createDefaultProgress(userId)
+  const base = (await getChapterProgress(userId)) ?? createDefaultProgress(userId)
 
   if (base.completedProblemIds.includes(problemId)) {
-    return base
+    // Already complete (e.g. a practice restart re-finish): never regress and
+    // never duplicate. Touch updatedAt only.
+    return saveProgress(base)
   }
 
   const completedProblemIds = [...base.completedProblemIds, problemId]
-  const completionPercentage = computeCompletionPercentage(completedProblemIds)
-  // Resume point follows the farthest completed progression, and never moves
-  // backward (e.g. when an earlier problem is re-completed after a restart).
+  // Resume cursor follows the farthest progression and never moves backward.
   const nextIndex = getNextIncompleteProblemIndex(completedProblemIds)
   const currentProblemIndex = Math.max(base.currentProblemIndex, nextIndex)
 
-  const progress: ChapterProgress = {
+  return saveProgress({
     ...base,
     completedProblemIds,
-    completionPercentage,
     currentProblemIndex,
-    masteryStatus: deriveMasteryStatus(completedProblemIds.length, base.masteryStatus),
-    updatedAt: new Date().toISOString(),
-  }
-
-  return saveProgress(progress)
+    masteryStatus: deriveMasteryStatus({
+      completedCount: completedProblemIds.length,
+      mastered: base.masteryStatus === 'Mastered',
+    }),
+  })
 }
 
 export async function saveProgressDirect(progress: ChapterProgress): Promise<ChapterProgress> {
@@ -209,17 +211,11 @@ export async function setCurrentProblem(
   problemId: string,
 ): Promise<void> {
   const base = (await getChapterProgress(userId)) ?? createDefaultProgress(userId)
-  const problemIndex = CHAPTER_PROBLEMS.findIndex((p) => p.problemId === problemId)
-  // Track which problem is open for resume hints, but never let opening an
-  // older (e.g. completed) problem drag the farthest progression backward.
-  const progress: ChapterProgress = {
+  // Track which problem is open for resume hints only. The authoritative resume
+  // target is derived from completedProblemIds, so opening (or reviewing /
+  // restarting) an older completed problem never drags progression backward.
+  await saveProgress({
     ...base,
     currentProblemId: problemId,
-    currentProblemIndex:
-      problemIndex >= 0
-        ? Math.max(base.currentProblemIndex, problemIndex)
-        : base.currentProblemIndex,
-    updatedAt: new Date().toISOString(),
-  }
-  await saveProgress(progress)
+  })
 }

@@ -1,13 +1,20 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { FirebaseError } from 'firebase/app'
-import { CHAPTER_ID, type Milestones } from '../types/chapter'
-import { CHAPTER_PROBLEMS } from '../data/chapter'
+import { type Milestones } from '../types/chapter'
 import { db } from './firebase'
 import {
   createDefaultLocalMilestones,
   readLocalMilestones,
   writeLocalMilestones,
 } from './localProgressStore'
+import { chapterScopedDocId } from '../core/persistence/docIds'
+import { getChapterProgress } from './chapterProgressService'
+import {
+  TOTAL_PROBLEMS,
+  getCompletedLessonIds,
+  isProblemCompleted,
+} from '../core/progression/selectors'
+import { mapCanonicalSlugToStorageId } from '../core/progression/canonical'
 
 function requireDb() {
   if (!db) {
@@ -17,8 +24,18 @@ function requireDb() {
 }
 
 function milestonesDocId(userId: string) {
-  return `${userId}_${CHAPTER_ID}`
+  return chapterScopedDocId(userId)
 }
+
+/** Canonical slugs whose completion drives concept-distinction milestones. */
+const SIMULATION_SLUGS = [
+  'l1-long-run-average',
+  'l1-unequal-spinner',
+  'l1-short-run-vs-long-run',
+  'l1-compare-spinners',
+  'l5-same-ev-different-risk',
+  'l5-low-risk-vs-high-risk',
+]
 
 function createDefaultMilestones(userId: string): Milestones {
   return {
@@ -95,23 +112,55 @@ export async function syncMilestonesForCompletion(
   userId: string,
   completedCount: number,
 ): Promise<Milestones> {
-  const base = (await ensureMilestones(userId))
+  const base = await ensureMilestones(userId)
   const unlocked = new Set(base.unlockedMilestones)
+
+  // Derive completion-based milestones from the authoritative chapter progress.
+  const progress = await getChapterProgress(userId)
+  const completedProblemIds = progress?.completedProblemIds ?? []
+  const completedLessonIds = getCompletedLessonIds(completedProblemIds)
 
   if (completedCount >= 1) {
     unlocked.add('first-problem-complete')
   }
-  if (completedCount >= 4) {
+  if (completedCount >= Math.ceil(TOTAL_PROBLEMS / 2)) {
     unlocked.add('half-chapter')
   }
-  if (completedCount >= CHAPTER_PROBLEMS.length) {
+
+  // Lesson-completion milestones (lesson 5 completion == chapter completion).
+  for (const lessonId of ['lesson-1', 'lesson-2', 'lesson-3', 'lesson-4']) {
+    if (completedLessonIds.includes(lessonId)) {
+      unlocked.add(`${lessonId}-complete`)
+    }
+  }
+
+  // Concept-distinction milestones.
+  if (isProblemCompleted(mapCanonicalSlugToStorageId('l4-payout-vs-profit') ?? '', completedProblemIds)) {
+    unlocked.add('profit-fairness-distinction')
+  }
+  if (
+    isProblemCompleted(mapCanonicalSlugToStorageId('l5-same-ev-different-risk') ?? '', completedProblemIds) ||
+    isProblemCompleted(mapCanonicalSlugToStorageId('l5-low-risk-vs-high-risk') ?? '', completedProblemIds)
+  ) {
+    unlocked.add('risk-distinction')
+  }
+  if (isProblemCompleted(mapCanonicalSlugToStorageId('l5-final-capstone-ev-decision') ?? '', completedProblemIds)) {
+    unlocked.add('final-capstone-complete')
+  }
+  if (SIMULATION_SLUGS.every((slug) => isProblemCompleted(mapCanonicalSlugToStorageId(slug) ?? '', completedProblemIds))) {
+    unlocked.add('all-simulations-complete')
+  }
+
+  const chapterCompleted = completedCount >= TOTAL_PROBLEMS
+  if (chapterCompleted) {
     unlocked.add('chapter-complete')
-    base.chapterCompleted = true
   }
 
   const milestones: Milestones = {
     ...base,
     unlockedMilestones: [...unlocked],
+    completedLessonIds,
+    chapterCompleted: base.chapterCompleted || chapterCompleted,
     updatedAt: new Date().toISOString(),
   }
 
