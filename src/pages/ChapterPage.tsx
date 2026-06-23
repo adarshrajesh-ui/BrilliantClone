@@ -3,8 +3,10 @@ import {
   CHAPTER_DESCRIPTION,
   CHAPTER_PROBLEMS,
   CHAPTER_TITLE,
+  getCompletedLessonIds,
   getContinueProblemId,
   MILESTONE_DEFINITIONS,
+  TOTAL_LESSONS,
 } from '../data/chapter'
 import { useChapterData } from '../hooks/useChapterData'
 import { ChapterSyncBanner } from '../components/SyncWarningBanner'
@@ -55,6 +57,7 @@ export function ChapterPage() {
 
   const continueProblemId = getContinueProblemId(progress)
   const allComplete = progress.completedProblemIds.length === CHAPTER_PROBLEMS.length
+  const completedLessons = getCompletedLessonIds(progress.completedProblemIds).length
 
   return (
     <div className="page chapter-page">
@@ -86,6 +89,12 @@ export function ChapterPage() {
             <span className="stat-label">Streak</span>
             <span className="stat-value">
               {progress.streakCount} day{progress.streakCount === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Lessons done</span>
+            <span className="stat-value">
+              {completedLessons} / {TOTAL_LESSONS}
             </span>
           </div>
           <div className="stat-item">

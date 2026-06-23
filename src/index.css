@@ -1316,12 +1316,50 @@ code {
 }
 
 .course-track {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.course-zone-wrap { list-style: none; margin: 0 0 0.5rem; }
+.course-zone-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin: 1rem 0 0.25rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.course-zone-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #86efac;
+}
+.course-zone-title { font-weight: 700; flex: 1; min-width: 8rem; }
+.course-zone-status {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #d1fae5;
+}
+.course-zone-complete { border-color: rgba(134, 239, 172, 0.6); }
+.course-zone-complete .course-zone-status { background: #16a34a; color: #fff; }
+.course-zone-current { border-color: #facc15; background: rgba(250, 204, 21, 0.1); }
+.course-zone-current .course-zone-status { background: #facc15; color: #422006; }
+
+.course-holes {
   position: relative;
   list-style: none;
   margin: 0;
-  padding: 0.5rem 0;
+  padding: 0.35rem 0;
 }
-.course-track::before {
+.course-holes::before {
   content: '';
   position: absolute;
   left: 50%;
@@ -1445,7 +1483,7 @@ code {
 }
 
 @media (max-width: 600px) {
-  .course-track::before { left: 1.8rem; }
+  .course-holes::before { left: 1.8rem; }
   .course-hole-left,
   .course-hole-right { justify-content: flex-start; }
   .course-hole-link,

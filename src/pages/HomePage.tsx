@@ -25,7 +25,7 @@ export function HomePage() {
       <section className="card chapter-card">
         <p className="chapter-eyebrow">Your chapter</p>
         <h2>{CHAPTER_TITLE}</h2>
-        <p>8 problems · observe → predict → construct → decide</p>
+        <p>5 lessons · 8 problems · observe → predict → construct → decide</p>
 
         {loading ? (
           <p className="home-progress-text">Loading your progress…</p>
@@ -61,7 +61,7 @@ export function HomePage() {
         <h2>How it works</h2>
         <ol className="how-it-works">
           <li>Sign in with Google — your progress saves automatically.</li>
-          <li>Work through 8 visual problems on expected value.</li>
+          <li>Work through 5 lessons (8 visual problems) on expected value.</li>
           <li>Get instant, specific feedback — every answer is hand-built.</li>
         </ol>
       </section>

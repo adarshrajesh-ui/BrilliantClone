@@ -1,6 +1,15 @@
-import type { ChapterProblem, MilestoneDefinition } from '../types/chapter'
+import type {
+  ChapterProblem,
+  LessonDefinition,
+  LessonProgressView,
+  MilestoneDefinition,
+  ProblemMeta,
+} from '../types/chapter'
 
 export const CHAPTER_TITLE = 'Expected Value — The Average Outcome of Uncertainty'
+
+export const CHAPTER_SUBTITLE =
+  'Play through 5 lessons (8 visual challenges) to master long-run average, payout, profit, fairness, and risk.'
 
 export const CHAPTER_DESCRIPTION =
   'Eight visual, interactive problems that move you from observing a simulation to building and interpreting an expected value model.'
@@ -56,6 +65,106 @@ export const CHAPTER_PROBLEMS: ChapterProblem[] = [
   },
 ]
 
+/**
+ * Five-lesson structure layered over the existing eight problems. Problem IDs are
+ * preserved exactly so saved progress (completedProblemIds) keeps resolving.
+ */
+export const CHAPTER_LESSONS: LessonDefinition[] = [
+  {
+    lessonId: 'lesson-1',
+    title: 'Expected Value as Long-Run Average',
+    order: 1,
+    problemIds: ['problem-1'],
+  },
+  {
+    lessonId: 'lesson-2',
+    title: 'Expected Value as a Weighted Average',
+    order: 2,
+    problemIds: ['problem-2'],
+  },
+  {
+    lessonId: 'lesson-3',
+    title: 'Counts, Tables, and Discrete Outcomes',
+    order: 3,
+    problemIds: ['problem-3', 'problem-4'],
+  },
+  {
+    lessonId: 'lesson-4',
+    title: 'Expected Payout, Expected Profit, and Fairness',
+    order: 4,
+    problemIds: ['problem-5', 'problem-6'],
+  },
+  {
+    lessonId: 'lesson-5',
+    title: 'Same EV, Different Risk, and Full EV Models',
+    order: 5,
+    problemIds: ['problem-7', 'problem-8'],
+  },
+]
+
+export const TOTAL_LESSONS = CHAPTER_LESSONS.length
+
+export function getLessonForProblem(problemId: string): LessonDefinition | undefined {
+  return CHAPTER_LESSONS.find((lesson) => lesson.problemIds.includes(problemId))
+}
+
+export function getProblemMeta(problemId: string): ProblemMeta | undefined {
+  const lesson = getLessonForProblem(problemId)
+  const globalProblemIndex = CHAPTER_PROBLEMS.findIndex((p) => p.problemId === problemId)
+  if (!lesson || globalProblemIndex < 0) {
+    return undefined
+  }
+  return {
+    problemId,
+    lessonId: lesson.lessonId,
+    lessonIndex: lesson.order - 1,
+    problemIndexWithinLesson: lesson.problemIds.indexOf(problemId),
+    globalProblemIndex,
+  }
+}
+
+export function isLessonComplete(lessonId: string, completedProblemIds: string[]): boolean {
+  const lesson = CHAPTER_LESSONS.find((l) => l.lessonId === lessonId)
+  if (!lesson) {
+    return false
+  }
+  return lesson.problemIds.every((pid) => completedProblemIds.includes(pid))
+}
+
+export function getCompletedLessonIds(completedProblemIds: string[]): string[] {
+  return CHAPTER_LESSONS.filter((lesson) =>
+    lesson.problemIds.every((pid) => completedProblemIds.includes(pid)),
+  ).map((lesson) => lesson.lessonId)
+}
+
+/** The lesson that contains the next incomplete problem (the "continue" target). */
+export function getCurrentLessonId(continueProblemId: string): string {
+  return getLessonForProblem(continueProblemId)?.lessonId ?? CHAPTER_LESSONS[0].lessonId
+}
+
+/** Lesson-aware view used by the pathway UI. Pure derivation — nothing persisted. */
+export function getLessonProgressViews(
+  completedProblemIds: string[],
+  continueProblemId: string,
+  allComplete: boolean,
+): LessonProgressView[] {
+  const currentLessonId = allComplete ? null : getCurrentLessonId(continueProblemId)
+  return CHAPTER_LESSONS.map((lesson) => {
+    const completedCount = lesson.problemIds.filter((pid) =>
+      completedProblemIds.includes(pid),
+    ).length
+    return {
+      lessonId: lesson.lessonId,
+      title: lesson.title,
+      order: lesson.order,
+      problemIds: lesson.problemIds,
+      completedCount,
+      isComplete: completedCount === lesson.problemIds.length,
+      isCurrent: lesson.lessonId === currentLessonId,
+    }
+  })
+}
+
 export const MILESTONE_DEFINITIONS: MilestoneDefinition[] = [
   {
     id: 'chapter-started',
@@ -88,23 +197,60 @@ export function getProblemById(problemId: string): ChapterProblem | undefined {
   return CHAPTER_PROBLEMS.find((p) => p.problemId === problemId)
 }
 
+/**
+ * The highest `order` of any completed problem (0 when nothing is complete).
+ * This represents the learner's farthest progression through the required
+ * sequence and must never move backward when older problems are reviewed or
+ * restarted.
+ */
+export function getFarthestCompletedOrder(completedProblemIds: string[]): number {
+  return CHAPTER_PROBLEMS.reduce(
+    (max, p) =>
+      completedProblemIds.includes(p.problemId) ? Math.max(max, p.order) : max,
+    0,
+  )
+}
+
+/**
+ * The next problem the learner should continue to: the first incomplete
+ * problem that comes *after* the farthest completed problem in the sequence.
+ * Falls back to the first incomplete problem overall (handles non-contiguous
+ * completion), and returns undefined only when every problem is complete.
+ */
+export function getNextIncompleteProblem(
+  completedProblemIds: string[],
+): ChapterProblem | undefined {
+  const farthest = getFarthestCompletedOrder(completedProblemIds)
+  const afterFarthest = CHAPTER_PROBLEMS.find(
+    (p) => p.order > farthest && !completedProblemIds.includes(p.problemId),
+  )
+  if (afterFarthest) {
+    return afterFarthest
+  }
+  return CHAPTER_PROBLEMS.find((p) => !completedProblemIds.includes(p.problemId))
+}
+
+export function getNextIncompleteProblemIndex(
+  completedProblemIds: string[],
+): number {
+  const next = getNextIncompleteProblem(completedProblemIds)
+  if (!next) {
+    return CHAPTER_PROBLEMS.length - 1
+  }
+  return CHAPTER_PROBLEMS.findIndex((p) => p.problemId === next.problemId)
+}
+
+/**
+ * Where "Continue chapter" should route. Always the first incomplete problem
+ * after the farthest completed progression, so opening or restarting an older
+ * completed problem never drags the resume point backward. When the whole
+ * chapter is complete we route to the first problem for review.
+ */
 export function getContinueProblemId(progress: {
   currentProblemIndex: number
   currentProblemId?: string
   completedProblemIds: string[]
 }): string {
-  if (
-    progress.currentProblemId &&
-    !progress.completedProblemIds.includes(progress.currentProblemId)
-  ) {
-    return progress.currentProblemId
-  }
-
-  const nextIncomplete = CHAPTER_PROBLEMS.find(
-    (p) => !progress.completedProblemIds.includes(p.problemId),
-  )
-  if (nextIncomplete) {
-    return nextIncomplete.problemId
-  }
-  return CHAPTER_PROBLEMS[progress.currentProblemIndex]?.problemId ?? CHAPTER_PROBLEMS[0].problemId
+  const next = getNextIncompleteProblem(progress.completedProblemIds)
+  return next?.problemId ?? CHAPTER_PROBLEMS[0].problemId
 }

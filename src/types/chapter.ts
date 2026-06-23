@@ -13,6 +13,38 @@ export interface ChapterProblem {
   order: number
 }
 
+export interface LessonDefinition {
+  lessonId: string
+  title: string
+  /** 1-based lesson order within the chapter. */
+  order: number
+  /** Existing problem IDs that belong to this lesson, in play order. */
+  problemIds: string[]
+}
+
+/** Per-problem position within the lesson/chapter structure. */
+export interface ProblemMeta {
+  problemId: string
+  lessonId: string
+  /** 0-based lesson index. */
+  lessonIndex: number
+  /** 0-based index of the problem within its lesson. */
+  problemIndexWithinLesson: number
+  /** 0-based index of the problem within the whole chapter. */
+  globalProblemIndex: number
+}
+
+/** Derived, lesson-aware view over the persisted ChapterProgress (not stored). */
+export interface LessonProgressView {
+  lessonId: string
+  title: string
+  order: number
+  problemIds: string[]
+  completedCount: number
+  isComplete: boolean
+  isCurrent: boolean
+}
+
 export interface ChapterProgress {
   userId: string
   chapterId: typeof CHAPTER_ID
