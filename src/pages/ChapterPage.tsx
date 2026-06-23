@@ -9,6 +9,7 @@ import {
 import { useChapterData } from '../hooks/useChapterData'
 import { ChapterSyncBanner } from '../components/SyncWarningBanner'
 import { SuggestedReview } from '../components/SuggestedReview'
+import { CoursePathway } from '../components/CoursePathway'
 import type { MasteryStatus } from '../types/chapter'
 
 const CHAPTER_PATH = '/chapter/expected-value-intro'
@@ -118,38 +119,11 @@ export function ChapterPage() {
         </div>
       </section>
 
-      <section className="card">
-        <h2>Problems</h2>
-        <ol className="problem-list">
-          {CHAPTER_PROBLEMS.map((problem) => {
-            const isComplete = progress.completedProblemIds.includes(problem.problemId)
-            const isCurrent = problem.problemId === continueProblemId && !allComplete
-
-            return (
-              <li
-                key={problem.problemId}
-                className={`problem-item${isComplete ? ' problem-complete' : ''}${isCurrent ? ' problem-current' : ''}`}
-              >
-                <div className="problem-item-main">
-                  <span className="problem-number">{problem.order}</span>
-                  <div>
-                    <Link
-                      to={`${CHAPTER_PATH}/problem/${problem.problemId}`}
-                      className="problem-title"
-                    >
-                      {problem.title}
-                    </Link>
-                    <p className="problem-concept">{problem.concept}</p>
-                  </div>
-                </div>
-                <span className="problem-status">
-                  {isComplete ? 'Complete' : isCurrent ? 'Up next' : 'Not started'}
-                </span>
-              </li>
-            )
-          })}
-        </ol>
-      </section>
+      <CoursePathway
+        completedProblemIds={progress.completedProblemIds}
+        continueProblemId={continueProblemId}
+        allComplete={allComplete}
+      />
 
       <SuggestedReview />
 
