@@ -42,7 +42,11 @@ export function FormulaBuilder({
           </span>
         ))}
       </p>
-      <p className="section-note">Tap a card, then tap a slot to place it. Tap a filled slot to clear.</p>
+      <p className="section-note tap-hint">
+        {selectedCard
+          ? `Now tap an empty slot to place ${selectedCard}. Tap a filled slot to clear placement.`
+          : 'Tap a card first, then tap a slot. Tap a filled slot to replace it.'}
+      </p>
       <div className="card-bank">
         {cards.map((card) => (
           <button

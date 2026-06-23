@@ -1049,3 +1049,92 @@ code {
 .review-item:last-child { border-bottom: none; }
 .review-link { font-weight: 600; color: var(--text-heading); }
 .review-item p { margin: 0.25rem 0 0; font-size: 0.9rem; color: #6b7280; }
+
+/* ---- Step 2: Task guide, checklist, inline field status, tap hints ---- */
+.task-guide {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 60%);
+}
+.task-guide-eyebrow {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 0.2rem;
+}
+.task-guide-action {
+  margin: 0 0 0.85rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+.task-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.task-step {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+.task-step-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: #e5e7eb;
+  color: #6b7280;
+}
+.task-step-done .task-step-marker { background: #16a34a; color: #fff; }
+.task-step-done .task-step-label { color: #6b7280; text-decoration: line-through; }
+.task-step-active {
+  background: #eff6ff;
+  box-shadow: inset 0 0 0 1px #bfdbfe;
+}
+.task-step-active .task-step-marker { background: var(--primary); color: #fff; }
+.task-step-active .task-step-label { font-weight: 600; color: var(--text-heading); }
+.task-progress-label {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.tap-hint {
+  background: #f3f4f6;
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  margin: 0 0 0.75rem;
+  color: #4b5563;
+}
+
+.cell-status input,
+.cell-status { position: relative; }
+.cell-status-ok input { border-color: #16a34a; background: #f0fdf4; }
+.cell-status-bad input { border-color: var(--error); background: #fef2f2; }
+.cell-status-ok::after {
+  content: '✓';
+  color: #16a34a;
+  font-weight: 700;
+  margin-left: 0.35rem;
+}
+.cell-status-bad::after {
+  content: '✗';
+  color: var(--error);
+  font-weight: 700;
+  margin-left: 0.35rem;
+}

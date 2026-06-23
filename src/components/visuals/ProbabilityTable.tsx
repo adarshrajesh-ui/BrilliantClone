@@ -1,3 +1,7 @@
+import type { FieldStatus } from '../../lib/fieldStatus'
+
+export type { FieldStatus }
+
 interface ProbabilityRow {
   outcome: string
   count: string
@@ -10,7 +14,25 @@ interface ProbabilityTableProps {
   activeRow?: number | null
   onChange?: (rowIndex: number, field: 'count' | 'probability', value: string) => void
   readOnly?: boolean
-  extraColumns?: Array<{ key: string; label: string; values: string[]; onChange?: (row: number, val: string) => void }>
+  countStatus?: FieldStatus[]
+  probabilityStatus?: FieldStatus[]
+  extraColumns?: Array<{
+    key: string
+    label: string
+    values: string[]
+    onChange?: (row: number, val: string) => void
+    status?: FieldStatus[]
+  }>
+}
+
+function statusTitle(status: FieldStatus): string | undefined {
+  if (status === 'ok') return 'Correct'
+  if (status === 'bad') return 'Needs correction'
+  return undefined
+}
+
+function statusClass(status: FieldStatus): string {
+  return status ? ` cell-status cell-status-${status}` : ''
 }
 
 export function ProbabilityTable({
@@ -18,6 +40,8 @@ export function ProbabilityTable({
   activeRow,
   onChange,
   readOnly,
+  countStatus,
+  probabilityStatus,
   extraColumns = [],
 }: ProbabilityTableProps) {
   return (
@@ -40,7 +64,7 @@ export function ProbabilityTable({
               className={`${activeRow === i ? 'prob-row-active' : ''}${row.color ? ` prob-row-${row.color}` : ''}`}
             >
               <td>{row.outcome}</td>
-              <td>
+              <td className={statusClass(countStatus?.[i])}>
                 {readOnly || !onChange ? (
                   row.count
                 ) : (
@@ -49,10 +73,11 @@ export function ProbabilityTable({
                     value={row.count}
                     onChange={(e) => onChange(i, 'count', e.target.value)}
                     aria-label={`Count for ${row.outcome}`}
+                    title={statusTitle(countStatus?.[i])}
                   />
                 )}
               </td>
-              <td>
+              <td className={statusClass(probabilityStatus?.[i])}>
                 {readOnly || !onChange ? (
                   row.probability
                 ) : (
@@ -61,17 +86,19 @@ export function ProbabilityTable({
                     value={row.probability}
                     onChange={(e) => onChange(i, 'probability', e.target.value)}
                     aria-label={`Probability for ${row.outcome}`}
+                    title={statusTitle(probabilityStatus?.[i])}
                   />
                 )}
               </td>
               {extraColumns.map((col) => (
-                <td key={col.key}>
+                <td key={col.key} className={statusClass(col.status?.[i])}>
                   {col.onChange ? (
                     <input
                       type="text"
                       value={col.values[i] ?? ''}
                       onChange={(e) => col.onChange?.(i, e.target.value)}
                       aria-label={`${col.label} for ${row.outcome}`}
+                      title={statusTitle(col.status?.[i])}
                     />
                   ) : (
                     col.values[i]

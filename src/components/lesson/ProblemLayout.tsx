@@ -18,6 +18,7 @@ interface ProblemLayoutProps {
   nextProblemId?: string
   completionMessage?: string
   hideHints?: boolean
+  taskGuide?: ReactNode
 }
 
 export function ProblemLayout({
@@ -32,6 +33,7 @@ export function ProblemLayout({
   nextProblemId,
   completionMessage,
   hideHints,
+  taskGuide,
 }: ProblemLayoutProps) {
   return (
     <div className="page problem-page">
@@ -68,6 +70,7 @@ export function ProblemLayout({
         </section>
       ) : (
         <>
+          {taskGuide}
           {children}
           {!hideHints && (
             <HintPanel

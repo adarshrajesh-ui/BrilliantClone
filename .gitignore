@@ -13,6 +13,11 @@ dist-ssr
 *.local
 .env
 
+# Local tool / deploy state (not for version control)
+.cursor/
+.firebase/
+.firebaserc
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

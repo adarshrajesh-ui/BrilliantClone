@@ -1,6 +1,7 @@
 import { FormulaBuilder } from '../visuals/FormulaBuilder'
 import { ConfigurableSpinner, SPINNER_P2 } from '../visuals/ConfigurableSpinner'
 import { ProblemLayout } from '../lesson/ProblemLayout'
+import { TaskGuide } from '../lesson/TaskGuide'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { PROBLEM_2 } from '../../data/problems/problem-2'
@@ -24,9 +25,28 @@ export function Problem2WeightedAverage() {
     return <div className="loading-screen"><div className="spinner" /><p>Loading problem…</p></div>
   }
 
+  const slotsFilled = state.slots.filter(Boolean).length
+  const allPlaced = slotsFilled === 4
+  const currentTask = state.selectedCard
+    ? 'Now tap an empty formula slot to place the card.'
+    : !allPlaced
+      ? 'Select a card, then tap an empty formula slot.'
+      : 'Now compute the expected value and enter it.'
+
+  const taskGuide = (
+    <TaskGuide
+      currentTask={currentTask}
+      steps={[
+        { id: 'pairs', label: 'Pair each payout with its probability', done: allPlaced },
+        { id: 'ev', label: 'Enter the expected value', done: session.completed },
+      ]}
+    />
+  )
+
   return (
     <ProblemLayout problem={PROBLEM_2} problemNumber={2} feedback={session.feedback} completed={session.completed}
-      revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-3">
+      revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-3"
+      taskGuide={taskGuide}>
       <section className="card problem-section">
         <ConfigurableSpinner segments={SPINNER_P2} rotation={0} spinning={false} lastOutcome={null} />
       </section>

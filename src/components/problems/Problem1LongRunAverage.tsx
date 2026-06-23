@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { ConfigurableSpinner, SPINNER_P1, spinFromSegments } from '../visuals/ConfigurableSpinner'
 import { RunningAverageGraph } from '../visuals/RunningAverageGraph'
 import { ProblemLayout } from '../lesson/ProblemLayout'
+import { TaskGuide } from '../lesson/TaskGuide'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { PROBLEM_1 } from '../../data/problems/problem-1'
@@ -64,9 +65,29 @@ export function Problem1LongRunAverage() {
     return <div className="loading-screen"><div className="spinner" /><p>Loading problem…</p></div>
   }
 
+  const currentTask = !state.predictionSubmitted
+    ? 'First, predict the long-run average, then submit it.'
+    : state.totalSpins < 100
+      ? `Now spin at least 100 times (${state.totalSpins}/100).`
+      : state.finalAnswer === null
+        ? 'Watch where the average settles, then choose the long-run average.'
+        : 'Submit your long-run average answer.'
+
+  const taskGuide = (
+    <TaskGuide
+      currentTask={currentTask}
+      steps={[
+        { id: 'predict', label: 'Predict the long-run average', done: state.predictionSubmitted },
+        { id: 'spin', label: 'Spin at least 100 times', done: state.totalSpins >= 100 },
+        { id: 'identify', label: 'Identify the $5 long-run average', done: session.completed },
+      ]}
+    />
+  )
+
   return (
     <ProblemLayout problem={PROBLEM_1} problemNumber={1} feedback={session.feedback} completed={session.completed}
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-2"
+      taskGuide={taskGuide}
       completionMessage="You predicted, ran 100+ spins, and identified $5 as the long-run average.">
       <section className="card problem-section">
         <h2>Step 1 — Predict the long-run average</h2>

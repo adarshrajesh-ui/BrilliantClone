@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { RiskComparisonGraph } from '../visuals/RiskComparisonGraph'
 import { ProblemLayout } from '../lesson/ProblemLayout'
+import { TaskGuide } from '../lesson/TaskGuide'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { PROBLEM_8 } from '../../data/problems/problem-8'
@@ -40,9 +41,29 @@ export function Problem8SameEVDifferentRisk() {
 
   if (!loaded || !session.sessionLoaded) return <div className="loading-screen"><div className="spinner" /><p>Loading…</p></div>
 
+  const bothSimulated = state.gameASimulated && state.gameBSimulated
+  const evsFilled = state.evA.trim() !== '' && state.evB.trim() !== ''
+  const currentTask = !bothSimulated
+    ? 'Run 20 simulated trials for each game.'
+    : !evsFilled
+      ? 'Enter the expected value for each game.'
+      : 'Identify which game is riskier and why.'
+
+  const taskGuide = (
+    <TaskGuide
+      currentTask={currentTask}
+      steps={[
+        { id: 'sim', label: 'Run both simulations', done: bothSimulated },
+        { id: 'ev', label: 'Compare the expected values', done: evsFilled },
+        { id: 'risk', label: 'Identify the higher-risk game and why', done: session.completed },
+      ]}
+    />
+  )
+
   return (
     <ProblemLayout problem={PROBLEM_8} problemNumber={8} feedback={session.feedback} completed={session.completed}
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint}
+      taskGuide={taskGuide}
       completionMessage="You compared two games with the same EV but different risk profiles.">
       <section className="card problem-section">
         <div className="risk-cards">

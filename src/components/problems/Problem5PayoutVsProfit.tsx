@@ -1,5 +1,6 @@
 import { BalanceScale } from '../visuals/BalanceScale'
 import { ProblemLayout } from '../lesson/ProblemLayout'
+import { TaskGuide } from '../lesson/TaskGuide'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { PROBLEM_5 } from '../../data/problems/problem-5'
@@ -14,9 +15,24 @@ export function Problem5PayoutVsProfit() {
 
   if (!loaded || !session.sessionLoaded) return <div className="loading-screen"><div className="spinner" /><p>Loading…</p></div>
 
+  const currentTask = !state.costPlaced
+    ? 'Tap the cost block to subtract the cost from the expected payout.'
+    : 'Now enter the expected profit: expected payout − cost.'
+
+  const taskGuide = (
+    <TaskGuide
+      currentTask={currentTask}
+      steps={[
+        { id: 'cost', label: 'Subtract cost from expected payout', done: state.costPlaced },
+        { id: 'profit', label: 'Enter the expected profit', done: session.completed },
+      ]}
+    />
+  )
+
   return (
     <ProblemLayout problem={PROBLEM_5} problemNumber={5} feedback={session.feedback} completed={session.completed}
-      revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-6">
+      revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-6"
+      taskGuide={taskGuide}>
       <section className="card problem-section">
         <BalanceScale payout={4} cost={3} costPlaced={state.costPlaced} onPlaceCost={() => setState((p) => ({ ...p, costPlaced: true }))} />
         <label className="field-label">Expected profit
