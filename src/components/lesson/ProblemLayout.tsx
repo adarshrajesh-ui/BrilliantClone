@@ -1,8 +1,20 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type { CheckResult, ProblemDefinition, ProblemHint } from '../../types/problem'
-import { FeedbackPanel, resultToFeedbackType } from './FeedbackPanel'
+import { CHAPTER_PROBLEMS } from '../../data/chapter'
 import { HintPanel } from './HintPanel'
+import {
+  ResponsiveProblemShell,
+  LearningCoachPanel,
+  ProblemIntroDemo,
+  ReviewModeBanner,
+  ShowDemoAgainAction,
+  useDemoVisibility,
+  buildFallbackDemoSteps,
+  checkResultToCoachFeedback,
+  configKeyFor,
+} from '../../features/learning-experience'
+import type { DemoStepConfig } from '../../features/learning-experience'
 
 const CHAPTER_PATH = '/chapter/expected-value-intro'
 
@@ -48,13 +60,21 @@ interface ProblemLayoutProps {
   lastSubmittedAnswer?: string | null
   /** Whether any recorded attempt used a hint. */
   reviewHintUsed?: boolean
+  /**
+   * Optional problem-specific demo steps (Agents 3/4). When omitted, a generic
+   * fallback demo is derived from the problem definition.
+   */
+  demoSteps?: DemoStepConfig[]
+  /** Closing call-to-action shown on the last demo step. */
+  demoFinalCta?: string
+  /** Short concept reinforcement shown by the coach on a correct answer. */
+  conceptSummary?: string
 }
 
-function ReviewMode({
+function ReviewDetail({
   problem,
   completionMessage,
   nextProblemId,
-  onRestart,
   attemptCount,
   lastSubmittedAnswer,
   reviewHintUsed,
@@ -62,7 +82,6 @@ function ReviewMode({
   problem: ProblemDefinition
   completionMessage?: string
   nextProblemId?: string
-  onRestart?: () => void
   attemptCount?: number
   lastSubmittedAnswer?: string | null
   reviewHintUsed?: boolean
@@ -73,89 +92,63 @@ function ReviewMode({
     'You met all completion requirements for this problem.'
 
   return (
-    <>
-      <section className="card review-banner">
-        <div className="review-banner-head">
-          <span className="review-badge" aria-hidden="true">
-            ✓
-          </span>
-          <div>
-            <p className="review-banner-title">Completed — Review or restart</p>
-            <p className="review-banner-sub">
-              You can revisit your result, or start a fresh practice attempt.
-            </p>
-          </div>
-        </div>
-        <div className="review-actions">
-          <span className="btn-secondary review-mode-active" aria-current="true">
-            Review Problem
-          </span>
-          {onRestart && (
-            <button type="button" className="btn-outline touch-target" onClick={onRestart}>
-              Restart This Problem
-            </button>
-          )}
-        </div>
-      </section>
+    <section className="card review-detail" aria-label="Completed problem review">
+      <p className="review-state-label">Completed — Review Mode</p>
 
-      <section className="card review-detail" aria-label="Completed problem review">
-        <p className="review-state-label">Completed — Review Mode</p>
+      <div className="review-row">
+        <span className="review-row-label">Correct result</span>
+        <p className="review-row-value">{correctFeedback}</p>
+      </div>
 
+      {lastSubmittedAnswer != null && lastSubmittedAnswer !== '' && (
         <div className="review-row">
-          <span className="review-row-label">Correct result</span>
-          <p className="review-row-value">{correctFeedback}</p>
+          <span className="review-row-label">Your final answer</span>
+          <p className="review-row-value">{lastSubmittedAnswer}</p>
         </div>
+      )}
 
-        {lastSubmittedAnswer != null && lastSubmittedAnswer !== '' && (
-          <div className="review-row">
-            <span className="review-row-label">Your final answer</span>
-            <p className="review-row-value">{lastSubmittedAnswer}</p>
-          </div>
-        )}
+      {completionMessage && (
+        <div className="review-row">
+          <span className="review-row-label">What you did</span>
+          <p className="review-row-value">{completionMessage}</p>
+        </div>
+      )}
 
-        {completionMessage && (
-          <div className="review-row">
-            <span className="review-row-label">What you did</span>
-            <p className="review-row-value">{completionMessage}</p>
-          </div>
-        )}
-
-        <ul className="review-summary-stats">
+      <ul className="review-summary-stats">
+        <li>
+          <span>Status</span>
+          <strong className="review-stat-complete">Complete ✓</strong>
+        </li>
+        {typeof attemptCount === 'number' && attemptCount > 0 && (
           <li>
-            <span>Status</span>
-            <strong className="review-stat-complete">Complete ✓</strong>
+            <span>Attempts</span>
+            <strong>{attemptCount}</strong>
           </li>
-          {typeof attemptCount === 'number' && attemptCount > 0 && (
-            <li>
-              <span>Attempts</span>
-              <strong>{attemptCount}</strong>
-            </li>
-          )}
-          <li>
-            <span>Hints used</span>
-            <strong>{reviewHintUsed ? 'Yes' : 'No'}</strong>
-          </li>
-        </ul>
+        )}
+        <li>
+          <span>Hints used</span>
+          <strong>{reviewHintUsed ? 'Yes' : 'No'}</strong>
+        </li>
+      </ul>
 
-        <div className="placeholder-actions">
-          {nextProblemId && (
-            <Link to={`${CHAPTER_PATH}/problem/${nextProblemId}`} className="btn-secondary">
-              Next problem
-            </Link>
-          )}
-          <Link to={CHAPTER_PATH} className="btn-text-link">
-            Back to chapter
+      <div className="placeholder-actions">
+        {nextProblemId && (
+          <Link to={`${CHAPTER_PATH}/problem/${nextProblemId}`} className="btn-secondary">
+            Continue to next problem
           </Link>
-        </div>
-      </section>
-    </>
+        )}
+        <Link to={CHAPTER_PATH} className="btn-text-link">
+          Back to chapter
+        </Link>
+      </div>
+    </section>
   )
 }
 
 export function ProblemLayout({
   problem,
   problemNumber,
-  totalProblems = 8,
+  totalProblems = CHAPTER_PROBLEMS.length,
   children,
   feedback,
   completed,
@@ -171,16 +164,25 @@ export function ProblemLayout({
   attemptCount,
   lastSubmittedAnswer,
   reviewHintUsed,
+  demoSteps,
+  demoFinalCta,
+  conceptSummary,
 }: ProblemLayoutProps) {
+  const navigate = useNavigate()
   const showReview = completed && !restarted
   const showInteractive = !completed || restarted
 
-  return (
-    <div className="page problem-page">
+  // Demo gating. The demo never auto-shows on a completed problem (review is the
+  // default); it can still be re-opened explicitly. Local-only state — no
+  // attempts, hints, or progress are touched.
+  const demo = useDemoVisibility(configKeyFor(problem.problemId), { disabled: completed })
+  const steps = demoSteps ?? buildFallbackDemoSteps(problem)
+
+  const header = (
+    <>
       <nav className="problem-nav">
         <Link to={CHAPTER_PATH}>← Back to chapter</Link>
       </nav>
-
       <header className="problem-header">
         <p className="chapter-eyebrow">
           Problem {problemNumber} of {totalProblems}
@@ -189,52 +191,107 @@ export function ProblemLayout({
         <p className="problem-concept">{problem.concept}</p>
         <p>{problem.scenarioText}</p>
       </header>
+    </>
+  )
+
+  // Pre-problem (or replay) demo takes over the page until skipped/started.
+  if (demo.showDemo) {
+    return (
+      <div className="page problem-page">
+        {header}
+        <ProblemIntroDemo
+          steps={steps}
+          finalCallToAction={demoFinalCta}
+          onSkip={demo.markSeen}
+          onStart={demo.markSeen}
+        />
+      </div>
+    )
+  }
+
+  const coachFeedback = feedback
+    ? checkResultToCoachFeedback(feedback, { conceptSummary })
+    : null
+  const hintsRemaining = problem.hints.length - revealedHintIds.length
+  const revealNextHint = () => {
+    const next = problem.hints.find((h) => !revealedHintIds.includes(h.id))
+    if (next) {
+      onRevealHint(next.id)
+    }
+  }
+
+  return (
+    <div className="page problem-page">
+      {header}
 
       {showReview && (
-        <ReviewMode
-          problem={problem}
-          completionMessage={completionMessage}
-          nextProblemId={nextProblemId}
-          onRestart={onRestart}
-          attemptCount={attemptCount}
-          lastSubmittedAnswer={lastSubmittedAnswer}
-          reviewHintUsed={reviewHintUsed}
-        />
+        <>
+          <ReviewModeBanner onRestart={onRestart} onShowDemo={demo.showAgain} />
+          <ReviewDetail
+            problem={problem}
+            completionMessage={completionMessage}
+            nextProblemId={nextProblemId}
+            attemptCount={attemptCount}
+            lastSubmittedAnswer={lastSubmittedAnswer}
+            reviewHintUsed={reviewHintUsed}
+          />
+        </>
       )}
 
       {showInteractive && (
-        <>
-          {completed && restarted && (
-            <section className="card restart-banner" role="status">
-              <p className="restart-banner-title">Restarted practice attempt</p>
-              <p className="restart-banner-sub">
-                This is a fresh attempt — your chapter progress is already saved and
-                won't change.
-              </p>
-              {onReview && (
-                <button type="button" className="btn-text" onClick={onReview}>
-                  ← Back to review
-                </button>
-              )}
-            </section>
-          )}
-          {taskGuide}
+        <ResponsiveProblemShell
+          banner={
+            completed && restarted ? (
+              <section className="card restart-banner" role="status">
+                <p className="restart-banner-title">Restarted practice attempt</p>
+                <p className="restart-banner-sub">
+                  This is a fresh attempt — your chapter progress is already saved and
+                  won't change.
+                </p>
+                {onReview && (
+                  <button type="button" className="btn-text" onClick={onReview}>
+                    ← Back to review
+                  </button>
+                )}
+              </section>
+            ) : undefined
+          }
+          taskPanel={
+            taskGuide ? (
+              <div className="task-area">
+                {taskGuide}
+                <div className="task-area-actions">
+                  <ShowDemoAgainAction onShowDemo={demo.showAgain} />
+                </div>
+              </div>
+            ) : undefined
+          }
+          coachPanel={
+            <LearningCoachPanel
+              feedback={coachFeedback}
+              onContinue={
+                feedback?.canComplete && nextProblemId
+                  ? () => navigate(`${CHAPTER_PATH}/problem/${nextProblemId}`)
+                  : undefined
+              }
+              continueLabel="Continue to next problem"
+              onRequestHint={hideHints ? undefined : revealNextHint}
+              hintsRemaining={hideHints ? 0 : hintsRemaining}
+            />
+          }
+          hintPanel={
+            !hideHints ? (
+              <HintPanel
+                hints={problem.hints}
+                revealedHintIds={revealedHintIds}
+                onRevealHint={onRevealHint}
+                visualCue={visualCueFor(problem.visualType)}
+              />
+            ) : undefined
+          }
+        >
           {children}
-          {!hideHints && (
-            <HintPanel
-              hints={problem.hints}
-              revealedHintIds={revealedHintIds}
-              onRevealHint={onRevealHint}
-              visualCue={visualCueFor(problem.visualType)}
-            />
-          )}
-          {feedback && (
-            <FeedbackPanel
-              message={feedback.feedback}
-              type={resultToFeedbackType(feedback)}
-            />
-          )}
-        </>
+        </ResponsiveProblemShell>
       )}
     </div>
   )

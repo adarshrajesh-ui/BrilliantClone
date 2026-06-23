@@ -1,7 +1,18 @@
+import { CurrentTaskPanel } from '../../features/learning-experience/CurrentTaskPanel'
+import type {
+  ChecklistStepStatus,
+  ChecklistStepView,
+} from '../../features/learning-experience'
+
+/**
+ * Backwards-compatible checklist step. `done` keeps the original API working;
+ * `status` is optional and lets a problem flag a step as "needs-correction".
+ */
 export interface ChecklistStep {
   id: string
   label: string
   done: boolean
+  status?: ChecklistStepStatus
 }
 
 interface TaskGuideProps {
@@ -9,32 +20,17 @@ interface TaskGuideProps {
   steps: ChecklistStep[]
 }
 
+/**
+ * Thin wrapper preserved for the existing 8 problems. It now delegates to the
+ * reusable `CurrentTaskPanel`, which adds the needs-correction state while
+ * keeping the original current-task + checklist behavior intact.
+ */
 export function TaskGuide({ currentTask, steps }: TaskGuideProps) {
-  const activeIndex = steps.findIndex((s) => !s.done)
-  const completedCount = steps.filter((s) => s.done).length
-
-  return (
-    <section className="card task-guide" aria-label="Current task and checklist">
-      <div className="task-guide-now">
-        <span className="task-guide-eyebrow">Current task</span>
-        <p className="task-guide-action">{currentTask}</p>
-      </div>
-      <ol className="task-checklist">
-        {steps.map((step, i) => {
-          const state = step.done ? 'done' : i === activeIndex ? 'active' : 'todo'
-          return (
-            <li key={step.id} className={`task-step task-step-${state}`}>
-              <span className="task-step-marker" aria-hidden="true">
-                {step.done ? '✓' : i + 1}
-              </span>
-              <span className="task-step-label">{step.label}</span>
-            </li>
-          )
-        })}
-      </ol>
-      <p className="task-progress-label">
-        {completedCount} of {steps.length} steps done
-      </p>
-    </section>
-  )
+  const viewSteps: ChecklistStepView[] = steps.map((s) => ({
+    id: s.id,
+    label: s.label,
+    done: s.done,
+    status: s.status,
+  }))
+  return <CurrentTaskPanel currentTask={currentTask} steps={viewSteps} />
 }

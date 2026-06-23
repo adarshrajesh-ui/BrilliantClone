@@ -1,16 +1,67 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useChapterData } from '../hooks/useChapterData'
 import { ChapterSyncBanner } from '../components/SyncWarningBanner'
 import { SuggestedReview } from '../components/SuggestedReview'
-import { ChapterProgressCard } from '../components/ChapterProgressCard'
-import { CHAPTER_TITLE, getContinueProblemId } from '../data/chapter'
+import { CurrentChapterCard, buildCourseMapView } from '../features/course-map'
+import {
+  CHAPTER_LESSONS,
+  CHAPTER_PROBLEMS,
+  CHAPTER_TITLE,
+  getContinueProblemId,
+  getCurrentLessonId,
+  getLessonProgressViews,
+  getProblemById,
+  MILESTONE_DEFINITIONS,
+} from '../data/chapter'
+
+const CHAPTER_PATH = '/chapter/expected-value-intro'
+const problemHref = (problemId: string) => `${CHAPTER_PATH}/problem/${problemId}`
 
 export function HomePage() {
   const { profile } = useAuth()
   const { progress, milestones, loading, syncWarning } = useChapterData()
   const displayName = profile?.displayName || 'Learner'
   const continueProblemId = progress ? getContinueProblemId(progress) : 'problem-1'
+
+  let card: ReactNode = null
+  if (progress) {
+    const allComplete = progress.completedProblemIds.length === CHAPTER_PROBLEMS.length
+    const lessons = getLessonProgressViews(
+      progress.completedProblemIds,
+      continueProblemId,
+      allComplete,
+    )
+    const view = buildCourseMapView({
+      lessons,
+      problems: CHAPTER_PROBLEMS,
+      completedProblemIds: progress.completedProblemIds,
+      continueProblemId,
+      allComplete,
+    })
+    const currentLessonId = getCurrentLessonId(continueProblemId)
+    const currentLessonTitle = CHAPTER_LESSONS.find((l) => l.lessonId === currentLessonId)?.title
+    const currentProblemTitle = getProblemById(continueProblemId)?.title
+
+    card = (
+      <CurrentChapterCard
+        title="Expected Value Course"
+        subtitle="Master long-run average, payout, profit, fairness, and risk."
+        completionPercentage={progress.completionPercentage}
+        streakCount={progress.streakCount}
+        masteryStatus={progress.masteryStatus}
+        currentLessonTitle={currentLessonTitle}
+        currentProblemTitle={currentProblemTitle}
+        view={view}
+        unlockedMilestones={milestones?.unlockedMilestones.length ?? 0}
+        totalMilestones={MILESTONE_DEFINITIONS.length}
+        continueHref={problemHref(continueProblemId)}
+        reviewHref={CHAPTER_PATH}
+        problemHref={problemHref}
+      />
+    )
+  }
 
   return (
     <div className="page home-page">
@@ -29,7 +80,10 @@ export function HomePage() {
           <section className="card chapter-card">
             <p className="chapter-eyebrow">Your chapter</p>
             <h2>{CHAPTER_TITLE}</h2>
-            <p>5 lessons · 8 problems · observe → predict → construct → decide</p>
+            <p>
+              {CHAPTER_LESSONS.length} lessons · {CHAPTER_PROBLEMS.length} problems · observe →
+              predict → construct → decide
+            </p>
 
             {loading ? (
               <p className="home-progress-text">Loading your progress…</p>
@@ -65,21 +119,16 @@ export function HomePage() {
             <h2>How it works</h2>
             <ol className="how-it-works">
               <li>Sign in with Google — your progress saves automatically.</li>
-              <li>Work through 5 lessons (8 visual problems) on expected value.</li>
+              <li>
+                Work through {CHAPTER_LESSONS.length} lessons ({CHAPTER_PROBLEMS.length} visual
+                problems) on expected value.
+              </li>
               <li>Get instant, specific feedback — every answer is hand-built.</li>
             </ol>
           </section>
         </div>
 
-        {progress && (
-          <div className="home-aside">
-            <ChapterProgressCard
-              progress={progress}
-              milestones={milestones}
-              continueProblemId={continueProblemId}
-            />
-          </div>
-        )}
+        {card && <div className="home-aside">{card}</div>}
       </div>
     </div>
   )

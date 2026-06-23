@@ -2,19 +2,22 @@ import { Link } from 'react-router-dom'
 import {
   CHAPTER_DESCRIPTION,
   CHAPTER_PROBLEMS,
+  CHAPTER_SUBTITLE,
   CHAPTER_TITLE,
   getCompletedLessonIds,
   getContinueProblemId,
+  getLessonProgressViews,
   MILESTONE_DEFINITIONS,
   TOTAL_LESSONS,
 } from '../data/chapter'
 import { useChapterData } from '../hooks/useChapterData'
 import { ChapterSyncBanner } from '../components/SyncWarningBanner'
 import { SuggestedReview } from '../components/SuggestedReview'
-import { CoursePathway } from '../components/CoursePathway'
+import { ExpandedCoursePathway, buildCourseMapView } from '../features/course-map'
 import type { MasteryStatus } from '../types/chapter'
 
 const CHAPTER_PATH = '/chapter/expected-value-intro'
+const problemHref = (problemId: string) => `${CHAPTER_PATH}/problem/${problemId}`
 
 function masteryClass(status: MasteryStatus) {
   switch (status) {
@@ -58,6 +61,13 @@ export function ChapterPage() {
   const continueProblemId = getContinueProblemId(progress)
   const allComplete = progress.completedProblemIds.length === CHAPTER_PROBLEMS.length
   const completedLessons = getCompletedLessonIds(progress.completedProblemIds).length
+  const courseView = buildCourseMapView({
+    lessons: getLessonProgressViews(progress.completedProblemIds, continueProblemId, allComplete),
+    problems: CHAPTER_PROBLEMS,
+    completedProblemIds: progress.completedProblemIds,
+    continueProblemId,
+    allComplete,
+  })
 
   return (
     <div className="page chapter-page">
@@ -128,10 +138,11 @@ export function ChapterPage() {
         </div>
       </section>
 
-      <CoursePathway
-        completedProblemIds={progress.completedProblemIds}
-        continueProblemId={continueProblemId}
-        allComplete={allComplete}
+      <ExpandedCoursePathway
+        view={courseView}
+        subtitle={CHAPTER_SUBTITLE}
+        totalLessons={TOTAL_LESSONS}
+        problemHref={problemHref}
       />
 
       <SuggestedReview />
