@@ -58,6 +58,8 @@ function RunningAverageGraphMini({
         fill="none"
         stroke={variant === 'flat' ? '#15803d' : '#2563eb'}
         strokeWidth={variant === 'jagged' ? 2.5 : 2}
+        pathLength={1}
+        className={`risk-line risk-line-${variant}`}
       />
     </svg>
   )
