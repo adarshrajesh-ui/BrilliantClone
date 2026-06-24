@@ -11,20 +11,33 @@ interface BalanceScaleProps {
   revealProfit?: boolean
 }
 
-const barHeight = (value: number) => `${Math.max(20, Math.min(value * 12 + 8, 120))}px`
+/** Map dollar amount to beam tilt: positive net tips left (payout side down). */
+const beamTiltDeg = (payout: number, cost: number, costPlaced: boolean) => {
+  const net = payout - (costPlaced ? cost : 0)
+  if (!costPlaced) return -11
+  return Math.max(-9, Math.min(9, -net * 2.8))
+}
+
+/** Marker position along the 0 → payout track (0 = bottom, 100 = top). */
+const markerPercent = (payout: number, cost: number, costPlaced: boolean) => {
+  const value = costPlaced ? payout - cost : payout
+  return Math.max(0, Math.min(100, (value / payout) * 100))
+}
 
 export function BalanceScale({ payout, cost, costPlaced, onPlaceCost, revealProfit = false }: BalanceScaleProps) {
   const profit = payout - cost
+  const tilt = beamTiltDeg(payout, cost, costPlaced)
+  const markerPos = markerPercent(payout, cost, costPlaced)
 
   return (
     <div className="balance-scale">
       <div className="balance-equation">
-        <span className="balance-block balance-payout">Expected payout +${payout}</span>
+        <span className="balance-block balance-payout" id="payout-block">Expected payout +${payout}</span>
         <span className="balance-op">−</span>
         {costPlaced ? (
-          <span className="balance-block balance-cost">Cost ${cost}</span>
+          <span className="balance-block balance-cost" id="cost-block">Cost ${cost}</span>
         ) : (
-          <button type="button" className="balance-block balance-cost-btn" onClick={onPlaceCost}>
+          <button type="button" className="balance-block balance-cost-btn" id="cost-block" onClick={onPlaceCost}>
             Tap to subtract cost ${cost}
           </button>
         )}
@@ -35,27 +48,40 @@ export function BalanceScale({ payout, cost, costPlaced, onPlaceCost, revealProf
           </>
         )}
       </div>
-      <div className="balance-visual">
-        {/*
-          The two blocks consistently represent the expected payout (left) and the
-          cost (right) — never the answer. The cost block only appears once it has
-          been "dropped" onto the scale, matching the demo gesture and the math
-          (payout − cost = profit).
-        */}
-        <div className="balance-beam">
-          <div className="balance-left" style={{ height: barHeight(payout) }}>
-            <span>+${payout}</span>
+      <div className="balance-visual" id="balance">
+        <div className="balance-scale-assembly">
+          <div className="balance-marker-track" aria-hidden="true">
+            <span className="balance-track-label">+${payout}</span>
+            <div className="balance-track-bar">
+              <div
+                className={`balance-marker${costPlaced ? ' balance-marker-dropped' : ''}${revealProfit ? ' balance-marker-revealed' : ''}`}
+                style={{ bottom: `${markerPos}%` }}
+              >
+                {revealProfit && <span className="balance-marker-label">+${profit}</span>}
+              </div>
+            </div>
+            <span className="balance-track-label">$0</span>
           </div>
-          <div className="balance-fulcrum" />
-          {costPlaced ? (
-            <div className="balance-right" style={{ height: barHeight(cost) }}>
-              <span>−${cost}</span>
+          <div className="balance-beam-wrap">
+            <div
+              className={`balance-beam${costPlaced ? ' balance-beam-settled' : ''}`}
+              style={{ transform: `rotate(${tilt}deg)` }}
+            >
+              <div className="balance-pan balance-pan-left">
+                <span className="balance-weight balance-weight-payout">+${payout}</span>
+              </div>
+              <div className="balance-pan balance-pan-right">
+                {costPlaced ? (
+                  <span className="balance-weight balance-weight-cost">−${cost}</span>
+                ) : (
+                  <button type="button" className="balance-weight balance-weight-cost-btn" onClick={onPlaceCost}>
+                    −${cost}
+                  </button>
+                )}
+              </div>
             </div>
-          ) : (
-            <div className="balance-right balance-right-empty" aria-hidden="true">
-              <span>cost</span>
-            </div>
-          )}
+            <div className="balance-fulcrum" />
+          </div>
         </div>
       </div>
     </div>

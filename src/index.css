@@ -159,6 +159,22 @@ code {
   align-items: center;
 }
 
+.guest-sign-in {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.guest-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
 .btn-google,
 .btn-secondary,
 .btn-text {
@@ -998,18 +1014,67 @@ code {
 .balance-payout { background: #dcfce7; }
 .balance-cost, .balance-cost-btn { background: #fee2e2; border: 2px dashed #fca5a5; cursor: pointer; font: inherit; }
 .balance-profit { background: #dbeafe; }
-.balance-visual { display: flex; justify-content: center; padding: 1rem; }
-.balance-beam { display: flex; align-items: flex-end; gap: 1rem; }
-.balance-left, .balance-right {
-  width: 60px; background: linear-gradient(to top, #22c55e, #86efac); border-radius: 8px 8px 0 0;
-  display: flex; align-items: flex-start; justify-content: center; padding-top: 0.35rem; font-size: 0.75rem; font-weight: 600;
+.balance-visual { display: flex; flex-direction: column; align-items: center; padding: 1rem; gap: 0.5rem; }
+.balance-scale-assembly { display: flex; align-items: flex-end; gap: 1.25rem; }
+.balance-marker-track {
+  display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+  height: 112px; font-size: 0.7rem; font-weight: 600; color: #6b7280;
 }
-.balance-right { background: linear-gradient(to top, #2563eb, #93c5fd); }
-.balance-right-empty {
-  height: 44px; background: none; border: 2px dashed #93c5fd; color: #6b7280;
-  align-items: flex-end; padding-bottom: 0.25rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;
+.balance-track-bar {
+  position: relative; flex: 1; width: 10px;
+  background: linear-gradient(to top, #f3f4f6 0%, #dcfce7 100%);
+  border-radius: 999px; border: 1px solid #d1d5db;
 }
-.balance-fulcrum { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 20px solid #374151; }
+.balance-marker {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #22c55e; border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: bottom 0.6s cubic-bezier(0.33, 1, 0.68, 1), background 0.3s ease;
+}
+.balance-marker-dropped { background: #16a34a; }
+.balance-marker-revealed { background: #2563eb; }
+.balance-marker-label {
+  position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%);
+  white-space: nowrap; font-size: 0.72rem; font-weight: 700; color: #166534;
+}
+.balance-beam-wrap {
+  position: relative; width: 190px; height: 88px;
+  display: flex; justify-content: center; align-items: flex-end;
+}
+.balance-beam {
+  position: relative; width: 168px; height: 8px;
+  background: #374151; border-radius: 4px;
+  transform-origin: center center;
+  transition: transform 0.6s cubic-bezier(0.33, 1, 0.68, 1);
+  margin-bottom: 2px;
+}
+.balance-pan {
+  position: absolute; top: 6px; width: 56px;
+  display: flex; justify-content: center;
+}
+.balance-pan-left { left: -10px; }
+.balance-pan-right { right: -10px; }
+.balance-weight {
+  padding: 0.35rem 0.45rem; border-radius: 6px;
+  font-size: 0.72rem; font-weight: 700; white-space: nowrap;
+}
+.balance-weight-payout { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+.balance-weight-cost { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.balance-weight-cost-btn {
+  background: #fee2e2; color: #b91c1c; border: 2px dashed #fca5a5;
+  cursor: pointer; font: inherit; animation: balance-cost-pulse 1.4s ease-in-out infinite;
+}
+.balance-fulcrum {
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 14px solid transparent; border-right: 14px solid transparent;
+  border-bottom: 22px solid #374151;
+}
+@keyframes balance-cost-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
 
 /* Fairness number line */
 .fairness-line { margin: 1rem 0; }
@@ -1251,10 +1316,10 @@ code {
   animation: pop-in 0.3s ease-out;
 }
 
-/* Balance scale arms ease between heights as cost is applied */
-.balance-left,
-.balance-right {
-  transition: height 0.5s cubic-bezier(0.33, 1, 0.68, 1);
+/* Balance scale beam and marker ease when cost is applied */
+.balance-beam,
+.balance-marker {
+  transition: transform 0.6s cubic-bezier(0.33, 1, 0.68, 1), bottom 0.6s cubic-bezier(0.33, 1, 0.68, 1), background 0.3s ease;
 }
 
 /* Fairness buckets: a placed tag pops in */

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { CheckResult, ProblemDefinition, ProblemHint } from '../../types/problem'
 import { CHAPTER_PROBLEMS, getAdjacentNextProblemId, getProblemMeta } from '../../data/chapter'
+import { getNextImplementedProblemId } from '../../data/implementedProblems'
 import { HintPanel } from './HintPanel'
 import {
   ResponsiveProblemShell,
@@ -217,7 +218,13 @@ export function ProblemLayout({
   // props are kept as fallbacks for any non-canonical/standalone usage.
   const canonicalMeta = getProblemMeta(problem.problemId)
   const resolvedProblemNumber = canonicalMeta ? canonicalMeta.globalProblemIndex + 1 : problemNumber
-  const resolvedNextProblemId = getAdjacentNextProblemId(problem.problemId) ?? nextProblemId
+  // Advance to the next problem that actually has an interactive implementation,
+  // skipping unimplemented placeholders. Falls back to the strictly-adjacent
+  // problem (then the passed prop) only when no implemented problem remains.
+  const resolvedNextProblemId =
+    getNextImplementedProblemId(problem.problemId) ??
+    getAdjacentNextProblemId(problem.problemId) ??
+    nextProblemId
 
   // A demo exists only when the problem introduces a brand-new UI interaction
   // and supplies steps for it. Otherwise there is no demo at all.

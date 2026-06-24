@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { resolveToImplementedProblemId } from '../data/implementedProblems'
 import { useAuth } from '../hooks/useAuth'
 import { useChapterData } from '../hooks/useChapterData'
 import { ChapterSyncBanner } from '../components/SyncWarningBanner'
@@ -23,7 +24,11 @@ export function HomePage() {
   const { profile } = useAuth()
   const { progress, milestones, loading, syncWarning } = useChapterData()
   const displayName = profile?.displayName || 'Learner'
-  const continueProblemId = progress ? getContinueProblemId(progress) : 'problem-1'
+  // Resolve to an implemented problem so the "Continue" affordance never targets
+  // an unimplemented placeholder.
+  const continueProblemId = resolveToImplementedProblemId(
+    progress ? getContinueProblemId(progress) : 'problem-1',
+  )
 
   let card: ReactNode = null
   if (progress) {

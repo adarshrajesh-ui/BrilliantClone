@@ -2,7 +2,7 @@ import { GoogleSignInButton } from '../components/GoogleSignInButton'
 import { useAuth } from '../hooks/useAuth'
 
 export function LoginPage() {
-  const { firebaseConfigured } = useAuth()
+  const { firebaseConfigured, signInAsGuest } = useAuth()
 
   return (
     <div className="page-center">
@@ -23,6 +23,19 @@ export function LoginPage() {
         ) : (
           <GoogleSignInButton />
         )}
+
+        <div className="guest-sign-in">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => signInAsGuest()}
+          >
+            Continue without signing in
+          </button>
+          <p className="guest-note">
+            Guest progress is saved only on this device.
+          </p>
+        </div>
       </div>
     </div>
   )

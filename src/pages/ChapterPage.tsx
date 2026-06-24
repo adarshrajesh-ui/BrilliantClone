@@ -9,6 +9,7 @@ import {
   TOTAL_LESSONS,
   TOTAL_PROBLEMS,
 } from '../data/chapter'
+import { resolveToImplementedProblemId } from '../data/implementedProblems'
 import { useChapterData } from '../hooks/useChapterData'
 import { ChapterSyncBanner } from '../components/SyncWarningBanner'
 import { SuggestedReview } from '../components/SuggestedReview'
@@ -43,7 +44,10 @@ export function ChapterPage() {
     )
   }
 
-  const continueProblemId = getContinueProblemId(progress)
+  // Route every continue / current affordance to an implemented problem so the
+  // learner never lands on a placeholder via "Continue" (direct clicks on a
+  // future/placeholder node on the map stay open-access).
+  const continueProblemId = resolveToImplementedProblemId(getContinueProblemId(progress))
   const allComplete = progress.completedProblemIds.length === CHAPTER_PROBLEMS.length
   const courseView = buildCourseMapView({
     lessons: getLessonProgressViews(progress.completedProblemIds, continueProblemId, allComplete),

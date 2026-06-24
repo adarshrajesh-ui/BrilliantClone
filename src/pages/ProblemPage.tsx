@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom'
 import type { ComponentType } from 'react'
-import { getProblemDefinition } from '../data/problems'
+import { normalizeToStorageId } from '../core/progression/canonical'
+import type { ImplementedProblemId } from '../data/implementedProblems'
 import { useTrackCurrentProblem } from '../hooks/useTrackCurrentProblem'
 import { Problem1LongRunAverage } from '../components/problems/Problem1LongRunAverage'
 import { Problem2WeightedAverage } from '../components/problems/Problem2WeightedAverage'
@@ -12,7 +13,9 @@ import { Problem7WholeEVModel } from '../components/problems/Problem7WholeEVMode
 import { Problem8SameEVDifferentRisk } from '../components/problems/Problem8SameEVDifferentRisk'
 import { ProblemPlaceholderPage } from './ProblemPlaceholderPage'
 
-const PROBLEM_COMPONENTS: Record<string, ComponentType> = {
+// Keyed by STORAGE ID. The key type is pinned to ImplementedProblemId so this
+// map and the implemented-problem registry can never silently drift apart.
+const PROBLEM_COMPONENTS: Record<ImplementedProblemId, ComponentType> = {
   'problem-1': Problem1LongRunAverage,
   'problem-2': Problem2WeightedAverage,
   'problem-3': Problem3MysteryBoxes,
@@ -27,17 +30,16 @@ export function ProblemPage() {
   useTrackCurrentProblem()
   const { problemId } = useParams<{ problemId: string }>()
 
-  if (!problemId) {
-    return <ProblemPlaceholderPage />
-  }
+  // Accept either a canonical slug or a storage ID in the URL and resolve it to
+  // the storage ID the registry is keyed by, so implemented problems always load
+  // their interactive component instead of falling through to the placeholder.
+  const storageId = problemId ? normalizeToStorageId(problemId) : undefined
+  const Component = storageId
+    ? PROBLEM_COMPONENTS[storageId as ImplementedProblemId]
+    : undefined
 
-  const Component = PROBLEM_COMPONENTS[problemId]
   if (Component) {
     return <Component />
-  }
-
-  if (getProblemDefinition(problemId)) {
-    return <ProblemPlaceholderPage />
   }
 
   return <ProblemPlaceholderPage />
