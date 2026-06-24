@@ -3,27 +3,26 @@ import type { CourseZoneView } from './types'
 
 interface LessonZoneProps {
   zone: CourseZoneView
+  /** Label for the call-to-action on the current node. */
+  continueLabel: string
   /** Builds the route for a given problem id. */
   problemHref: (problemId: string) => string
-  /** Running global hole index used to alternate hole sides across zones. */
+  /** Running global hole index used to alternate node sides across zones. */
   startIndex: number
 }
 
-/** One lesson zone (header + its holes) within the expanded pathway. */
-export function LessonZone({ zone, problemHref, startIndex }: LessonZoneProps) {
+/** One level (lesson header + its lesson nodes) within the winding path. */
+export function LessonZone({ zone, continueLabel, problemHref, startIndex }: LessonZoneProps) {
   const zoneState = zone.isComplete ? 'complete' : zone.isCurrent ? 'current' : 'upcoming'
 
   return (
-    <li className="course-zone-wrap">
-      <div className={`course-zone-header course-zone-${zoneState}`}>
-        <span className="course-zone-eyebrow">Lesson {zone.order}</span>
-        <span className="course-zone-title">{zone.title}</span>
-        <span className="course-zone-status">
-          {zone.isComplete ? 'Cleared' : `${zone.completedCount}/${zone.total}`}
-        </span>
+    <li className="coursemap-level">
+      <div className={`coursemap-level-header coursemap-level-${zoneState}`}>
+        <span className="coursemap-level-eyebrow">Level {zone.order}</span>
+        <span className="coursemap-level-title">{zone.title}</span>
       </div>
 
-      <ol className="course-holes">
+      <ol className="coursemap-nodes">
         {zone.holes.map((hole, i) => {
           const globalIndex = startIndex + i
           const side = globalIndex % 2 === 0 ? 'left' : 'right'
@@ -33,6 +32,7 @@ export function LessonZone({ zone, problemHref, startIndex }: LessonZoneProps) {
               hole={hole}
               href={problemHref(hole.problemId)}
               side={side}
+              continueLabel={continueLabel}
             />
           )
         })}
