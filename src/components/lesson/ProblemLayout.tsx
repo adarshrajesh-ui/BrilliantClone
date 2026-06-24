@@ -10,7 +10,6 @@ import {
   ReviewModeBanner,
   ShowDemoAgainAction,
   useDemoVisibility,
-  buildFallbackDemoSteps,
   checkResultToCoachFeedback,
   configKeyFor,
 } from '../../features/learning-experience'
@@ -61,8 +60,10 @@ interface ProblemLayoutProps {
   /** Whether any recorded attempt used a hint. */
   reviewHintUsed?: boolean
   /**
-   * Optional problem-specific demo steps (Agents 3/4). When omitted, a generic
-   * fallback demo is derived from the problem definition.
+   * Optional demo steps. A demo is shown ONLY when a problem introduces a
+   * brand-new UI interaction and these steps are supplied. When omitted, no
+   * demo (and no demo affordances) are shown — problems do not get a demo just
+   * for existing, and demos never repeat the problem statement.
    */
   demoSteps?: DemoStepConfig[]
   /** Closing call-to-action shown on the last demo step. */
@@ -172,11 +173,17 @@ export function ProblemLayout({
   const showReview = completed && !restarted
   const showInteractive = !completed || restarted
 
+  // A demo exists only when the problem introduces a brand-new UI interaction
+  // and supplies steps for it. Otherwise there is no demo at all.
+  const steps = demoSteps ?? []
+  const hasDemo = steps.length > 0
+
   // Demo gating. The demo never auto-shows on a completed problem (review is the
   // default); it can still be re-opened explicitly. Local-only state — no
   // attempts, hints, or progress are touched.
-  const demo = useDemoVisibility(configKeyFor(problem.problemId), { disabled: completed })
-  const steps = demoSteps ?? buildFallbackDemoSteps(problem)
+  const demo = useDemoVisibility(configKeyFor(problem.problemId), {
+    disabled: completed || !hasDemo,
+  })
 
   const header = (
     <>
@@ -195,7 +202,7 @@ export function ProblemLayout({
   )
 
   // Pre-problem (or replay) demo takes over the page until skipped/started.
-  if (demo.showDemo) {
+  if (hasDemo && demo.showDemo) {
     return (
       <div className="page problem-page">
         {header}
@@ -226,7 +233,10 @@ export function ProblemLayout({
 
       {showReview && (
         <>
-          <ReviewModeBanner onRestart={onRestart} onShowDemo={demo.showAgain} />
+          <ReviewModeBanner
+            onRestart={onRestart}
+            onShowDemo={hasDemo ? demo.showAgain : undefined}
+          />
           <ReviewDetail
             problem={problem}
             completionMessage={completionMessage}
@@ -260,9 +270,11 @@ export function ProblemLayout({
             taskGuide ? (
               <div className="task-area">
                 {taskGuide}
-                <div className="task-area-actions">
-                  <ShowDemoAgainAction onShowDemo={demo.showAgain} />
-                </div>
+                {hasDemo && (
+                  <div className="task-area-actions">
+                    <ShowDemoAgainAction onShowDemo={demo.showAgain} />
+                  </div>
+                )}
               </div>
             ) : undefined
           }

@@ -5,6 +5,7 @@ import { TaskGuide } from '../lesson/TaskGuide'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { PROBLEM_3 } from '../../data/problems/problem-3'
+import { PROBLEM_3_DEMO, PROBLEM_3_DEMO_CTA } from '../lesson/problemDemos'
 import { checkProblem3 } from '../../lib/answerChecker'
 import { numericFieldStatus, probabilityFieldStatus } from '../../lib/fieldStatus'
 
@@ -62,7 +63,8 @@ export function Problem3MysteryBoxes() {
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-4"
       restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
       attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
-      taskGuide={taskGuide}>
+      taskGuide={taskGuide}
+      demoSteps={PROBLEM_3_DEMO} demoFinalCta={PROBLEM_3_DEMO_CTA}>
       <section className="card problem-section">
         <MysteryBoxes boxes={MYSTERY_BOXES_P3} revealedIds={state.revealed}
           onReveal={(id) => setState((p) => ({ ...p, revealed: [...p.revealed, id] }))} highlightValue={highlightValue} />

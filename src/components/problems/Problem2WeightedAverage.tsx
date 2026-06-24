@@ -5,6 +5,7 @@ import { TaskGuide } from '../lesson/TaskGuide'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { PROBLEM_2 } from '../../data/problems/problem-2'
+import { PROBLEM_2_DEMO, PROBLEM_2_DEMO_CTA } from '../lesson/problemDemos'
 import { checkProblem2 } from '../../lib/answerChecker'
 
 const CARDS = ['$20', '$0', '25%', '75%']
@@ -48,7 +49,8 @@ export function Problem2WeightedAverage() {
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-3"
       restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
       attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
-      taskGuide={taskGuide}>
+      taskGuide={taskGuide}
+      demoSteps={PROBLEM_2_DEMO} demoFinalCta={PROBLEM_2_DEMO_CTA}>
       <section className="card problem-section">
         <ConfigurableSpinner segments={SPINNER_P2} rotation={0} spinning={false} lastOutcome={null} />
       </section>

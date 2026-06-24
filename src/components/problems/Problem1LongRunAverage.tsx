@@ -6,6 +6,7 @@ import { TaskGuide } from '../lesson/TaskGuide'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { PROBLEM_1 } from '../../data/problems/problem-1'
+import { PROBLEM_1_DEMO, PROBLEM_1_DEMO_CTA } from '../lesson/problemDemos'
 import { checkProblem1Completion, checkProblem1Prediction } from '../../lib/answerChecker'
 import type { Problem1Choice } from '../../types/problem'
 
@@ -90,6 +91,7 @@ export function Problem1LongRunAverage() {
       restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
       attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
       taskGuide={taskGuide}
+      demoSteps={PROBLEM_1_DEMO} demoFinalCta={PROBLEM_1_DEMO_CTA}
       completionMessage="You predicted, ran 100+ spins, and identified $5 as the long-run average.">
       <section className="card problem-section">
         <h2>Step 1 — Predict the long-run average</h2>

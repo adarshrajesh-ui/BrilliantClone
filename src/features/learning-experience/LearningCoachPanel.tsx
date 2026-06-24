@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import type { CoachFeedback } from './types'
 
 export interface LearningCoachPanelProps {
@@ -12,8 +11,6 @@ export interface LearningCoachPanelProps {
   hintsRemaining?: number
   /** Idle guidance shown before any submission. */
   idleMessage?: string
-  /** Scroll the panel into view when new feedback arrives (mobile helper). */
-  scrollIntoViewOnFeedback?: boolean
 }
 
 /**
@@ -23,6 +20,10 @@ export interface LearningCoachPanelProps {
  *
  * Wrong answers render the structured what-happened / why / what-next layout;
  * correct answers render confirmation + concept summary + a Continue action.
+ *
+ * The panel is a polite live region kept visible by layout (sticky right rail
+ * on desktop, high in the column on mobile), so feedback surfaces without ever
+ * moving the viewport — typing, selecting, or submitting must not scroll the page.
  */
 export function LearningCoachPanel({
   feedback,
@@ -31,22 +32,13 @@ export function LearningCoachPanel({
   onRequestHint,
   hintsRemaining = 0,
   idleMessage = "Work through the steps, then submit. I'll check your answer and help if it isn't right yet.",
-  scrollIntoViewOnFeedback = true,
 }: LearningCoachPanelProps) {
-  const ref = useRef<HTMLElement>(null)
   const tone = feedback?.tone ?? 'idle'
-
-  useEffect(() => {
-    if (feedback && scrollIntoViewOnFeedback && tone !== 'idle') {
-      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }
-  }, [feedback, tone, scrollIntoViewOnFeedback])
 
   const showHint = onRequestHint && hintsRemaining > 0
 
   return (
     <section
-      ref={ref}
       className={`card coach-panel coach-${tone}`}
       role="status"
       aria-live="polite"

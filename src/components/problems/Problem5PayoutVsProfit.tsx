@@ -4,6 +4,7 @@ import { TaskGuide } from '../lesson/TaskGuide'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { PROBLEM_5 } from '../../data/problems/problem-5'
+import { PROBLEM_5_DEMO, PROBLEM_5_DEMO_CTA } from '../lesson/problemDemos'
 import { checkProblem5 } from '../../lib/answerChecker'
 
 interface P5State { costPlaced: boolean; profitAnswer: string }
@@ -34,7 +35,8 @@ export function Problem5PayoutVsProfit() {
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-6"
       restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
       attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
-      taskGuide={taskGuide}>
+      taskGuide={taskGuide}
+      demoSteps={PROBLEM_5_DEMO} demoFinalCta={PROBLEM_5_DEMO_CTA}>
       <section className="card problem-section">
         <BalanceScale payout={4} cost={3} costPlaced={state.costPlaced} onPlaceCost={() => setState((p) => ({ ...p, costPlaced: true }))} />
         <label className="field-label">Expected profit

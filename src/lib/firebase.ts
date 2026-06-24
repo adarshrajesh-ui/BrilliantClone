@@ -1,6 +1,6 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app'
 import { getAuth, type Auth } from 'firebase/auth'
-import { getFirestore, type Firestore } from 'firebase/firestore'
+import { initializeFirestore, type Firestore } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -27,7 +27,9 @@ let db: Firestore | undefined
 if (isFirebaseConfigured()) {
   app = initializeApp(firebaseConfig)
   auth = getAuth(app)
-  db = getFirestore(app)
+  // `ignoreUndefinedProperties` lets writes omit undefined optional fields
+  // (e.g. a brand-new user's `currentProblemId`) instead of failing setDoc().
+  db = initializeFirestore(app, { ignoreUndefinedProperties: true })
 } else {
   console.error(
     'Firebase is not configured. Copy .env.example to .env and add your Firebase config values.',
