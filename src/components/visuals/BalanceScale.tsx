@@ -3,25 +3,32 @@ interface BalanceScaleProps {
   cost: number
   costPlaced: boolean
   onPlaceCost: () => void
-  profitShown?: number | null
+  /**
+   * Reveal the final "expected profit" token. Kept hidden during an active
+   * attempt so the answer is not given away; shown once the learner is correct
+   * (or when a demo explicitly walks through the result).
+   */
+  revealProfit?: boolean
 }
 
-export function BalanceScale({ payout, cost, costPlaced, onPlaceCost, profitShown }: BalanceScaleProps) {
-  const profit = profitShown ?? (costPlaced ? payout - cost : null)
+const barHeight = (value: number) => `${Math.max(20, Math.min(value * 12 + 8, 120))}px`
+
+export function BalanceScale({ payout, cost, costPlaced, onPlaceCost, revealProfit = false }: BalanceScaleProps) {
+  const profit = payout - cost
 
   return (
     <div className="balance-scale">
       <div className="balance-equation">
         <span className="balance-block balance-payout">Expected payout +${payout}</span>
-        <span className="balance-op">{costPlaced ? '−' : '+'}</span>
+        <span className="balance-op">−</span>
         {costPlaced ? (
-          <span className="balance-block balance-cost">Cost −${cost}</span>
+          <span className="balance-block balance-cost">Cost ${cost}</span>
         ) : (
           <button type="button" className="balance-block balance-cost-btn" onClick={onPlaceCost}>
-            Tap to add cost −${cost}
+            Tap to subtract cost ${cost}
           </button>
         )}
-        {costPlaced && profit !== null && (
+        {revealProfit && (
           <>
             <span className="balance-op">=</span>
             <span className="balance-block balance-profit">Expected profit ${profit}</span>
@@ -29,21 +36,26 @@ export function BalanceScale({ payout, cost, costPlaced, onPlaceCost, profitShow
         )}
       </div>
       <div className="balance-visual">
+        {/*
+          The two blocks consistently represent the expected payout (left) and the
+          cost (right) — never the answer. The cost block only appears once it has
+          been "dropped" onto the scale, matching the demo gesture and the math
+          (payout − cost = profit).
+        */}
         <div className="balance-beam">
-          <div className="balance-left" style={{ height: `${Math.min(payout * 12, 120)}px` }}>
+          <div className="balance-left" style={{ height: barHeight(payout) }}>
             <span>+${payout}</span>
           </div>
           <div className="balance-fulcrum" />
-          <div
-            className="balance-right"
-            style={{
-              height: costPlaced
-                ? `${Math.max(20, Math.min(profit !== null && profit >= 0 ? profit * 12 + 20 : 20, 120))}px`
-                : `${Math.min(cost * 12, 80)}px`,
-            }}
-          >
-            <span>{costPlaced ? (profit !== null ? `$${profit}` : '') : `−$${cost}`}</span>
-          </div>
+          {costPlaced ? (
+            <div className="balance-right" style={{ height: barHeight(cost) }}>
+              <span>−${cost}</span>
+            </div>
+          ) : (
+            <div className="balance-right balance-right-empty" aria-hidden="true">
+              <span>cost</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

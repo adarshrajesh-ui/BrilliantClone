@@ -14,6 +14,8 @@ interface ProbabilityTableProps {
   activeRow?: number | null
   onChange?: (rowIndex: number, field: 'count' | 'probability', value: string) => void
   readOnly?: boolean
+  /** Render the "Number of Boxes" column as given (read-only) text even when other cells are editable. */
+  countReadOnly?: boolean
   countStatus?: FieldStatus[]
   probabilityStatus?: FieldStatus[]
   extraColumns?: Array<{
@@ -40,6 +42,7 @@ export function ProbabilityTable({
   activeRow,
   onChange,
   readOnly,
+  countReadOnly,
   countStatus,
   probabilityStatus,
   extraColumns = [],
@@ -65,8 +68,8 @@ export function ProbabilityTable({
             >
               <td>{row.outcome}</td>
               <td className={statusClass(countStatus?.[i])}>
-                {readOnly || !onChange ? (
-                  row.count
+                {readOnly || countReadOnly || !onChange ? (
+                  <span className="prob-cell-given">{row.count}</span>
                 ) : (
                   <input
                     type="text"

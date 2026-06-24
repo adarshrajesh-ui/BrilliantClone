@@ -7,7 +7,7 @@ import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { PROBLEM_3 } from '../../data/problems/problem-3'
 import { PROBLEM_3_DEMO, PROBLEM_3_DEMO_CTA } from '../lesson/problemDemos'
 import { checkProblem3 } from '../../lib/answerChecker'
-import { numericFieldStatus, probabilityFieldStatus } from '../../lib/fieldStatus'
+import { probabilityFieldStatus } from '../../lib/fieldStatus'
 
 const EXPECTED_COUNTS = [1, 2, 3]
 const EXPECTED_PROBS = [1 / 6, 2 / 6, 3 / 6]
@@ -22,10 +22,17 @@ const DEFAULT: P3State = {
   revealed: [],
   activeRow: null,
   rows: [
-    { outcome: '$12', count: '', probability: '' },
-    { outcome: '$6', count: '', probability: '' },
-    { outcome: '$0', count: '', probability: '' },
+    { outcome: '$12', count: '1', probability: '' },
+    { outcome: '$6', count: '2', probability: '' },
+    { outcome: '$0', count: '3', probability: '' },
   ],
+}
+
+/** Human-readable summary of the learner's submitted table (no raw JSON in review). */
+function formatRows(rows: P3State['rows']): string {
+  return rows
+    .map((r) => `${r.outcome} → count ${r.count} → probability ${r.probability || '—'}`)
+    .join('; ')
 }
 
 export function Problem3MysteryBoxes() {
@@ -40,20 +47,22 @@ export function Problem3MysteryBoxes() {
 
   const allRevealed = state.revealed.length === 6
   const showStatus = Boolean(session.feedback && !session.feedback.isCorrect && session.feedback.mistakeType)
-  const countStatus = showStatus ? state.rows.map((r, i) => numericFieldStatus(r.count, EXPECTED_COUNTS[i])) : undefined
   const probabilityStatus = showStatus ? state.rows.map((r, i) => probabilityFieldStatus(r.probability, EXPECTED_PROBS[i])) : undefined
+
+  // The number of boxes for each prize is given in the scenario, so it is shown
+  // as fixed (read-only) data. The learner only fills the probability column.
+  const tableRows = state.rows.map((r, i) => ({ ...r, count: String(EXPECTED_COUNTS[i]) }))
 
   const currentTask = !allRevealed
     ? `Reveal all six boxes by tapping them (${state.revealed.length}/6).`
-    : 'Fill each count, then convert the count to a probability (count ÷ 6).'
+    : 'For each prize, convert its given count to a probability (count ÷ 6).'
 
   const taskGuide = (
     <TaskGuide
       currentTask={currentTask}
       steps={[
         { id: 'reveal', label: 'Reveal all six boxes', done: allRevealed },
-        { id: 'counts', label: 'Fill the count for each prize', done: session.completed },
-        { id: 'probs', label: 'Convert each count to a probability', done: session.completed },
+        { id: 'probs', label: 'Convert each given count to a probability (count ÷ 6)', done: session.completed },
       ]}
     />
   )
@@ -71,9 +80,9 @@ export function Problem3MysteryBoxes() {
       </section>
       <section className="card problem-section">
         <h2>Probability table</h2>
-        <p className="section-note tap-hint">Probability = number of boxes with that prize ÷ 6 total boxes.</p>
-        <ProbabilityTable rows={state.rows} activeRow={state.activeRow}
-          countStatus={countStatus} probabilityStatus={probabilityStatus}
+        <p className="section-note tap-hint">The number of boxes is given. Answer here: probability = number of boxes with that prize ÷ 6 total boxes.</p>
+        <ProbabilityTable rows={tableRows} activeRow={state.activeRow} countReadOnly
+          probabilityStatus={probabilityStatus}
           onChange={(i, field, val) => setState((p) => ({
             ...p, activeRow: i,
             rows: p.rows.map((r, idx) => idx === i ? { ...r, [field]: val } : r),
@@ -81,8 +90,8 @@ export function Problem3MysteryBoxes() {
         <button type="button" className="btn-secondary touch-target" disabled={session.submitting}
           onClick={() => void session.handleCheck(checkProblem3({
             allRevealed: state.revealed.length === 6,
-            rows: state.rows.map((row, i) => ({ outcome: [12, 6, 0][i], count: row.count, probability: row.probability })),
-          }), 'final', JSON.stringify(state.rows), JSON.stringify(state.rows))}>Submit answer</button>
+            rows: tableRows.map((row, i) => ({ outcome: [12, 6, 0][i], count: row.count, probability: row.probability })),
+          }), 'final', formatRows(tableRows), formatRows(tableRows))}>Submit answer</button>
       </section>
     </ProblemLayout>
   )

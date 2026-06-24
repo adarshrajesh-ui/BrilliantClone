@@ -72,6 +72,44 @@ interface ProblemLayoutProps {
   conceptSummary?: string
 }
 
+/**
+ * Render a recorded final answer for review. Most problems store a short string,
+ * but defensively handle any legacy structured answers (e.g. a JSON array of
+ * probability-table rows) so learners never see raw JSON in review/completed state.
+ */
+function ReviewAnswer({ value }: { value: string }) {
+  const trimmed = value.trim()
+  if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed)
+      const rows = Array.isArray(parsed) ? parsed : [parsed]
+      const looksLikeTableRows = rows.every(
+        (r) => r && typeof r === 'object' && ('outcome' in r || 'count' in r || 'probability' in r),
+      )
+      if (looksLikeTableRows) {
+        return (
+          <ul className="review-answer-rows">
+            {rows.map((r, i) => {
+              const outcome = r.outcome != null ? String(r.outcome) : '—'
+              const count = r.count != null && r.count !== '' ? String(r.count) : '—'
+              const probability =
+                r.probability != null && r.probability !== '' ? String(r.probability) : '—'
+              return (
+                <li key={i}>
+                  {outcome} → count {count} → probability {probability}
+                </li>
+              )
+            })}
+          </ul>
+        )
+      }
+    } catch {
+      // Not valid JSON — fall through and render as plain text.
+    }
+  }
+  return <p className="review-row-value">{value}</p>
+}
+
 function ReviewDetail({
   problem,
   completionMessage,
@@ -104,7 +142,7 @@ function ReviewDetail({
       {lastSubmittedAnswer != null && lastSubmittedAnswer !== '' && (
         <div className="review-row">
           <span className="review-row-label">Your final answer</span>
-          <p className="review-row-value">{lastSubmittedAnswer}</p>
+          <ReviewAnswer value={lastSubmittedAnswer} />
         </div>
       )}
 

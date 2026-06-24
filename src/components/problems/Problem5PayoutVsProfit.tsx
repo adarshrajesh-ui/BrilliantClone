@@ -38,9 +38,9 @@ export function Problem5PayoutVsProfit() {
       taskGuide={taskGuide}
       demoSteps={PROBLEM_5_DEMO} demoFinalCta={PROBLEM_5_DEMO_CTA}>
       <section className="card problem-section">
-        <BalanceScale payout={4} cost={3} costPlaced={state.costPlaced} onPlaceCost={() => setState((p) => ({ ...p, costPlaced: true }))} />
-        <label className="field-label">Expected profit
-          <input className="touch-input" value={state.profitAnswer} onChange={(e) => setState((p) => ({ ...p, profitAnswer: e.target.value }))} disabled={!state.costPlaced} />
+        <BalanceScale payout={4} cost={3} costPlaced={state.costPlaced} onPlaceCost={() => setState((p) => ({ ...p, costPlaced: true }))} revealProfit={Boolean(session.feedback?.canComplete)} />
+        <label className="field-label">Expected profit — your answer here
+          <input className="touch-input" value={state.profitAnswer} onChange={(e) => setState((p) => ({ ...p, profitAnswer: e.target.value }))} disabled={!state.costPlaced} placeholder="Type the expected profit" />
         </label>
         <button type="button" className="btn-secondary touch-target" disabled={!state.costPlaced || session.submitting}
           onClick={() => void session.handleCheck(checkProblem5({ formulaSelected: state.costPlaced, profitAnswer: state.profitAnswer }), 'final', state.profitAnswer, state.profitAnswer)}>Submit answer</button>

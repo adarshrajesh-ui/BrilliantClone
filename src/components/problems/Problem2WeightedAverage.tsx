@@ -63,8 +63,8 @@ export function Problem2WeightedAverage() {
             setState((p) => { const n = [...p.slots] as typeof p.slots; n[index] = p.selectedCard!; return { ...p, slots: n, selectedCard: null } })
           }}
           onClearSlot={(i) => setState((p) => { const n = [...p.slots] as typeof p.slots; n[i] = ''; return { ...p, slots: n } })} />
-        <label className="field-label">Expected value
-          <input type="text" className="touch-input" value={state.evAnswer} onChange={(e) => setState((p) => ({ ...p, evAnswer: e.target.value }))} placeholder="$5" />
+        <label className="field-label">Expected value — your answer here
+          <input type="text" className="touch-input" value={state.evAnswer} onChange={(e) => setState((p) => ({ ...p, evAnswer: e.target.value }))} placeholder="Type the expected value" />
         </label>
         <button type="button" className="btn-secondary touch-target" disabled={session.submitting}
           onClick={() => void session.handleCheck(checkProblem2({ slots: state.slots, evAnswer: state.evAnswer }), 'final', state.evAnswer, state.evAnswer)}>Submit answer</button>
