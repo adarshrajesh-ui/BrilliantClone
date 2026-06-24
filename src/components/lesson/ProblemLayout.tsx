@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { CheckResult, ProblemDefinition, ProblemHint } from '../../types/problem'
-import { CHAPTER_PROBLEMS } from '../../data/chapter'
+import { CHAPTER_PROBLEMS, getAdjacentNextProblemId, getProblemMeta } from '../../data/chapter'
 import { HintPanel } from './HintPanel'
 import {
   ResponsiveProblemShell,
@@ -211,6 +211,14 @@ export function ProblemLayout({
   const showReview = completed && !restarted
   const showInteractive = !completed || restarted
 
+  // Single source of truth for ordering: derive the displayed problem number and
+  // the "next problem" target from the canonical chapter model (keyed by storage
+  // ID), so in-problem navigation and the chapter map always agree. The passed
+  // props are kept as fallbacks for any non-canonical/standalone usage.
+  const canonicalMeta = getProblemMeta(problem.problemId)
+  const resolvedProblemNumber = canonicalMeta ? canonicalMeta.globalProblemIndex + 1 : problemNumber
+  const resolvedNextProblemId = getAdjacentNextProblemId(problem.problemId) ?? nextProblemId
+
   // A demo exists only when the problem introduces a brand-new UI interaction
   // and supplies steps for it. Otherwise there is no demo at all.
   const steps = demoSteps ?? []
@@ -230,7 +238,7 @@ export function ProblemLayout({
       </nav>
       <header className="problem-header">
         <p className="chapter-eyebrow">
-          Problem {problemNumber} of {totalProblems}
+          Problem {resolvedProblemNumber} of {totalProblems}
         </p>
         <h1>{problem.title}</h1>
         <p className="problem-concept">{problem.concept}</p>
@@ -278,7 +286,7 @@ export function ProblemLayout({
           <ReviewDetail
             problem={problem}
             completionMessage={completionMessage}
-            nextProblemId={nextProblemId}
+            nextProblemId={resolvedNextProblemId}
             attemptCount={attemptCount}
             lastSubmittedAnswer={lastSubmittedAnswer}
             reviewHintUsed={reviewHintUsed}
@@ -320,8 +328,8 @@ export function ProblemLayout({
             <LearningCoachPanel
               feedback={coachFeedback}
               onContinue={
-                feedback?.canComplete && nextProblemId
-                  ? () => navigate(`${CHAPTER_PATH}/problem/${nextProblemId}`)
+                feedback?.canComplete && resolvedNextProblemId
+                  ? () => navigate(`${CHAPTER_PATH}/problem/${resolvedNextProblemId}`)
                   : undefined
               }
               continueLabel="Continue to next problem"

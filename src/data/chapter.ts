@@ -139,6 +139,20 @@ export function getProblemById(problemId: string): ChapterProblem | undefined {
 }
 
 /**
+ * The storage ID of the problem immediately after this one in canonical chapter
+ * order (or undefined for the final problem / an unknown ID). This is the single
+ * source of truth for "next problem" so in-problem navigation matches the chapter
+ * map exactly — both keyed by the same storage IDs and canonical ordering.
+ */
+export function getAdjacentNextProblemId(problemId: string): string | undefined {
+  const meta = getProblemMeta(problemId)
+  if (!meta) {
+    return undefined
+  }
+  return CHAPTER_PROBLEMS[meta.globalProblemIndex + 1]?.problemId
+}
+
+/**
  * The 1-based `order` of the farthest completed problem (0 when nothing is
  * complete). Allows gaps; never moves backward when older problems are
  * reviewed/restarted. Retained for legacy callers/tests.

@@ -44,6 +44,17 @@ export function Problem7WholeEVModel() {
 
   const probsFilled = state.probabilities.every((x) => x.trim() !== '')
   const contribsFilled = state.contributions.every((x) => x.trim() !== '')
+
+  // Parse the learner's entered profit so the fairness marker reflects it. Note
+  // `0` is the correct (fair) value, so we must NOT treat it as "empty" — a naive
+  // `parseFloat(...) || null` would drop the marker exactly when the answer is right.
+  const parseMoney = (raw: string): number | null => {
+    const t = raw.replace(/[$,\s]/g, '')
+    if (t === '') return null
+    const n = Number(t)
+    return Number.isFinite(n) ? n : null
+  }
+  const profitValue = parseMoney(state.expectedProfit)
   const showStatus = Boolean(session.feedback && !session.feedback.isCorrect && session.feedback.mistakeType)
   const probabilityStatus = showStatus ? state.probabilities.map((x, i) => probabilityFieldStatus(x, EXPECTED_PROBS[i])) : undefined
   const contributionStatus = showStatus ? state.contributions.map((x, i) => numericFieldStatus(x, EXPECTED_CONTRIBS[i])) : undefined
@@ -85,15 +96,15 @@ export function Problem7WholeEVModel() {
           onChange={(i, field, val) => { if (field === 'probability') setState((p) => ({ ...p, probabilities: p.probabilities.map((x, idx) => idx === i ? val : x) as typeof p.probabilities })) }}
           extraColumns={[{ key: 'c', label: 'Contribution', values: [...state.contributions], status: contributionStatus, onChange: (i, val) => setState((p) => ({ ...p, contributions: p.contributions.map((x, idx) => idx === i ? val : x) as typeof p.contributions })) }]} />
         <div className="field-grid">
-          <label className="field-label">Expected payout<input className="touch-input" value={state.expectedPayout} onChange={(e) => setState((p) => ({ ...p, expectedPayout: e.target.value }))} /></label>
-          <label className="field-label">Expected profit<input className="touch-input" value={state.expectedProfit} onChange={(e) => setState((p) => ({ ...p, expectedProfit: e.target.value }))} /></label>
+          <label className="field-label">Expected payout<input className="touch-input" value={state.expectedPayout} onChange={(e) => setState((p) => ({ ...p, expectedPayout: e.target.value }))} placeholder="Sum of contributions" /></label>
+          <label className="field-label">Expected profit<input className="touch-input" value={state.expectedProfit} onChange={(e) => setState((p) => ({ ...p, expectedProfit: e.target.value }))} placeholder="Payout − cost" /></label>
           <label className="field-label">Decision
             <select className="touch-input" value={state.decision} onChange={(e) => setState((p) => ({ ...p, decision: e.target.value }))}>
               <option value="">Choose…</option><option value="fair">Fair</option><option value="favorable">Favorable</option><option value="unfavorable">Unfavorable</option>
             </select>
           </label>
         </div>
-        <FairnessNumberLine value={parseFloat(state.expectedProfit) || null} />
+        <FairnessNumberLine value={profitValue} highlightZero={profitValue === 0} />
         <button type="button" className="btn-secondary touch-target" disabled={session.submitting}
           onClick={() => void session.handleCheck(checkProblem7({
             probabilities: state.probabilities, contributions: state.contributions,
