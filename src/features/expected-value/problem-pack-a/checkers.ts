@@ -9,7 +9,6 @@ import {
   areNumbersClose,
   areProbabilitiesEquivalent,
   normalizeMoneyAnswer,
-  normalizeNumericAnswer,
   parseProbabilityAnswer,
 } from '../../../lib/answerParser'
 import type {
@@ -73,6 +72,47 @@ function normToken(value: unknown): string {
     .replace(/\s+/g, ' ')
 }
 
+const PACK_MONEY_WORDS = /\b(dollars?|bucks?|usd)\b/g
+const PACK_RATE_WORDS = /\b(per\s*spin|per\s*play|per\s*trial|each|a\s*spin|on\s*average)\b/g
+
+function cleanPackNumericAnswer(value: unknown): string {
+  if (value === null || value === undefined) {
+    return ''
+  }
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[$,]/g, '')
+    .replace(PACK_MONEY_WORDS, '')
+    .replace(PACK_RATE_WORDS, '')
+    .trim()
+}
+
+function normalizeNonPercentNumberAnswer(value: unknown): number | null {
+  const cleaned = cleanPackNumericAnswer(value)
+  if (cleaned === '' || cleaned.includes('%')) {
+    return null
+  }
+  if (cleaned.includes('/')) {
+    const parts = cleaned.split('/')
+    if (parts.length !== 2) {
+      return null
+    }
+    const numerator = Number(parts[0].trim())
+    const denominator = Number(parts[1].trim())
+    if (Number.isFinite(numerator) && Number.isFinite(denominator) && denominator !== 0) {
+      return numerator / denominator
+    }
+    return null
+  }
+  const parsed = Number(cleaned)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function normalizePackMoneyAnswer(value: unknown): number | null {
+  return normalizeMoneyAnswer(value) ?? normalizeNonPercentNumberAnswer(value)
+}
+
 // ---------------------------------------------------------------------------
 // Lesson 1, Problem 1 — l1-long-run-average  (storage id: problem-1)
 // ---------------------------------------------------------------------------
@@ -84,7 +124,7 @@ export function checkLongRunAverage(input: LongRunAverageInput): CheckResult {
   if (input.totalSpins < 100) {
     return guard(`Run at least 100 total spins (${input.totalSpins}/100).`)
   }
-  const value = normalizeMoneyAnswer(input.finalAnswer)
+  const value = normalizePackMoneyAnswer(input.finalAnswer)
   if (value === null) {
     return guard('Choose the long-run average based on what you observed.')
   }
@@ -122,7 +162,7 @@ export function checkUnequalSpinner(input: UnequalSpinnerInput): CheckResult {
   if (input.totalSpins < 100) {
     return guard(`Run at least 100 total spins (${input.totalSpins}/100).`)
   }
-  const value = normalizeMoneyAnswer(input.finalAnswer)
+  const value = normalizePackMoneyAnswer(input.finalAnswer)
   if (value === null) {
     return guard('Enter the long-run average for this spinner.')
   }
@@ -309,7 +349,7 @@ export function checkBuildWeightedAverage(input: BuildWeightedAverageInput): Che
     )
   }
 
-  const ev = normalizeMoneyAnswer(input.evAnswer)
+  const ev = normalizePackMoneyAnswer(input.evAnswer)
   if (ev === null) {
     return guard('Enter the final expected value.')
   }
@@ -400,8 +440,8 @@ export function checkFillMissingFormula(input: FillMissingFormulaInput): CheckRe
     return guard('Place a card in each blank: the outcome before × 0.4 and the probability after 5 ×.')
   }
 
-  const outcome = normalizeNumericAnswer(input.outcomeSlot)
-  const probability = normalizeNumericAnswer(input.probabilitySlot)
+  const outcome = normalizeNonPercentNumberAnswer(input.outcomeSlot)
+  const probability = parseProbabilityAnswer(input.probabilitySlot)
 
   // Slot-type mistakes.
   const outcomeIsProbabilityLike = outcome !== null && outcome <= 1
@@ -426,7 +466,7 @@ export function checkFillMissingFormula(input: FillMissingFormulaInput): CheckRe
     )
   }
 
-  const ev = normalizeMoneyAnswer(input.evAnswer)
+  const ev = normalizePackMoneyAnswer(input.evAnswer)
   if (ev === null) {
     return guard('Add the three contributions and enter the final EV.')
   }
@@ -544,7 +584,7 @@ export function checkMysteryBoxOutcomes(input: MysteryBoxInput): CheckResult {
   for (let i = 0; i < MYSTERY_EXPECTED.length; i += 1) {
     const expected = MYSTERY_EXPECTED[i]
     const row = input.rows[i]
-    const count = normalizeNumericAnswer(row?.count ?? '')
+    const count = normalizeNonPercentNumberAnswer(row?.count ?? '')
 
     if (normToken(row?.count) === '' || normToken(row?.probability) === '') {
       return guard('Fill every count and probability cell.')
@@ -557,7 +597,7 @@ export function checkMysteryBoxOutcomes(input: MysteryBoxInput): CheckResult {
           `You entered ${MYSTERY_TOTAL} (the total number of boxes) as the count. The count is how many boxes show $${expected.outcome} — that is ${expected.count}.`,
         )
       }
-      const rawProbAsCount = normalizeNumericAnswer(row.probability)
+      const rawProbAsCount = normalizeNonPercentNumberAnswer(row.probability)
       if (rawProbAsCount !== null && areNumbersClose(rawProbAsCount, expected.count, 0.001)) {
         return fail(
           'counts-as-probabilities',
@@ -568,7 +608,7 @@ export function checkMysteryBoxOutcomes(input: MysteryBoxInput): CheckResult {
     }
 
     if (!areProbabilitiesEquivalent(row.probability, expected.prob, 0.005)) {
-      const raw = normalizeNumericAnswer(row.probability)
+      const raw = normalizeNonPercentNumberAnswer(row.probability)
       if (raw !== null && areNumbersClose(raw, expected.count, 0.001)) {
         return fail(
           'counts-as-probabilities',
@@ -616,7 +656,7 @@ export function checkCalculateEvFromTable(input: CalculateEvFromTableInput): Che
     )
   }
 
-  const contribs = input.contributions.map((c) => normalizeMoneyAnswer(c))
+  const contribs = input.contributions.map((c) => normalizePackMoneyAnswer(c))
   if (contribs.some((c) => c === null)) {
     return guard('Fill all three contribution cells (outcome × probability).')
   }
@@ -647,7 +687,7 @@ export function checkCalculateEvFromTable(input: CalculateEvFromTableInput): Che
     )
   }
 
-  const ev = normalizeMoneyAnswer(input.evAnswer)
+  const ev = normalizePackMoneyAnswer(input.evAnswer)
   if (ev === null) {
     return guard('Enter the final expected value (the sum of the contributions).')
   }

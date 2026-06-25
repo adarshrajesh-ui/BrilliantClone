@@ -1,0 +1,543 @@
+/* =========================================================================
+   No-scroll, Brilliant-like problem workspace (T-001 foundation).
+   Brilliant is UX inspiration only — no proprietary code/assets are copied
+   and colors intentionally differ. This file owns the fixed-viewport
+   workspace shell + the .ws-* affordance classes that lesson agents apply.
+   ========================================================================= */
+
+:root {
+  /* Tunables for the workspace shell. Colors reuse the app's token palette. */
+  --ws-bar-bg: var(--surface);
+  --ws-gap: 0.85rem;
+  --ws-pad-x: clamp(0.85rem, 3vw, 1.5rem);
+  --ws-radius: 14px;
+}
+
+/* When a workspace is on the page, lock the global shell to the viewport so the
+   PAGE never scrolls during a problem. Scoped via :has() so every other page
+   keeps its normal scrolling behavior untouched. */
+.layout:has(.problem-workspace) {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+.layout:has(.problem-workspace) .main {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+}
+/* The wrapping .page/.problem-page collapses to a flex pass-through so the
+   workspace can fill the available height below the global header. */
+.layout:has(.problem-workspace) .main > .problem-page {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  gap: 0;
+  display: flex;
+}
+
+/* ---- Workspace shell ---- */
+.problem-workspace {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* ---- Compact problem header ---- */
+.ws-header {
+  flex: 0 0 auto;
+  padding: 0.6rem var(--ws-pad-x) 0.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.ws-header-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.2rem;
+}
+.ws-back {
+  font-size: 0.85rem;
+  color: #6b7280;
+  text-decoration: none;
+}
+.ws-back:hover {
+  color: var(--primary);
+}
+.ws-problem-counter {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+}
+.ws-step-indicator {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary);
+  background: #eff6ff;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+}
+
+/* Per-step status badge next to the step indicator (✓ correct / ! incorrect). */
+.ws-step-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.ws-step-status-correct {
+  color: #047857;
+  background: #d1fae5;
+}
+.ws-step-status-incorrect {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+/* Inline per-step Check button: aligns left under the step's options. */
+.ws-step-check {
+  align-self: flex-start;
+  min-width: 7rem;
+}
+.ws-title {
+  font-size: clamp(1.05rem, 2.4vw, 1.4rem);
+  margin: 0;
+  line-height: 1.2;
+}
+.ws-scenario {
+  max-width: 68rem;
+  margin: 0.25rem 0 0;
+  color: var(--text-muted, #6b7280);
+  font-size: 0.93rem;
+  line-height: 1.45;
+}
+.ws-step-title {
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+  color: var(--text-heading);
+  font-size: 0.98rem;
+}
+.ws-prompt {
+  margin: 0.35rem 0 0;
+  color: var(--text-heading);
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.ws-prompt p {
+  margin: 0;
+}
+.ws-prompt .section-note {
+  margin-top: 0.35rem;
+  color: var(--text-muted, #6b7280);
+  font-weight: 500;
+}
+
+.ws-banner {
+  flex: 0 0 auto;
+  padding: 0.5rem var(--ws-pad-x) 0;
+}
+.ws-banner .card {
+  padding: 0.6rem 0.85rem;
+}
+
+/* ---- Flexible step-content region ---- */
+.ws-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--ws-gap) var(--ws-pad-x);
+  overflow: hidden;
+}
+.ws-step {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  /* Safety net: if a step is taller than the region it scrolls WITHIN the
+     workspace, never the page. Steps should be split so this rarely engages. */
+  overflow: auto;
+}
+/* Hidden panels stay mounted (preserve entered DOM/input values) but invisible. */
+.problem-workspace .ws-step[hidden] {
+  display: none;
+}
+
+/* ---- Sticky bottom action bar ---- */
+.ws-actionbar {
+  flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
+  background: var(--ws-bar-bg);
+  border-top: 1px solid var(--border);
+  padding: 0.6rem var(--ws-pad-x) max(0.6rem, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.ws-coach-slot {
+  /* Keep feedback bounded so the bar never grows unbounded; it scrolls
+     internally on very long messages, page stays put. */
+  max-height: 30vh;
+  overflow: auto;
+}
+/* The coach card is decluttered inside the bar (border/shadow handled by bar). */
+.ws-coach-slot .coach-panel {
+  border: none;
+  border-left: 4px solid var(--border);
+  box-shadow: none;
+  padding: 0.6rem 0.85rem;
+}
+.ws-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.ws-hint-toggle {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.ws-nav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.ws-next-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ws-advance-hint {
+  font-size: 0.8rem;
+  color: #6b7280;
+  max-width: 16rem;
+}
+.ws-prev,
+.ws-next {
+  min-width: 7rem;
+}
+.ws-prev:disabled,
+.ws-next:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ws-controls .problem-nav-controls {
+  margin-left: auto;
+}
+
+/* ---- Bounded hint drawer (above the action bar) ---- */
+.ws-hint-drawer {
+  max-height: 32vh;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--ws-radius);
+  background: var(--surface);
+}
+.ws-hint-drawer .hint-panel {
+  border: none;
+  box-shadow: none;
+}
+
+/* =========================================================================
+   Brilliant-like affordance classes (applied by lesson agents).
+   ========================================================================= */
+
+/* Compact visual wrapper: constrain big SVG/canvas visuals to the available
+   panel height and center them; never force horizontal scroll. */
+.ws-visual {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  overflow: hidden;
+}
+.ws-visual > * {
+  max-width: 100%;
+  max-height: 100%;
+}
+.ws-visual svg,
+.ws-visual img,
+.ws-visual canvas {
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
+}
+
+/* Single-column, full-width option rows (Brilliant-like stacked choices). */
+.ws-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+}
+.ws-option {
+  width: 100%;
+  text-align: left;
+  justify-content: flex-start;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+/* When applied to an existing .choice-btn, make it a full-width stacked row. */
+.choice-btn.ws-option {
+  min-width: 0;
+}
+
+/* Inline prompt styling (for prompts placed inside content rather than the prop). */
+.ws-prompt-inline {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+/* =========================================================================
+   Shared QuestionPrompt primitive (T-001 foundation).
+   The single themed way to render "the question being asked" so it reads as
+   the most prominent element of the prompt area. Subtle tinted, left-accent
+   callout with a small uppercase eyebrow + bold question text. Compact so it
+   never breaks the no-scroll workspace layout. No animation (reduced-motion
+   safe by construction); no layout shift.
+   ========================================================================= */
+.question-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  /* Tint derived from the theme's --primary; falls back to plain surface on
+     browsers without color-mix(). No hardcoded brand colors. */
+  background: var(--surface);
+  background: color-mix(in srgb, var(--primary) 7%, var(--surface));
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--primary);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+}
+.question-prompt-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--primary);
+  line-height: 1.2;
+}
+.question-prompt-text {
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-heading);
+}
+.question-prompt-text p {
+  margin: 0;
+}
+.question-prompt-text p + p {
+  margin-top: 0.35rem;
+}
+
+/* Inside the workspace header prompt slot the wrapper already provides spacing,
+   so the callout sits flush and stays compact. */
+.ws-prompt .question-prompt {
+  margin: 0;
+}
+/* The header .ws-prompt no longer needs its own emphasis when it hosts a
+   QuestionPrompt — avoid double-bolding the wrapper text. */
+.ws-prompt:has(.question-prompt) {
+  font-weight: 400;
+}
+
+/* Inline inside step content: add a little breathing room below it. */
+.ws-step .question-prompt {
+  margin: 0 0 0.5rem;
+}
+
+/* Legacy taskGuide panel: keep it tidy within the task area. */
+.task-area .question-prompt {
+  margin: 0 0 0.5rem;
+}
+
+/* Compact labeled input row. */
+.ws-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  font-weight: 600;
+}
+.ws-field input,
+.ws-field select {
+  font-weight: 500;
+}
+
+/* Generic compact flex row. */
+.ws-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Tighten spacing inside a dense step. */
+.ws-compact {
+  gap: 0.5rem;
+}
+.ws-compact p {
+  margin: 0;
+}
+.ws-compact h2,
+.ws-compact h3 {
+  margin: 0 0 0.35rem;
+}
+
+/* =========================================================================
+   Responsive: mobile single column, bottom bar with Prev/Next/Continue.
+   ========================================================================= */
+@media (max-width: 768px) {
+  .layout:has(.problem-workspace) {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .layout:has(.problem-workspace) .main {
+    overflow: visible;
+  }
+  .problem-workspace {
+    overflow: visible;
+  }
+  .ws-header {
+    padding: 0.55rem var(--ws-pad-x) 0.45rem;
+  }
+  .ws-body {
+    padding: 0.6rem var(--ws-pad-x);
+    overflow: visible;
+  }
+  .ws-step {
+    gap: 0.65rem;
+    overflow: visible;
+    scroll-margin-bottom: 9rem;
+  }
+  .ws-step :is(input, select, textarea, button, [tabindex]) {
+    scroll-margin-bottom: 10rem;
+  }
+  .ws-controls {
+    gap: 0.5rem;
+  }
+  .ws-nav {
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
+  }
+  .ws-prev,
+  .ws-next {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .ws-next-wrap {
+    flex: 1 1 0;
+    min-width: 0;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  .ws-advance-hint {
+    display: block;
+    order: -1;
+    max-width: none;
+    padding: 0.25rem 0.45rem;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    font-size: 0.74rem;
+    line-height: 1.25;
+  }
+  .ws-coach-slot {
+    max-height: 22vh;
+  }
+  .ws-hint-drawer {
+    max-height: 24vh;
+  }
+  .ws-coach-slot .coach-panel {
+    gap: 0.45rem;
+    padding: 0.5rem 0.65rem;
+  }
+  .ws-coach-slot .coach-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 0.82rem;
+  }
+  .ws-coach-slot .coach-title,
+  .ws-coach-slot .coach-body p {
+    font-size: 0.86rem;
+    line-height: 1.35;
+  }
+  .ws-coach-slot .coach-body {
+    gap: 0.4rem;
+  }
+  .ws-coach-slot .coach-actions {
+    gap: 0.35rem;
+  }
+}
+
+@media (max-width: 768px) and (max-height: 700px) {
+  .ws-header {
+    padding-top: 0.4rem;
+    padding-bottom: 0.35rem;
+  }
+  .ws-scenario,
+  .ws-prompt {
+    margin-top: 0.2rem;
+    line-height: 1.35;
+  }
+  .ws-body {
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+  .ws-actionbar {
+    gap: 0.35rem;
+    padding-top: 0.45rem;
+  }
+  .ws-coach-slot {
+    max-height: 18vh;
+  }
+  .ws-hint-drawer {
+    max-height: 20vh;
+  }
+}
+
+/* Very narrow phones (≤390px): keep everything single-column and tappable. */
+@media (max-width: 390px) {
+  .ws-header-top {
+    gap: 0.5rem;
+  }
+  .ws-title {
+    font-size: 1.05rem;
+  }
+  .ws-actionbar {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+  }
+}

@@ -132,7 +132,7 @@ export function ProblemIntroDemo({
     >
       <div className="demo-card-head">
         <span className="demo-card-eyebrow">{title}</span>
-        <button type="button" className="demo-skip btn-text" onClick={onSkip}>
+        <button type="button" className="demo-skip btn-text touch-target" onClick={onSkip}>
           Skip demo
         </button>
       </div>

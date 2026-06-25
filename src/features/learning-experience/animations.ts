@@ -67,3 +67,29 @@ export function getPrefersReducedMotion(): boolean {
   }
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
+
+/**
+ * Canonical reduced-motion primitive for problem agents (PRD/interface name).
+ *
+ * Usage pattern in a problem component:
+ *
+ * ```ts
+ * import { prefersReducedMotion } from '../../features/learning-experience'
+ *
+ * const reduced = prefersReducedMotion()
+ * // Build the deterministic outcome FIRST (seeded RNG, fixed sequence), then
+ * // only branch on `reduced` for HOW it is presented — never for WHAT the
+ * // result is. Reduced path: skip arcs/tumble/bounce/sparkle and apply the
+ * // final state instantly. The outcome must be identical either way.
+ * if (reduced) {
+ *   applyFinalStateInstantly(result)
+ * } else {
+ *   playAnimation(result)
+ * }
+ * ```
+ *
+ * Prefer the `usePrefersReducedMotion` hook inside React components so the value
+ * stays reactive to OS-level changes; use this synchronous reader in event
+ * handlers, reducers, or non-React helpers.
+ */
+export const prefersReducedMotion = getPrefersReducedMotion

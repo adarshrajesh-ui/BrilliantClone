@@ -28,7 +28,7 @@ export function CoursePathway({
   allComplete,
 }: CoursePathwayProps) {
   const lessons = getLessonProgressViews(completedProblemIds, continueProblemId, allComplete)
-  const currentHole = allComplete
+  const currentProblem = allComplete
     ? CHAPTER_PROBLEMS.length
     : CHAPTER_PROBLEMS.findIndex((p) => p.problemId === continueProblemId) + 1
   const currentLesson = lessons.find((l) => l.isCurrent)
@@ -37,16 +37,16 @@ export function CoursePathway({
   let holeCounter = 0
 
   return (
-    <section className="card course" aria-label="Expected Value course map">
+    <section className="card course" aria-label="Midpoint course map">
       <div className="course-hero">
         <div>
-          <p className="chapter-eyebrow course-eyebrow">Expected Value Course</p>
+          <p className="chapter-eyebrow course-eyebrow">Midpoint</p>
           <p className="course-subtitle">{CHAPTER_SUBTITLE}</p>
         </div>
         <span className="course-ribbon">
           {allComplete
             ? 'Course complete 🏆'
-            : `Lesson ${currentLesson?.order ?? 1} of ${TOTAL_LESSONS} · Hole ${currentHole} of ${CHAPTER_PROBLEMS.length}`}
+            : `Lesson ${currentLesson?.order ?? 1} of ${TOTAL_LESSONS} · Problem ${currentProblem} of ${CHAPTER_PROBLEMS.length}`}
         </span>
       </div>
 
@@ -89,12 +89,12 @@ export function CoursePathway({
                         </span>
                         <span className="course-hole-info">
                           <span className="course-hole-label">
-                            Hole {problemOrder(problemId)}
+                            Problem {problemOrder(problemId)}
                             {isFinal && <span className="course-final-tag">Capstone</span>}
                           </span>
                           <span className="course-hole-title">{problemTitle(problemId)}</span>
                           <span className={`course-hole-status course-status-${state}`}>
-                            {isComplete ? 'Sunk' : isCurrent ? 'Tee off →' : 'Upcoming'}
+                            {isComplete ? 'Complete' : isCurrent ? 'Continue →' : 'Upcoming'}
                           </span>
                         </span>
                       </Link>

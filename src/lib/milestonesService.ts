@@ -27,15 +27,11 @@ function milestonesDocId(userId: string) {
   return chapterScopedDocId(userId)
 }
 
-/** Canonical slugs whose completion drives concept-distinction milestones. */
-const SIMULATION_SLUGS = [
-  'l1-long-run-average',
-  'l1-unequal-spinner',
-  'l1-short-run-vs-long-run',
-  'l1-compare-spinners',
-  'l5-same-ev-different-risk',
-  'l5-low-risk-vs-high-risk',
-]
+/**
+ * Canonical slugs whose completion unlocks the "all simulations" milestone.
+ * PRD Page 10: the "All simulations" milestone applies to the Lesson 1 problems.
+ */
+const SIMULATION_SLUGS = ['ev-l1-p1', 'ev-l1-p2', 'ev-l1-p3']
 
 function createDefaultMilestones(userId: string): Milestones {
   return {
@@ -135,16 +131,13 @@ export async function syncMilestonesForCompletion(
   }
 
   // Concept-distinction milestones.
-  if (isProblemCompleted(mapCanonicalSlugToStorageId('l4-payout-vs-profit') ?? '', completedProblemIds)) {
+  if (isProblemCompleted(mapCanonicalSlugToStorageId('ev-l4-p1') ?? '', completedProblemIds)) {
     unlocked.add('profit-fairness-distinction')
   }
-  if (
-    isProblemCompleted(mapCanonicalSlugToStorageId('l5-same-ev-different-risk') ?? '', completedProblemIds) ||
-    isProblemCompleted(mapCanonicalSlugToStorageId('l5-low-risk-vs-high-risk') ?? '', completedProblemIds)
-  ) {
+  if (isProblemCompleted(mapCanonicalSlugToStorageId('ev-l5-p2') ?? '', completedProblemIds)) {
     unlocked.add('risk-distinction')
   }
-  if (isProblemCompleted(mapCanonicalSlugToStorageId('l5-final-capstone-ev-decision') ?? '', completedProblemIds)) {
+  if (isProblemCompleted(mapCanonicalSlugToStorageId('ev-l5-p3') ?? '', completedProblemIds)) {
     unlocked.add('final-capstone-complete')
   }
   if (SIMULATION_SLUGS.every((slug) => isProblemCompleted(mapCanonicalSlugToStorageId(slug) ?? '', completedProblemIds))) {

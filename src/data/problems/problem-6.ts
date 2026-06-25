@@ -26,6 +26,14 @@ export const PROBLEM_6: ProblemDefinition = {
     { mistakeType: 'forgot-subtract-cost', feedback: 'Expected profit = payout − cost. Game C has profit −$2.' },
   ],
   feedback: { correct: 'Correct! A is fair ($0), B is favorable (+$2), C is unfavorable (−$2).' },
+  teachingExplanation: {
+    title: 'What this teaches',
+    body: [
+      'A positive average payout does not automatically mean a good deal — you always subtract the cost first. Game A pays $5 and costs $5, so profit is exactly $0: fair. Game B leaves +$2; Game C leaves −$2.',
+      'The fairness buckets map directly onto the number line: zero profit is the dividing line between favorable (above) and unfavorable (below). Sorting by profit, not raw payout, is what makes the classification honest.',
+    ],
+    takeaway: 'Fair = $0 expected profit; favorable = positive profit; unfavorable = negative profit.',
+  },
   hints: [
     { id: 'p6-h1', label: 'Profit first', content: 'Compute payout − cost for each game before sorting.' },
     { id: 'p6-h2', label: 'Number line', content: 'Zero profit = fair; above zero = favorable; below = unfavorable.' },

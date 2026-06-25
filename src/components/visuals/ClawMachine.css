@@ -1,0 +1,442 @@
+.claw-machine {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+  max-width: 420px;
+}
+
+/* ---------- Cabinet (3D carnival shell) ---------- */
+.cm-cabinet {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  border-radius: 18px;
+  padding: 14px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 80% at 50% 0%, #3b1d6e 0%, #2a134f 55%, #1c0d38 100%);
+  border: 6px solid #ef4444;
+  box-shadow:
+    inset 0 2px 8px rgba(255, 255, 255, 0.12),
+    inset 0 -16px 30px rgba(0, 0, 0, 0.45),
+    0 14px 30px rgba(0, 0, 0, 0.35);
+  perspective: 760px;
+}
+
+/* Top rail the claw carriage rides along. */
+.cm-rail {
+  position: absolute;
+  top: 16px;
+  left: 14px;
+  right: 14px;
+  height: 8px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #e5e7eb, #9ca3af 60%, #6b7280);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Carriage + cable + claw ---------- */
+.cm-carriage {
+  position: absolute;
+  top: 18px;
+  left: 88%;
+  width: 0;
+  z-index: 6;
+  transform: translateX(-50%);
+  transition: left 310ms cubic-bezier(0.45, 0.05, 0.3, 1);
+}
+
+.cm-cable {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 3px;
+  height: 26px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #d1d5db, #9ca3af);
+  transition: height 280ms cubic-bezier(0.55, 0.06, 0.4, 1);
+}
+
+.cm-carriage-extended .cm-cable {
+  height: 168px;
+}
+
+.cm-claw {
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  width: 46px;
+  height: 34px;
+  transform: translateX(-50%);
+  transition: top 280ms cubic-bezier(0.55, 0.06, 0.4, 1);
+}
+
+.cm-carriage-extended .cm-claw {
+  top: 168px;
+}
+
+.cm-claw-mount {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  width: 16px;
+  height: 8px;
+  transform: translateX(-50%);
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, #cbd5e1, #64748b);
+}
+
+.cm-claw-arm {
+  position: absolute;
+  top: 2px;
+  width: 8px;
+  height: 28px;
+  background: linear-gradient(180deg, #e2e8f0, #94a3b8);
+  border-radius: 0 0 6px 6px;
+  transform-origin: top center;
+  transition: transform 175ms ease;
+}
+
+.cm-claw-arm-left {
+  left: 8px;
+  transform: rotate(-26deg);
+}
+
+.cm-claw-arm-right {
+  right: 8px;
+  transform: rotate(26deg);
+}
+
+/* Claw closed: arms pinch together. */
+.cm-claw-closed .cm-claw-arm-left {
+  transform: rotate(-6deg);
+}
+
+.cm-claw-closed .cm-claw-arm-right {
+  transform: rotate(6deg);
+}
+
+/* ---------- Held / released token ---------- */
+.cm-token {
+  position: absolute;
+  left: 50%;
+  top: 188px;
+  transform: translateX(-50%);
+  min-width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #fff;
+  z-index: 5;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+  transition: top 280ms cubic-bezier(0.55, 0.06, 0.4, 1);
+}
+
+/* While the claw is raised the held token rides just under the claw head. */
+.cm-carriage:not(.cm-carriage-extended) .cm-token {
+  top: 52px;
+}
+
+.cm-token-gold {
+  background: radial-gradient(circle at 35% 30%, #fde68a, #f59e0b 70%);
+  color: #5b3b00;
+  border: 2px solid #fbbf24;
+}
+
+.cm-token-gray {
+  background: radial-gradient(circle at 35% 30%, #cbd5e1, #6b7280 70%);
+  border: 2px solid #9ca3af;
+}
+
+.cm-token-flash {
+  animation: cm-gold-flash 300ms ease-in-out infinite;
+}
+
+.cm-token-release {
+  top: 52px;
+  animation: cm-tray-drop 260ms cubic-bezier(0.5, 0, 0.7, 1) forwards;
+}
+
+/* ---------- Pit floor (tilted for depth) ---------- */
+.cm-pit {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  height: 150px;
+}
+
+.cm-pit-floor {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(15, 8, 33, 0.6), rgba(0, 0, 0, 0.7));
+  transform: rotateX(46deg);
+  transform-origin: bottom center;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.6);
+}
+
+.cm-zone {
+  position: relative;
+  flex: 1 1 25%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  transition: box-shadow 220ms ease, filter 220ms ease, transform 220ms ease;
+}
+
+.cm-zone-prize {
+  background:
+    repeating-linear-gradient(45deg, #fde68a, #fde68a 10px, #fcd34d 10px, #fcd34d 20px);
+  box-shadow: inset 0 0 0 2px #f59e0b, 0 0 14px rgba(245, 158, 11, 0.5);
+}
+
+.cm-zone-zero {
+  background:
+    repeating-linear-gradient(45deg, #e5e7eb, #e5e7eb 10px, #d1d5db 10px, #d1d5db 20px);
+  box-shadow: inset 0 0 0 2px #9ca3af;
+}
+
+.cm-zone-label {
+  color: #1f2937;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.cm-zone-prize .cm-zone-label {
+  color: #7c2d12;
+}
+
+.cm-zone-active {
+  filter: brightness(1.18);
+  transform: translateY(-2px);
+  animation: cm-zone-glow 350ms ease-in-out;
+}
+
+.cm-zone-prize.cm-zone-active {
+  box-shadow: inset 0 0 0 3px #f59e0b, 0 0 22px rgba(245, 158, 11, 0.85);
+}
+
+.cm-zone-zero.cm-zone-active {
+  box-shadow: inset 0 0 0 3px #cbd5e1, 0 0 16px rgba(203, 213, 225, 0.7);
+}
+
+/* Prize chute the claw drops tokens into (front-left of the cabinet). */
+.cm-chute {
+  position: absolute;
+  right: 2px;
+  bottom: -2px;
+  width: 46px;
+  height: 22px;
+  border-radius: 6px 6px 8px 8px;
+  background: linear-gradient(180deg, #111827, #000);
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.8), 0 0 0 2px #ef4444;
+  z-index: 4;
+}
+
+/* ---------- Glass front ---------- */
+.cm-glass {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 28%),
+    linear-gradient(300deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 24%);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- Payout tray ---------- */
+.cm-tray {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 2px solid #cbd5e1;
+}
+
+.cm-tray-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.cm-tray-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-height: 32px;
+  align-items: center;
+}
+
+.cm-tray-empty {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.cm-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.76rem;
+  color: #fff;
+  animation: cm-chip-pop 160ms ease-out;
+}
+
+.cm-chip-gold {
+  background: radial-gradient(circle at 35% 30%, #fde68a, #f59e0b 70%);
+  color: #5b3b00;
+  border: 2px solid #fbbf24;
+}
+
+.cm-chip-gray {
+  background: #6b7280;
+  border: 2px solid #9ca3af;
+}
+
+.cm-tray-counts {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.cm-count-gold {
+  color: #b45309;
+}
+
+.cm-count-gray {
+  color: #4b5563;
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes cm-claw-travel {
+  from { transform: translateX(-50%) translateX(-12px); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes cm-cable-drop {
+  from { height: 26px; }
+  to { height: 168px; }
+}
+
+@keyframes cm-grab-close {
+  0% { transform: rotate(-26deg); }
+  100% { transform: rotate(-6deg); }
+}
+
+@keyframes cm-token-rise {
+  from { transform: translateX(-50%) translateY(28px); opacity: 0.6; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+@keyframes cm-gold-flash {
+  0%, 100% { box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4); }
+  50% { box-shadow: 0 0 16px 4px rgba(251, 191, 36, 0.9); }
+}
+
+@keyframes cm-tray-drop {
+  0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translateX(-50%) translateY(150px); opacity: 0; }
+}
+
+@keyframes cm-zone-glow {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(1.4); }
+  100% { filter: brightness(1.18); }
+}
+
+@keyframes cm-chip-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ---------- Reduced motion ---------- */
+.cm-reduced .cm-carriage,
+.cm-reduced .cm-cable,
+.cm-reduced .cm-claw,
+.cm-reduced .cm-claw-arm {
+  transition: none !important;
+  animation: none !important;
+}
+
+.cm-reduced .cm-token-flash,
+.cm-reduced .cm-token-release,
+.cm-reduced .cm-zone-active,
+.cm-reduced .cm-chip {
+  animation: none !important;
+}
+
+@media (max-width: 640px) {
+  .claw-machine {
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  .cm-cabinet {
+    height: 300px;
+    border-width: 5px;
+    padding: 12px;
+    overflow: visible;
+  }
+
+  .cm-rail {
+    left: 12px;
+    right: 12px;
+  }
+
+  .cm-pit {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .cm-zone {
+    min-width: 0;
+    font-size: 0.82rem;
+  }
+
+  .cm-tray {
+    overflow: visible;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-carriage,
+  .cm-cable,
+  .cm-claw,
+  .cm-claw-arm,
+  .cm-token,
+  .cm-token-flash,
+  .cm-token-release,
+  .cm-zone,
+  .cm-zone-active,
+  .cm-chip {
+    transition: none !important;
+    animation: none !important;
+  }
+}

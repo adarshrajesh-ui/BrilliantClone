@@ -37,7 +37,7 @@ export function ExpandedCoursePathway({
   let runningIndex = 0
 
   return (
-    <section className="coursemap" aria-label="Expected Value course map">
+    <section className="coursemap" aria-label="Midpoint course map">
       <aside className="coursemap-info">
         <div className="coursemap-info-card">
           <span className="coursemap-info-icon" aria-hidden="true">
@@ -51,7 +51,7 @@ export function ExpandedCoursePathway({
               <strong>{totalLessons}</strong> Lessons
             </span>
             <span>
-              <strong>{totalProblems}</strong> Exercises
+              <strong>{totalProblems}</strong> Problems
             </span>
           </div>
 

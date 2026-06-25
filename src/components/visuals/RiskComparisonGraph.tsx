@@ -1,23 +1,31 @@
 interface RiskComparisonGraphProps {
   gameAAverages: number[]
   gameBAverages: number[]
+  /** The shared expected value both games converge toward (dashed tie line). */
   target?: number
+  /** Upper bound of the y-axis. */
+  maxY?: number
+  labelA?: string
+  labelB?: string
 }
 
 export function RiskComparisonGraph({
   gameAAverages,
   gameBAverages,
-  target = 5,
+  target = 6,
+  maxY = 12,
+  labelA = 'Game A — guaranteed',
+  labelB = 'Game B — wider spread',
 }: RiskComparisonGraphProps) {
   return (
     <div className="risk-comparison">
       <div className="risk-graph-col">
-        <p className="graph-caption">Game A — guaranteed $5</p>
-        <RunningAverageGraphMini averages={gameAAverages} target={target} variant="flat" />
+        <p className="graph-caption">{labelA}</p>
+        <RunningAverageGraphMini averages={gameAAverages} target={target} maxY={maxY} variant="flat" />
       </div>
       <div className="risk-graph-col">
-        <p className="graph-caption">Game B — 50/50 $10 or $0</p>
-        <RunningAverageGraphMini averages={gameBAverages} target={target} variant="jagged" />
+        <p className="graph-caption">{labelB}</p>
+        <RunningAverageGraphMini averages={gameBAverages} target={target} maxY={maxY} variant="jagged" />
       </div>
     </div>
   )
@@ -26,16 +34,18 @@ export function RiskComparisonGraph({
 function RunningAverageGraphMini({
   averages,
   target,
+  maxY,
   variant,
 }: {
   averages: number[]
   target: number
+  maxY: number
   variant: 'flat' | 'jagged'
 }) {
   const width = 280
   const height = 120
   const padding = 20
-  const maxY = 10
+  const yMax = Math.max(maxY, target, 1)
 
   if (averages.length === 0) {
     return <div className="graph-empty">Run 20 trials</div>
@@ -45,13 +55,13 @@ function RunningAverageGraphMini({
   const plotH = height - padding * 2
   const points = averages.map((avg, i) => {
     const x = padding + (i / Math.max(averages.length - 1, 1)) * plotW
-    const y = padding + plotH - (avg / maxY) * plotH
+    const y = padding + plotH - (avg / yMax) * plotH
     return `${x},${y}`
   })
-  const targetY = padding + plotH - (target / maxY) * plotH
+  const targetY = padding + plotH - (target / yMax) * plotH
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="running-graph">
+    <svg viewBox={`0 0 ${width} ${height}`} className="running-graph" role="img" aria-label={`${variant} running-average line approaching ${target}`}>
       <line x1={padding} y1={targetY} x2={width - padding} y2={targetY} stroke="#93c5fd" strokeDasharray="3 3" />
       <polyline
         points={points.join(' ')}

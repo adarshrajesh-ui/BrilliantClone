@@ -36,8 +36,11 @@ export const L5_BUILD_WHOLE_EV_MODEL: PackProblemDefinition = {
     probability30: ['1/10', '0.1', '.1', '10%'],
     probability10: ['2/10', '1/5', '0.2', '.2', '20%'],
     probability0: ['7/10', '0.7', '.7', '70%'],
-    expectedPayout: ['5', '5.0', '$5'],
-    expectedProfit: ['0', '0.0', '$0'],
+    contribution30: ['3', '3.0', '$3', '6/2'],
+    contribution10: ['2', '2.0', '$2', '20/10'],
+    contribution0: ['0', '0.0', '$0', '0/7'],
+    expectedPayout: ['5', '5.0', '$5', '10/2'],
+    expectedProfit: ['0', '0.0', '$0', '0/5'],
     decision: ['fair'],
   },
   mistakeRules: [

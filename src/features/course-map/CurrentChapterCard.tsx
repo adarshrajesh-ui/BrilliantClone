@@ -72,13 +72,15 @@ export function CurrentChapterCard({
 
       <p className="cpc-current">
         {allComplete ? (
-          <>Course complete — replay any hole to review.</>
+          <span className="cpc-current-text">Course complete — replay any problem to review.</span>
         ) : (
           <>
             <span className="cpc-current-flag" aria-hidden="true" />
-            {currentLessonTitle ? `${currentLessonTitle} · ` : ''}
-            Next: <strong>Hole {currentHoleOrder}</strong>
-            {currentProblemTitle ? ` · ${currentProblemTitle}` : ''}
+            <span className="cpc-current-text">
+              {currentLessonTitle ? `${currentLessonTitle} · ` : ''}
+              Next: <strong>Problem {currentHoleOrder}</strong>
+              {currentProblemTitle ? ` · ${currentProblemTitle}` : ''}
+            </span>
           </>
         )}
       </p>
@@ -101,7 +103,7 @@ export function CurrentChapterCard({
       </div>
 
       <p className="sr-only">
-        {view.completedCount} of {totalHoles} holes complete.
+        {view.completedCount} of {totalHoles} problems complete.
       </p>
 
       <div className="cpc-actions">

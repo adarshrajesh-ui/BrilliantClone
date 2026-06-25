@@ -30,6 +30,13 @@ export const problemPackAValidationCases: ValidationCase[] = [
     expect: { canComplete: true, mistakeType: null, graded: true },
   },
   {
+    id: 'l1-lra-correct-fraction',
+    slug: 'l1-long-run-average',
+    description: 'fraction equivalent to $5 -> complete',
+    input: { predictionSubmitted: true, totalSpins: 120, finalAnswer: '10 / 2' },
+    expect: { canComplete: true, mistakeType: null, graded: true },
+  },
+  {
     id: 'l1-lra-extreme-0',
     slug: 'l1-long-run-average',
     description: '$0 chosen -> extreme outcome',
@@ -143,6 +150,13 @@ export const problemPackAValidationCases: ValidationCase[] = [
     expect: { canComplete: true, mistakeType: null, graded: true },
   },
   {
+    id: 'l2-bwa-correct-fraction-ev',
+    slug: 'l2-build-weighted-average',
+    description: 'correct pairs + fraction EV 10/2 -> complete',
+    input: { slots: ['$20', '25%', '$0', '75%'], evAnswer: '10 / 2' },
+    expect: { canComplete: true, mistakeType: null, graded: true },
+  },
+  {
     id: 'l2-bwa-reversed',
     slug: 'l2-build-weighted-average',
     description: 'reversed types -> reversed-outcome-probability',
@@ -166,6 +180,13 @@ export const problemPackAValidationCases: ValidationCase[] = [
     expect: { canComplete: true, mistakeType: null, graded: true },
   },
   {
+    id: 'l2-mop-correct-equivalent-formats',
+    slug: 'l2-match-outcomes-probabilities',
+    description: 'equivalent fractions and percent probability forms -> complete',
+    input: { assignments: { '12': '2 / 6', '3': '50%', '0': '16.667%' } },
+    expect: { canComplete: true, mistakeType: null, graded: true },
+  },
+  {
     id: 'l2-mop-ranked',
     slug: 'l2-match-outcomes-probabilities',
     description: '$12 with 1/2 -> ranked-by-size',
@@ -186,6 +207,13 @@ export const problemPackAValidationCases: ValidationCase[] = [
     slug: 'l2-fill-missing-formula',
     description: '10 + 0.5 + EV 6.5 -> complete',
     input: { outcomeSlot: '10', probabilitySlot: '0.5', evAnswer: '6.5' },
+    expect: { canComplete: true, mistakeType: null, graded: true },
+  },
+  {
+    id: 'l2-fmf-correct-equivalent-formats',
+    slug: 'l2-fill-missing-formula',
+    description: 'fraction outcome, percent probability, fraction EV -> complete',
+    input: { outcomeSlot: '20 / 2', probabilitySlot: '50%', evAnswer: '13 / 2' },
     expect: { canComplete: true, mistakeType: null, graded: true },
   },
   {
@@ -242,6 +270,20 @@ export const problemPackAValidationCases: ValidationCase[] = [
     expect: { canComplete: true, mistakeType: null, graded: true },
   },
   {
+    id: 'l3-mbo-correct-equivalent-formats',
+    slug: 'l3-mystery-box-outcomes',
+    description: 'fraction counts and percent probabilities -> complete',
+    input: {
+      allRevealed: true,
+      rows: [
+        { outcome: 12, count: '2/2', probability: '16.667%' },
+        { outcome: 6, count: '4 / 2', probability: '33.333%' },
+        { outcome: 0, count: '6/2', probability: '50%' },
+      ],
+    },
+    expect: { canComplete: true, mistakeType: null, graded: true },
+  },
+  {
     id: 'l3-mbo-counts-as-prob',
     slug: 'l3-mystery-box-outcomes',
     description: 'count typed as probability -> counts-as-probabilities',
@@ -290,6 +332,13 @@ export const problemPackAValidationCases: ValidationCase[] = [
     slug: 'l3-calculate-ev-from-table',
     description: 'contributions 2,2,0 + EV 4 -> complete',
     input: { contributions: ['2', '2', '0'], evAnswer: '4' },
+    expect: { canComplete: true, mistakeType: null, graded: true },
+  },
+  {
+    id: 'l3-cet-correct-equivalent-formats',
+    slug: 'l3-calculate-ev-from-table',
+    description: 'fraction contributions and fraction EV -> complete',
+    input: { contributions: ['4 / 2', '8/4', '0/3'], evAnswer: '8 / 2' },
     expect: { canComplete: true, mistakeType: null, graded: true },
   },
   {

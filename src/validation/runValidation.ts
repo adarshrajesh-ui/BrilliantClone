@@ -1,20 +1,19 @@
-// Validation and Test Coverage — Expected Value Lab MVP
-// ------------------------------------------------------
-// Self-contained, deterministic validation runner for the established 8-problem
-// MVP. It imports the existing (unmodified) answer parser + checker and runs the
-// hand-built cases in answerValidationMatrix.ts / problemBehaviorValidation.ts.
+// Validation and Test Coverage — Expected Value Lab (active problem flow)
+// ----------------------------------------------------------------------
+// Self-contained, deterministic validation runner. It imports the existing
+// (unmodified) answer parser and the REAL co-located checkers (via
+// ./liveCheckers) and runs the hand-built cases in answerValidationMatrix.ts.
 //
 // SAFE-BY-DESIGN:
 //   * It only *imports* existing functions — it does not modify any app file.
 //   * It has no AI / model calls and no Firebase imports.
-//   * It does not edit package.json. The main agent can wire it up later via
-//     either `npm run test` / `npm run validate:answers` (a Vitest wrapper, see
-//     the TODO at the bottom) or a direct `tsx src/validation/runValidation.ts`.
+//   * The Vitest wrappers live in liveCheckerValidation.test.ts and
+//     prdCoverage.test.ts, which `npm run test` / `npm run validate:answers`
+//     (both `vitest run`) execute.
 //
-// Usage today (no config changes required):
+// Programmatic usage:
 //   import { runAllValidations, formatValidationReport } from './runValidation'
-//   const report = runAllValidations()
-//   console.log(formatValidationReport(report))
+//   console.log(formatValidationReport(runAllValidations()))
 
 import {
   areNumbersClose,
@@ -23,15 +22,16 @@ import {
   normalizeMoneyAnswer,
   parseProbabilityAnswer,
 } from '../lib/answerParser'
-import { checkProblem, isGradedAttempt } from '../lib/answerChecker'
-import type { ProblemCheckInput } from '../types/problem'
+import { isGradedAttempt } from '../lib/answerChecker'
 import {
-  allProblemCheckerCases,
   classificationAnswerCases,
+  liveCheckerCases,
   moneyAnswerCases,
   probabilityAnswerCases,
+  type LiveCheckerCase,
   type ValidationCase,
 } from './answerValidationMatrix'
+import { runLiveChecker } from './liveCheckers'
 import { gradedAttemptExpectations } from './problemBehaviorValidation'
 
 export interface ValidationFailure {
@@ -86,53 +86,25 @@ function runClassificationCases(report: ValidationReport): void {
   }
 }
 
-function runCheckerCase(report: ValidationReport, c: ValidationCase): void {
-  const result = checkProblem(c.problemId, c.input as ProblemCheckInput)
+function runLiveCheckerCase(report: ValidationReport, c: LiveCheckerCase): void {
+  const result = runLiveChecker(c.storageId, c.input)
 
-  // 1. completion expectation
-  record(
-    report,
-    result.canComplete === c.expectedCorrect,
-    c.id,
-    () => `${c.problemId} canComplete=${String(result.canComplete)}, expected ${String(c.expectedCorrect)} (${c.description})`,
-  )
-
-  // 2. mistakeType expectation (when asserted)
-  if (c.expectedMistakeType !== undefined) {
-    record(
-      report,
-      result.mistakeType === c.expectedMistakeType,
-      `${c.id}:mistakeType`,
-      () => `${c.problemId} mistakeType="${String(result.mistakeType)}", expected "${c.expectedMistakeType}"`,
-    )
-
-    // 3. attempt-counting policy implied by the mistakeType
-    if (c.expectedMistakeType === '') {
-      // Guard result: must NOT be a graded attempt.
-      record(
-        report,
-        isGradedAttempt(result) === false,
-        `${c.id}:guard-not-graded`,
-        () => `${c.problemId} guard incorrectly counted as a graded attempt`,
-      )
-    } else {
-      // Graded wrong result: must count as an attempt.
-      record(
-        report,
-        isGradedAttempt(result) === true,
-        `${c.id}:wrong-graded`,
-        () => `${c.problemId} graded-wrong result not counted as an attempt`,
-      )
-    }
-  } else if (c.expectedCorrect) {
-    // Correct answers are graded attempts too.
-    record(
-      report,
-      isGradedAttempt(result) === true,
-      `${c.id}:correct-graded`,
-      () => `${c.problemId} correct result not counted as a graded attempt`,
-    )
+  if (c.kind === 'correct') {
+    record(report, result.canComplete === true, c.id, () => `${c.storageId} canComplete=${String(result.canComplete)}, expected true (${c.description})`)
+    record(report, isGradedAttempt(result) === true, `${c.id}:graded`, () => `${c.storageId} correct result not counted as a graded attempt`)
+    return
   }
+
+  if (c.kind === 'guard') {
+    record(report, result.canComplete === false, c.id, () => `${c.storageId} guard canComplete=${String(result.canComplete)}, expected false (${c.description})`)
+    record(report, isGradedAttempt(result) === false, `${c.id}:not-graded`, () => `${c.storageId} guard incorrectly counted as a graded attempt`)
+    return
+  }
+
+  // kind === 'mistake'
+  record(report, result.canComplete === false, c.id, () => `${c.storageId} mistake canComplete=${String(result.canComplete)}, expected false (${c.description})`)
+  record(report, result.mistakeType === c.expectedMistakeType, `${c.id}:mistakeType`, () => `${c.storageId} mistakeType="${String(result.mistakeType)}", expected "${String(c.expectedMistakeType)}"`)
+  record(report, isGradedAttempt(result) === true, `${c.id}:graded`, () => `${c.storageId} graded-wrong result not counted as an attempt`)
 }
 
 function runGradedAttemptCases(report: ValidationReport): void {
@@ -152,8 +124,8 @@ export function runAllValidations(): ValidationReport {
   runMoneyCases(report)
   runProbabilityCases(report)
   runClassificationCases(report)
-  for (const c of allProblemCheckerCases) {
-    runCheckerCase(report, c)
+  for (const c of liveCheckerCases) {
+    runLiveCheckerCase(report, c)
   }
   runGradedAttemptCases(report)
   return report
@@ -162,8 +134,8 @@ export function runAllValidations(): ValidationReport {
 /** Renders a human-readable report string. */
 export function formatValidationReport(report: ValidationReport): string {
   const lines: string[] = []
-  lines.push('Expected Value Lab — Validation Report')
-  lines.push('======================================')
+  lines.push('Expected Value Lab — Validation Report (14-problem active flow)')
+  lines.push('==========================================================')
   lines.push(`Checks passed: ${report.passed}/${report.total}`)
   if (report.failed.length === 0) {
     lines.push('All deterministic validation checks passed.')
@@ -176,9 +148,11 @@ export function formatValidationReport(report: ValidationReport): string {
   return lines.join('\n')
 }
 
+// Re-export the case type for downstream consumers/tests.
+export type { ValidationCase }
+
 function main(): void {
   const report = runAllValidations()
-  // console is available in both browser and Node runtimes.
   console.log(formatValidationReport(report))
   const proc = (globalThis as { process?: { exitCode?: number } }).process
   if (proc) {
@@ -187,30 +161,7 @@ function main(): void {
 }
 
 // Auto-run only when executed directly (e.g. `tsx src/validation/runValidation.ts`).
-// We detect this without depending on @types/node so the file type-checks under
-// the app's tsconfig (types: ["vite/client"]).
 const runtimeArgv = (globalThis as { process?: { argv?: string[] } }).process?.argv
 if (Array.isArray(runtimeArgv) && runtimeArgv.some((arg) => arg.includes('runValidation'))) {
   main()
 }
-
-// ---------------------------------------------------------------------------
-// TODO (for the main agent — no config changes were made here):
-//
-// Option A — Vitest (preferred; `npm run test` and `npm run validate:answers`
-// already run `vitest run`). Create a NEW test file, e.g.
-// `src/validation/runValidation.test.ts`, with:
-//
-//   import { describe, expect, it } from 'vitest'
-//   import { runAllValidations } from './runValidation'
-//   describe('PRD validation matrix', () => {
-//     it('passes every deterministic case', () => {
-//       const report = runAllValidations()
-//       expect(report.failed).toEqual([])
-//     })
-//   })
-//
-// Option B — standalone script (requires a dev dependency such as `tsx`):
-//   npx tsx src/validation/runValidation.ts
-//   This prints the report and exits nonzero on failure.
-// ---------------------------------------------------------------------------

@@ -1,0 +1,356 @@
+/* Lesson 5 Problem 1 — "Same Average, Different Ride" no-scroll workspace.
+   Component-scoped classes only (all prefixed `l5p1-`); never overrides the
+   shared lesson5.css or the global .ws-* affordance classes. Goal: keep the
+   two 3D machines + their controls, outcome strips, and running-average graphs
+   inside one viewport at desktop (1280×720) and mobile (≤390px). */
+
+/* ---- Play step ---- */
+.l5p1-play {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 0;
+}
+
+/* Two machines side by side; each column stacks machine + controls + strip + graph. */
+.l5p1-machines {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  align-items: start;
+  width: 100%;
+  min-height: 0;
+}
+
+.l5p1-machine {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.l5p1-machine-head {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  text-align: center;
+}
+
+/* Clipping wrapper that scales the fixed-size 3D machines down so two columns
+   of dense content fit the no-scroll panel. The inner machine roots keep their
+   intrinsic pixel layout; we scale + clip the reserved box height here. */
+.l5p1-stage {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  overflow: hidden;
+}
+.l5p1-stage-mp {
+  height: clamp(120px, 21vh, 172px);
+}
+.l5p1-stage-js {
+  height: clamp(150px, 26vh, 210px);
+}
+
+/* Scale the 3D machine roots (className passed through to .mp3 / .js3-root). */
+.l5p1-mp {
+  transform: scale(0.66);
+  transform-origin: top center;
+}
+.l5p1-js {
+  transform: scale(0.58);
+  transform-origin: top center;
+}
+
+/* ---- Run controls ---- */
+.l5p1-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.l5p1-run {
+  min-width: 0;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.85rem;
+}
+.l5p1-run:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---- Outcome strip (recent payouts as chips) ---- */
+.l5p1-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: center;
+  gap: 0.25rem;
+  min-height: 1.7rem;
+  max-height: 3.4rem;
+  overflow: hidden;
+}
+.l5p1-strip-empty {
+  align-items: center;
+  justify-content: center;
+}
+.l5p1-strip-hint {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+.l5p1-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.22rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.l5p1-chip-printer {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+.l5p1-chip-win {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fbbf24;
+}
+.l5p1-chip-lose {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+
+/* ---- Running-average graph (capped so it never forces scroll) ---- */
+.l5p1-graph {
+  width: 100%;
+}
+.l5p1-graph .graph-wrap {
+  margin: 0;
+}
+.l5p1-graph .running-graph {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 15vh;
+}
+.l5p1-graph .graph-caption {
+  font-size: 0.74rem;
+  margin: 0 0 0.15rem;
+}
+
+/* ---- Live status summary ---- */
+.l5p1-live {
+  margin: 0;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text, #374151);
+  min-height: 1rem;
+}
+
+.l5p1-phone-tip {
+  display: none;
+  margin: 0;
+  font-size: 0.78rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+/* ---- Questions step ---- */
+.l5p1-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+}
+.l5p1-question {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.l5p1-question legend {
+  font-weight: 600;
+  font-size: 0.92rem;
+  margin-bottom: 0.35rem;
+  padding: 0;
+}
+.l5p1-question:disabled {
+  opacity: 0.55;
+}
+.l5p1-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.l5p1-option {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 40px;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  line-height: 1.3;
+}
+.l5p1-option:hover {
+  border-color: #94a3b8;
+}
+.l5p1-option input {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+}
+.l5p1-option-selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.l5p1-submit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.l5p1-submit-hint {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* ---- Responsive: stack the two machines on narrow screens ---- */
+@media (max-width: 768px) {
+  .l5p1-machines {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+  .l5p1-stage-mp {
+    height: clamp(120px, 18vh, 165px);
+  }
+  .l5p1-stage-js {
+    height: clamp(140px, 22vh, 195px);
+  }
+  .l5p1-graph .running-graph {
+    max-height: 13vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .l5p1-play {
+    gap: 0.4rem;
+    overflow: hidden;
+  }
+
+  .l5p1-phone-tip {
+    display: block;
+  }
+
+  .l5p1-machines {
+    display: flex;
+    gap: 0.7rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    margin-inline: calc(var(--ws-pad-x, 0.85rem) * -1);
+    padding-inline: var(--ws-pad-x, 0.85rem);
+    padding-bottom: 0.25rem;
+  }
+
+  .l5p1-machine {
+    flex: 0 0 min(88vw, 340px);
+    scroll-snap-align: start;
+    padding: 0.55rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 12px;
+    background: #fff;
+  }
+
+  .l5p1-stage-mp {
+    height: 108px;
+  }
+
+  .l5p1-stage-js {
+    height: 128px;
+  }
+
+  .l5p1-mp {
+    transform: scale(0.48);
+  }
+
+  .l5p1-js {
+    transform: scale(0.4);
+  }
+
+  .l5p1-controls {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .l5p1-run {
+    padding: 0.35rem 0.25rem;
+    font-size: 0.78rem;
+  }
+
+  .l5p1-strip {
+    max-height: 2.4rem;
+  }
+
+  .l5p1-chip {
+    font-size: 0.66rem;
+    padding: 0.18rem 0.32rem;
+  }
+
+  .l5p1-graph .running-graph {
+    max-height: 96px;
+  }
+
+  .l5p1-questions {
+    gap: 0.5rem;
+  }
+
+  .l5p1-option {
+    font-size: 0.82rem;
+    padding: 0.4rem 0.55rem;
+  }
+
+  .l5p1-submit-row {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    padding: 0.55rem 0 0.1rem;
+    background: var(--bg, #f8fafc);
+    border-top: 1px solid var(--border, #e5e7eb);
+  }
+
+  .l5p1-submit-row .btn-secondary,
+  .l5p1-submit-hint {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .problem-workspace:has(.l5p1-play) .ws-advance-hint,
+  .problem-workspace:has(.l5p1-questions) .ws-advance-hint {
+    display: inline;
+    max-width: none;
+  }
+}
+
+/* ---- Reduced motion: the 3D components already honor `animate`; ensure no
+   residual transitions/animations leak from this layer either. ---- */
+@media (prefers-reduced-motion: reduce) {
+  .l5p1-stage *,
+  .l5p1-chip,
+  .l5p1-option {
+    animation: none !important;
+    transition: none !important;
+  }
+}

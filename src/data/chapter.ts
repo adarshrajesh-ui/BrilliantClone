@@ -27,13 +27,13 @@ import {
   type LessonProgressView,
 } from '../core/progression/selectors'
 
-export const CHAPTER_TITLE = 'Expected Value — The Average Outcome of Uncertainty'
+export const CHAPTER_TITLE = 'Midpoint — Expected Value'
 
 export const CHAPTER_SUBTITLE =
-  'Play through 5 lessons and 20 visual challenges to master long-run average, weighted models, payout, profit, fairness, and risk.'
+  'A hands-on expected value course with 5 lessons and 14 interactive problems on long-run averages, weighted models, payout, profit, fairness, and risk.'
 
 export const CHAPTER_DESCRIPTION =
-  'Twenty visual, interactive problems that move you from observing a simulation to building and interpreting a complete expected value model under uncertainty.'
+  'Fourteen interactive problems that move from simulation intuition to complete expected value models under uncertainty.'
 
 /**
  * Legacy-shaped problem list (problemId = storage ID, order = 1-based global
@@ -46,7 +46,7 @@ export const CHAPTER_PROBLEMS: ChapterProblem[] = CANONICAL_PROBLEMS.map((p) => 
   order: p.globalProblemIndex + 1,
 }))
 
-/** Five lessons, each with four problems (storage IDs in play order). */
+/** Five lessons with active problem storage IDs in play order. */
 export const CHAPTER_LESSONS: LessonDefinition[] = CANONICAL_LESSONS.map((lesson) => ({
   lessonId: lesson.lessonId,
   title: lesson.title,
@@ -102,7 +102,7 @@ export function getLessonProgressViews(
 }
 
 export const MILESTONE_DEFINITIONS: MilestoneDefinition[] = [
-  { id: 'chapter-started', label: 'Chapter started', description: 'Opened the Expected Value chapter.' },
+  { id: 'chapter-started', label: 'Chapter started', description: 'Opened Midpoint.' },
   { id: 'first-problem-complete', label: 'First win', description: 'Completed your first problem.' },
   {
     id: 'first-direct-correction',
@@ -113,7 +113,7 @@ export const MILESTONE_DEFINITIONS: MilestoneDefinition[] = [
   { id: 'lesson-2-complete', label: 'Lesson 2 complete', description: 'Finished the weighted-average lesson.' },
   { id: 'lesson-3-complete', label: 'Lesson 3 complete', description: 'Finished the counts & tables lesson.' },
   { id: 'lesson-4-complete', label: 'Lesson 4 complete', description: 'Finished the payout, profit & fairness lesson.' },
-  { id: 'half-chapter', label: 'Halfway there', description: 'Completed 10 of 20 problems.' },
+  { id: 'half-chapter', label: 'Halfway there', description: 'Completed 7 of 14 problems.' },
   {
     id: 'all-simulations-complete',
     label: 'Simulation pro',
@@ -130,8 +130,8 @@ export const MILESTONE_DEFINITIONS: MilestoneDefinition[] = [
     label: 'Capstone complete',
     description: 'Finished the final capstone decision.',
   },
-  { id: 'chapter-complete', label: 'Chapter complete', description: 'Finished all 20 problems.' },
-  { id: 'chapter-mastered', label: 'Chapter mastered', description: 'Met mastery criteria for this chapter.' },
+  { id: 'chapter-complete', label: 'Chapter complete', description: 'Finished all 14 problems.' },
+  { id: 'chapter-mastered', label: 'Chapter mastered', description: 'Met mastery criteria for this course.' },
 ]
 
 export function getProblemById(problemId: string): ChapterProblem | undefined {
@@ -150,6 +150,19 @@ export function getAdjacentNextProblemId(problemId: string): string | undefined 
     return undefined
   }
   return CHAPTER_PROBLEMS[meta.globalProblemIndex + 1]?.problemId
+}
+
+/**
+ * The storage ID of the problem immediately before this one in canonical chapter
+ * order (or undefined for the first problem / an unknown ID). Used by
+ * in-problem navigation so Previous follows the same ordering as the course map.
+ */
+export function getAdjacentPreviousProblemId(problemId: string): string | undefined {
+  const meta = getProblemMeta(problemId)
+  if (!meta) {
+    return undefined
+  }
+  return CHAPTER_PROBLEMS[meta.globalProblemIndex - 1]?.problemId
 }
 
 /**

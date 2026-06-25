@@ -27,7 +27,7 @@ export const L5_SAME_EV_DIFFERENT_RISK: PackProblemDefinition = {
   answerInputs: ['evA', 'evB', 'higherRisk', 'reason'],
   correctAnswers: { evA: 5, evB: 5, higherRisk: 'B', reason: 'variable-outcomes' },
   acceptedFormats: {
-    ev: ['5', '5.0', '$5'],
+    ev: ['5', '5.0', '$5', '10/2'],
     higherRisk: ['B', 'Game B', 'game-b'],
     reason: ['variable-outcomes', 'more-spread', 'same-ev-different-risk'],
   },

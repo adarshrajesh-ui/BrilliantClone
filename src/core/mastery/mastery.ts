@@ -12,18 +12,24 @@ import { uniqueCompletedCount } from '../progression/selectors'
 
 export type MasteryStatus = 'Not Started' | 'Learning' | 'Developing' | 'Mastered'
 
-/** Number of "strong" completions (<= 2 graded attempts) required for mastery. */
-export const STRONG_ATTEMPT_THRESHOLD = 15
+/**
+ * Number of "strong" completions (<= 2 graded attempts) required for mastery.
+ * PRD: at least 11 of the 15 problems completed in <= 2 graded attempts.
+ */
+export const STRONG_ATTEMPT_THRESHOLD = 11
 
 /** Max graded attempts for a completion to count as "strong". */
 export const STRONG_ATTEMPT_MAX = 2
 
-/** Canonical slugs whose correct completion is required for chapter mastery. */
+/**
+ * Canonical slugs whose correct completion is required for chapter mastery
+ * (PRD Page 10 revised rule): the final capstone, the payout-vs-profit
+ * distinction, and the equal-EV-vs-risk distinction.
+ */
 export const MASTERY_REQUIRED_SLUGS = {
-  capstone: 'l5-final-capstone-ev-decision',
-  fullModel: 'l5-build-whole-ev-model',
-  payoutVsProfit: 'l4-payout-vs-profit',
-  sameEvDifferentRisk: 'l5-same-ev-different-risk',
+  capstone: 'ev-l5-p3',
+  payoutVsProfit: 'ev-l4-p1',
+  sameEvDifferentRisk: 'ev-l5-p2',
 } as const
 
 /** Coarse mastery status shown in the UI badge. */
@@ -63,7 +69,6 @@ export interface MasteryEvaluationResult {
   mastered: boolean
   allComplete: boolean
   capstoneCorrect: boolean
-  fullModelCorrect: boolean
   payoutVsProfitCorrect: boolean
   sameEvDifferentRiskCorrect: boolean
   strongCompletions: number
@@ -101,7 +106,6 @@ export function evaluateChapterMastery(
   const allComplete = completedCount >= TOTAL_PROBLEMS
 
   const capstoneCorrect = isCorrect(input.correctByProblem, MASTERY_REQUIRED_SLUGS.capstone)
-  const fullModelCorrect = isCorrect(input.correctByProblem, MASTERY_REQUIRED_SLUGS.fullModel)
   const payoutVsProfitCorrect = isCorrect(
     input.correctByProblem,
     MASTERY_REQUIRED_SLUGS.payoutVsProfit,
@@ -136,7 +140,6 @@ export function evaluateChapterMastery(
   const mastered =
     allComplete &&
     capstoneCorrect &&
-    fullModelCorrect &&
     payoutVsProfitCorrect &&
     sameEvDifferentRiskCorrect &&
     strongThresholdMet
@@ -145,7 +148,6 @@ export function evaluateChapterMastery(
     mastered,
     allComplete,
     capstoneCorrect,
-    fullModelCorrect,
     payoutVsProfitCorrect,
     sameEvDifferentRiskCorrect,
     strongCompletions,

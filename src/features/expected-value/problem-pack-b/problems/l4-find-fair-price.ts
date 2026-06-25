@@ -22,9 +22,9 @@ export const L4_FIND_FAIR_PRICE: PackProblemDefinition = {
   answerInputs: ['expectedPayout', 'fairCost', 'expectedProfit', 'classification'],
   correctAnswers: { expectedPayout: 4, fairCost: 4, expectedProfit: 0, classification: 'fair' },
   acceptedFormats: {
-    expectedPayout: ['4', '4.0', '4.00', '$4', '$4.00'],
-    fairCost: ['4', '4.0', '4.00', '$4', '$4.00'],
-    expectedProfit: ['0', '0.0', '$0'],
+    expectedPayout: ['4', '4.0', '4.00', '$4', '$4.00', '8/2'],
+    fairCost: ['4', '4.0', '4.00', '$4', '$4.00', '8/2'],
+    expectedProfit: ['0', '0.0', '$0', '0/1'],
     classification: ['fair'],
   },
   mistakeRules: [

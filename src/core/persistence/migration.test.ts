@@ -31,11 +31,11 @@ describe('normalizeChapterProgress', () => {
     }
     const out = normalizeChapterProgress(legacy, 'uid')
     expect(out.completedProblemIds).toEqual(['problem-1', 'problem-2', 'problem-3'])
-    expect(out.completionPercentage).toBe(15)
+    expect(out.completionPercentage).toBe(21) // 3 of 14
     expect(out.completedLessonIds).toEqual([]) // no lesson fully complete
-    // problem-3 is the farthest completion (L3), so continue routes after it.
+    // Removed problem-3 maps to problem-4, so continue routes after that successor.
     expect(out.currentLessonId).toBe('lesson-3')
-    expect(out.nextProblemId).toBe('problem-4')
+    expect(out.nextProblemId).toBe('ev-l3-p3')
     // Only index 0 (problem-1) is reachable with no gaps.
     expect(out.highestSequentialCompletedGlobalIndex).toBe(0)
     expect(out.streakCount).toBe(4)
@@ -56,7 +56,7 @@ describe('normalizeChapterProgress', () => {
       'uid',
     )
     expect(out.completedProblemIds).toEqual(['problem-1', 'l1-long-run-average'])
-    expect(out.completionPercentage).toBe(5) // counted once
+    expect(out.completionPercentage).toBe(7) // counted once (1 of 14)
   })
 
   it('derives an all-complete chapter and preserves Mastered status', () => {
@@ -90,11 +90,11 @@ describe('mergeChapterProgress (legacy vs new doc)', () => {
     expect(merged.completedProblemIds.sort()).toEqual(
       ['problem-1', 'problem-2', 'problem-3', 'problem-4'].sort(),
     )
-    expect(merged.completionPercentage).toBe(20)
+    expect(merged.completionPercentage).toBe(21) // problem-3 and problem-4 normalize to one successor
   })
 
   it('handles a missing side', () => {
-    expect(mergeChapterProgress(null, { completedProblemIds: ['problem-1'] }, 'uid').completionPercentage).toBe(5)
+    expect(mergeChapterProgress(null, { completedProblemIds: ['problem-1'] }, 'uid').completionPercentage).toBe(7)
     expect(mergeChapterProgress({ completedProblemIds: [] }, null, 'uid').completionPercentage).toBe(0)
   })
 })
@@ -120,12 +120,12 @@ describe('lesson + problem progress normalization', () => {
   it('fills lesson progress defaults from chapter completion', () => {
     const out = normalizeLessonProgress(null, 'uid', 'lesson-1', ['problem-1'])
     expect(out.lessonId).toBe('lesson-1')
-    expect(out.completionPercentage).toBe(25)
+    expect(out.completionPercentage).toBe(33) // 1 of 3
     expect(out.lessonCompleted).toBe(false)
   })
 
   it('marks a fully-completed lesson', () => {
-    const L1 = ['problem-1', 'l1-unequal-spinner', 'l1-short-run-vs-long-run', 'l1-compare-spinners']
+    const L1 = ['problem-1', 'ev-l1-p2', 'ev-l1-p3']
     const out = normalizeLessonProgress(null, 'uid', 'lesson-1', L1)
     expect(out.completionPercentage).toBe(100)
     expect(out.lessonCompleted).toBe(true)

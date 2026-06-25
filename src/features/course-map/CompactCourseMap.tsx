@@ -27,14 +27,16 @@ interface PlacedHole {
 }
 
 /**
- * Compact winding golf-course map that scales cleanly toward 5 zones × 4 holes.
- * Each lesson zone is a serpentine row, so 20 holes fit in a short, readable
- * card rather than a tall vertical strip. Pure SVG/CSS, original artwork only.
+ * Compact winding golf-course map for the 5 zones × 3 holes = 15 hole chapter.
+ * Each lesson zone is a serpentine row, so all 15 holes fit in a short, readable
+ * card rather than a tall vertical strip. The column count is derived from the
+ * widest zone, so the layout adapts if the per-lesson hole count ever changes.
+ * Pure SVG/CSS, original artwork only.
  */
 export function CompactCourseMap({ view, onSelectHole }: CompactCourseMapProps) {
   const { placed, fairway, viewH } = useMemo(() => {
     const zones = view.zones
-    const columns = Math.max(4, ...zones.map((z) => z.holes.length), 1)
+    const columns = Math.max(...zones.map((z) => z.holes.length), 1)
     const usable = VIEW_W - MARGIN_X * 2
     const colGap = columns > 1 ? usable / (columns - 1) : 0
 
@@ -80,7 +82,7 @@ export function CompactCourseMap({ view, onSelectHole }: CompactCourseMapProps) 
     <div
       className="ccm"
       role="img"
-      aria-label={`Course map: ${completed} of ${view.totalHoles} holes complete`}
+      aria-label={`Course map: ${completed} of ${view.totalHoles} problems complete`}
     >
       <svg viewBox={`0 0 ${VIEW_W} ${viewH}`} className="ccm-svg" preserveAspectRatio="xMidYMin meet">
         <defs>
@@ -104,7 +106,7 @@ export function CompactCourseMap({ view, onSelectHole }: CompactCourseMapProps) 
               className={`ccm-hole ccm-hole-${h.state}${h.isFinal ? ' ccm-hole-final' : ''}`}
               role={interactive ? 'button' : undefined}
               tabIndex={interactive ? 0 : undefined}
-              aria-label={`Hole ${h.order}: ${h.title} — ${h.state}`}
+              aria-label={`Problem ${h.order}: ${h.title} — ${h.state}`}
               onClick={interactive ? activate : undefined}
               onKeyDown={
                 interactive
@@ -117,7 +119,8 @@ export function CompactCourseMap({ view, onSelectHole }: CompactCourseMapProps) 
                   : undefined
               }
             >
-              <title>{`Hole ${h.order}: ${h.title} — ${h.state}`}</title>
+              <title>{`Problem ${h.order}: ${h.title} — ${h.state}`}</title>
+              {interactive && <circle cx={h.x} cy={h.y} r="22" className="ccm-hit-area" />}
               {h.isCurrent && <circle cx={h.x} cy={h.y} r={r + 7} className="ccm-glow" />}
               <circle cx={h.x} cy={h.y} r={r} className="ccm-cup" />
               {h.state === 'future' && !h.isFinal && (

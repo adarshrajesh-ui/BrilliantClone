@@ -66,9 +66,9 @@ export function ChapterProgressCard({
     <aside className="chapter-progress-card" aria-label="Current chapter progress">
       <div className="cpc-header">
         <p className="cpc-eyebrow">Current chapter</p>
-        <h2 className="cpc-title">Expected Value Course</h2>
+        <h2 className="cpc-title">Midpoint</h2>
         <p className="cpc-subtitle">
-          Master long-run average, payout, profit, fairness, and risk.
+          Interactive expected value course.
         </p>
       </div>
 
@@ -89,16 +89,18 @@ export function ChapterProgressCard({
 
       <p className="cpc-current">
         {allComplete ? (
-          <>Course complete — replay any hole to review.</>
+          <span className="cpc-current-text">Course complete — replay any problem to review.</span>
         ) : (
           <>
             <span className="cpc-current-flag" aria-hidden="true" />
-            Next up: <strong>Hole {currentNumber}</strong> · {currentProblem?.title}
+            <span className="cpc-current-text">
+              Next up: <strong>Problem {currentNumber}</strong> · {currentProblem?.title}
+            </span>
           </>
         )}
       </p>
 
-      <div className="cpc-course" role="img" aria-label={`Course map: ${completedCount} of ${total} holes complete`}>
+      <div className="cpc-course" role="img" aria-label={`Course map: ${completedCount} of ${total} problems complete`}>
         <svg viewBox={`0 0 ${VIEW_W} ${viewH}`} className="cpc-course-svg" preserveAspectRatio="xMidYMin meet">
           <defs>
             <linearGradient id="cpc-grass" x1="0" y1="0" x2="0" y2="1">
@@ -129,7 +131,7 @@ export function ChapterProgressCard({
                 className={`cpc-hole cpc-hole-${state}${isFinal ? ' cpc-hole-final' : ''}`}
               >
                 <title>
-                  {`Hole ${problem.order}: ${problem.title} — ${
+                  {`Problem ${problem.order}: ${problem.title} — ${
                     isComplete ? 'complete' : isCurrent ? 'current' : 'upcoming'
                   }`}
                 </title>

@@ -66,14 +66,14 @@ const PROBLEM_L1_LONG_RUN_AVERAGE: PackProblem = {
   concept: 'Expected value is the average outcome over many repetitions.',
   difficulty: 1,
   scenarioText:
-    'Bob plays a spinner game with two equal sections: win $10 or win $0. Predict the long-run average, then run at least 100 spins.',
+    'A spinner is divided into two equal sections: one wins $10 and the other wins $0. Predict the long-run average payout per spin, then run at least 100 spins.',
   visualType: 'spinner',
   interactionType: 'simulate-and-predict',
   givenData: { outcomes: [10, 0], probabilities: [0.5, 0.5], minSpins: 100, ev: 5 },
   requiredActions: ['submit-prediction', 'spin-100', 'identify-average'],
   answerInputs: ['prediction', 'finalAnswer'],
   correctAnswers: { finalAnswer: 5 },
-  acceptedFormats: { finalAnswer: ['5', '5.0', '5.00', '$5', '$5.00', '5 dollars', '5 per spin'], prediction: ['0', '5', '10'] },
+  acceptedFormats: { finalAnswer: ['5', '5.0', '5.00', '$5', '$5.00', '5 dollars', '5 per spin', '10/2', '10 / 2'], prediction: ['0', '5', '10'] },
   mistakeRules: [
     { mistakeType: 'chose-extreme-outcome', feedback: 'The long-run average is the midpoint, not an individual outcome.' },
     { mistakeType: 'selected-largest-payout', feedback: 'The largest payout is not the average.' },
@@ -141,7 +141,7 @@ const PROBLEM_L1_UNEQUAL_SPINNER: PackProblem = {
   requiredActions: ['submit-prediction', 'spin-100', 'identify-average'],
   answerInputs: ['prediction', 'finalAnswer'],
   correctAnswers: { finalAnswer: 5 },
-  acceptedFormats: { finalAnswer: ['5', '5.0', '5.00', '$5', '$5.00', '5 dollars'] },
+  acceptedFormats: { finalAnswer: ['5', '5.0', '5.00', '$5', '$5.00', '5 dollars', '10/2', '10 / 2'] },
   mistakeRules: [
     { mistakeType: 'selected-largest-payout', feedback: 'The largest payout is not the average.' },
     { mistakeType: 'ignored-probability', feedback: 'EV weights each payout by its probability.' },
@@ -356,7 +356,7 @@ const PROBLEM_L2_BUILD_WEIGHTED: PackProblem = {
   requiredActions: ['place-outcome-cards', 'place-probability-cards', 'check-pairs', 'submit-ev'],
   answerInputs: ['slots', 'evAnswer'],
   correctAnswers: { slots: ['$20', '25%', '$0', '75%'], ev: 5 },
-  acceptedFormats: { ev: ['5', '5.0', '5.00', '$5', '$5.00'] },
+  acceptedFormats: { ev: ['5', '5.0', '5.00', '$5', '$5.00', '10/2', '10 / 2'] },
   mistakeRules: [
     { mistakeType: 'reversed-outcome-probability', feedback: 'Outcome and probability are swapped.' },
     { mistakeType: 'wrong-pairing', feedback: 'An outcome is paired with the wrong probability.' },
@@ -434,7 +434,7 @@ const PROBLEM_L2_MATCH_OUTCOMES: PackProblem = {
   answerInputs: ['assignments'],
   correctAnswers: { assignments: { '12': '1/3', '3': '1/2', '0': '1/6' } },
   acceptedFormats: {
-    probability: ['1/3', '0.3333', '0.333', '1/2', '0.5', '.5', '50%', '1/6', '0.1667', '0.167'],
+    probability: ['1/3', '2/6', '0.3333', '0.333', '33.333%', '1/2', '3/6', '0.5', '.5', '50%', '50', '1/6', '2/12', '0.1667', '0.167', '16.667%'],
   },
   mistakeRules: [
     { mistakeType: 'ranked-by-size', feedback: 'Do not rank cards by size; read the data.' },
@@ -509,7 +509,11 @@ const PROBLEM_L2_FILL_FORMULA: PackProblem = {
   requiredActions: ['fill-outcome-slot', 'fill-probability-slot', 'submit-ev'],
   answerInputs: ['outcomeSlot', 'probabilitySlot', 'evAnswer'],
   correctAnswers: { outcomeSlot: 10, probabilitySlot: 0.5, contributions: [4, 2.5, 0], ev: 6.5 },
-  acceptedFormats: { ev: ['6.5', '6.50', '$6.50', '$6.5'] },
+  acceptedFormats: {
+    outcomeSlot: ['10', '10.0', '20/2', '20 / 2'],
+    probabilitySlot: ['0.5', '.5', '1/2', '50%', '50'],
+    ev: ['6.5', '6.50', '$6.50', '$6.5', '13/2', '13 / 2'],
+  },
   mistakeRules: [
     { mistakeType: 'slot-type-error', feedback: 'An outcome or probability is in the wrong slot.' },
     { mistakeType: 'unweighted-sum', feedback: 'Add contributions, not raw payouts.' },
@@ -674,7 +678,7 @@ const PROBLEM_L3_MYSTERY_BOXES: PackProblem = {
   concept: 'Expected value can be calculated from counts rather than prewritten percentages.',
   difficulty: 3,
   scenarioText:
-    'Bob chooses one of 6 boxes: 1 has $12, 2 have $6, and 3 have $0. Reveal all boxes, then complete the count and probability for each outcome.',
+    'One of 6 identical boxes is chosen at random: 1 holds $12, 2 hold $6, and 3 hold $0. Reveal all boxes, then complete the count and probability for each outcome.',
   visualType: 'mystery-boxes',
   interactionType: 'reveal-and-table',
   givenData: { boxes: [12, 6, 6, 0, 0, 0], total: 6 },
@@ -688,9 +692,10 @@ const PROBLEM_L3_MYSTERY_BOXES: PackProblem = {
     ],
   },
   acceptedFormats: {
+    count: ['1', '1.0', '2/2', '2', '2.0', '4/2', '3', '3.0', '6/2'],
     'probability-12': ['1/6', '0.1667', '0.167'],
-    'probability-6': ['2/6', '1/3', '0.3333', '0.333'],
-    'probability-0': ['3/6', '1/2', '0.5', '.5', '50%'],
+    'probability-6': ['2/6', '1/3', '0.3333', '0.333', '33.333%'],
+    'probability-0': ['3/6', '1/2', '0.5', '.5', '50%', '50'],
   },
   mistakeRules: [
     { mistakeType: 'counts-as-probabilities', feedback: 'Probability is count ÷ total boxes.' },
@@ -774,8 +779,8 @@ const PROBLEM_L3_CALCULATE_EV: PackProblem = {
   answerInputs: ['contributions', 'evAnswer'],
   correctAnswers: { contributions: [2, 2, 0], ev: 4 },
   acceptedFormats: {
-    contribution: ['2', '2.0', '$2', '0', '$0'],
-    ev: ['4', '4.0', '4.00', '$4', '$4.00'],
+    contribution: ['2', '2.0', '$2', '4/2', '4 / 2', '0', '$0', '0/3'],
+    ev: ['4', '4.0', '4.00', '$4', '$4.00', '8/2', '8 / 2'],
   },
   mistakeRules: [
     { mistakeType: 'arithmetic-error', feedback: 'Contribution = outcome × probability.' },

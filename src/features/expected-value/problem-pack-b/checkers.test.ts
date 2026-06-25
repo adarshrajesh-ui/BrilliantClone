@@ -45,6 +45,11 @@ describe('11 — repair probability table', () => {
     expect(checkRepairProbabilityTable(repair('1/8', '3/8', '.5')).canComplete).toBe(true)
   })
 
+  it('accepts percent and whitespace probability equivalents', () => {
+    expect(checkRepairProbabilityTable(repair('12.5%', '37.5%', '50%')).canComplete).toBe(true)
+    expect(checkRepairProbabilityTable(repair(' 1 / 8 ', ' 3 / 8 ', ' 4 / 8 ')).canComplete).toBe(true)
+  })
+
   it('flags wrong denominator and count-as-probability deterministically', () => {
     expect(checkRepairProbabilityTable(repair('1/8', '3/10', '4/8')).mistakeType).toBe('wrong-denominator')
     expect(checkRepairProbabilityTable(repair('1/8', '3', '4/8')).mistakeType).toBe('count-as-probability')
@@ -73,6 +78,10 @@ describe('12 — prize bag EV table', () => {
     expect(checkPrizeBagEvTable(prizeBag('2', '1/5', '3', '3', '0.3', '1.5', '5', '1/2', '0', '4.5')).canComplete).toBe(true)
   })
 
+  it('accepts equivalent fractions and whitespace in count, contribution, and EV fields', () => {
+    expect(checkPrizeBagEvTable(prizeBag('4/2', '20%', '6/2', ' 6 / 2 ', '30%', '3/2', '10/2', '50%', '0/5', '9/2')).canComplete).toBe(true)
+  })
+
   it('detects omitted-zero and unweighted-sum', () => {
     expect(checkPrizeBagEvTable(prizeBag('2', '0.2', '3', '3', '0.3', '1.5', '5', '0.5', '2', '4.5')).mistakeType).toBe('omitted-zero-outcome')
     expect(checkPrizeBagEvTable(prizeBag('2', '0.2', '15', '3', '0.3', '5', '5', '0.5', '0', '20')).mistakeType).toBe('unweighted-sum')
@@ -88,6 +97,7 @@ describe('12 — prize bag EV table', () => {
 describe('13 — payout vs profit (problem-5)', () => {
   it('accepts $1 and rejects payout/added/reversed', () => {
     expect(checkPayoutVsProfit({ formulaSelected: true, profitAnswer: '1' }).canComplete).toBe(true)
+    expect(checkPayoutVsProfit({ formulaSelected: true, profitAnswer: '2/2' }).canComplete).toBe(true)
     expect(checkPayoutVsProfit({ formulaSelected: true, profitAnswer: '4' }).mistakeType).toBe('answered-payout')
     expect(checkPayoutVsProfit({ formulaSelected: true, profitAnswer: '7' }).mistakeType).toBe('added-cost')
     expect(checkPayoutVsProfit({ formulaSelected: true, profitAnswer: '-1' }).mistakeType).toBe('reversed-subtraction')
@@ -111,6 +121,7 @@ describe('14 — fairness sort (problem-6)', () => {
 describe('15 — find the fair price', () => {
   it('accepts payout/cost/profit/class = 4/4/0/fair', () => {
     expect(checkFindFairPrice({ expectedPayout: '4', fairCost: '4', expectedProfit: '0', classification: 'fair' }).canComplete).toBe(true)
+    expect(checkFindFairPrice({ expectedPayout: '8/2', fairCost: ' 12 / 3 ', expectedProfit: '0/4', classification: 'fair' }).canComplete).toBe(true)
   })
   it('flags largest payout and cost-below / cost-above mistakes', () => {
     expect(checkFindFairPrice({ expectedPayout: '8', fairCost: '4', expectedProfit: '0', classification: 'fair' }).mistakeType).toBe('used-largest-payout')
@@ -122,6 +133,7 @@ describe('15 — find the fair price', () => {
 describe('16 — choose better game after cost', () => {
   it('accepts profits 2/3 and choice B', () => {
     expect(checkChooseBetterGame({ profitA: '2', profitB: '3', betterGame: 'B' }).canComplete).toBe(true)
+    expect(checkChooseBetterGame({ profitA: '4/2', profitB: '9/3', betterGame: 'Game B' }).canComplete).toBe(true)
   })
   it('detects largest-payout misconception and cost errors', () => {
     expect(checkChooseBetterGame({ profitA: '2', profitB: '3', betterGame: 'A' }).mistakeType).toBe('largest-payout-misconception')
@@ -140,6 +152,13 @@ describe('17 — build whole EV model (problem-7)', () => {
   })
   it('accepts the full model and rejects count/profit/decision mistakes', () => {
     expect(checkWholeEvModel(model(['1/10', '2/10', '7/10'], '0', 'fair')).canComplete).toBe(true)
+    expect(checkWholeEvModel({
+      probabilities: ['10%', '20%', '70%'],
+      contributions: ['6/2', '20/10', '0/7'],
+      expectedPayout: '10/2',
+      expectedProfit: '0/5',
+      decision: 'fair',
+    }).canComplete).toBe(true)
     expect(checkWholeEvModel(model(['1', '2', '7'], '0', 'fair')).mistakeType).toBe('count-not-probability')
     expect(checkWholeEvModel(model(['1/10', '2/10', '7/10'], '5', 'fair')).mistakeType).toBe('payout-not-profit')
     expect(checkWholeEvModel(model(['1/10', '2/10', '7/10'], '0', 'favorable')).mistakeType).toBe('fair-marked-favorable')
@@ -151,6 +170,7 @@ describe('18 — same EV, different risk (problem-8)', () => {
   it('accepts EV 5/5 + B + variable reason', () => {
     expect(checkSameEvDifferentRisk({ ...base, evA: '5', evB: '5', higherRisk: 'Game B', reason: 'variable-outcomes' }).canComplete).toBe(true)
     expect(checkSameEvDifferentRisk({ ...base, evA: '5', evB: '5', higherRisk: 'B', reason: 'more spread, can be 0 or 10' }).canComplete).toBe(true)
+    expect(checkSameEvDifferentRisk({ ...base, evA: '10/2', evB: '15/3', higherRisk: 'B', reason: 'variable outcomes' }).canComplete).toBe(true)
   })
   it('rejects higher-EV, identical, and contradictory reasons', () => {
     expect(checkSameEvDifferentRisk({ ...base, evA: '5', evB: '10', higherRisk: 'B', reason: 'variable-outcomes' }).mistakeType).toBe('b-higher-ev')
@@ -167,6 +187,7 @@ describe('19 — low vs high risk', () => {
   it('accepts EV 6/6 + B + wider spread', () => {
     expect(checkLowVsHighRisk({ ...base, evA: '6', evB: '6', higherRisk: 'B', reason: 'wider-spread' }).canComplete).toBe(true)
     expect(checkLowVsHighRisk({ ...base, evA: '6', evB: '6', higherRisk: 'Game B', reason: 'wider range, can be 0 or 12' }).canComplete).toBe(true)
+    expect(checkLowVsHighRisk({ ...base, evA: '12/2', evB: '18/3', higherRisk: 'Game B', reason: 'wider spread' }).canComplete).toBe(true)
   })
   it('rejects higher-EV and average-vs-guaranteed', () => {
     expect(checkLowVsHighRisk({ ...base, evA: '6', evB: '12', higherRisk: 'B', reason: 'wider-spread' }).mistakeType).toBe('b-higher-ev')
@@ -188,6 +209,14 @@ describe('20 — final capstone', () => {
     expect(checkCapstone(base('fair-but-variable', ['1/12', '1/4', '2/3'])).canComplete).toBe(true)
     expect(checkCapstone(base('can be 0, 12, or 36', ['0.083', '0.25', '0.667'])).canComplete).toBe(true)
     expect(checkCapstone(base('not guaranteed', ['0.0833', '0.25', '0.6667'])).canComplete).toBe(true)
+    expect(checkCapstone({
+      probabilities: ['8.33%', '25%', '66.67%'],
+      contributions: ['9/3', '12/4', '0/8'],
+      expectedPayout: '12/2',
+      expectedProfit: '0/6',
+      decision: 'fair',
+      riskExplanation: 'fair but variable',
+    }).canComplete).toBe(true)
   })
   it('rejects fair-means-no-risk and average-not-guaranteed', () => {
     expect(checkCapstone(base('no risk because it is fair')).mistakeType).toBe('fair-means-no-risk')

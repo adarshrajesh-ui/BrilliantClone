@@ -1,0 +1,69 @@
+/* Dealt-Hand Contributions (ev-l3-p2) — read-only given columns + one editable
+   contribution column. Reuses the shared .prob-table look; this only tunes the
+   given cells so they read clearly as fixed data. */
+
+.dealt-hand-table .prob-cell-given {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.dealt-hand-table input {
+  width: 100%;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .dealt-hand-table {
+    display: block;
+    min-width: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .dealt-hand-table thead {
+    display: none;
+  }
+
+  .dealt-hand-table tbody {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .dealt-hand-table tr {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+  }
+
+  .dealt-hand-table .prob-row-active {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+  }
+
+  .dealt-hand-table td {
+    display: grid;
+    grid-template-columns: minmax(6.2rem, 42%) minmax(0, 1fr);
+    align-items: center;
+    gap: 0.55rem;
+    border: 0;
+    padding: 0;
+    text-align: left;
+  }
+
+  .dealt-hand-table td::before {
+    content: attr(data-label);
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .dealt-hand-table input {
+    min-height: 42px;
+  }
+}

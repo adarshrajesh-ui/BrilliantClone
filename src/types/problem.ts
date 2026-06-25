@@ -38,6 +38,16 @@ export interface MistakeRule {
   feedback: string
 }
 
+/** Hand-written post-completion teaching copy shown after a correct answer. */
+export interface TeachingExplanation {
+  /** Section heading, e.g. "Why this makes sense". */
+  title: string
+  /** One or more paragraphs of intuition-building explanation. */
+  body: string[]
+  /** Optional one-line concept the learner should remember. */
+  takeaway?: string
+}
+
 export interface ProblemDefinition {
   problemId: string
   title: string
@@ -53,9 +63,18 @@ export interface ProblemDefinition {
   acceptedFormats: Record<string, string[]>
   mistakeRules: MistakeRule[]
   feedback: Record<string, string>
+  /** Rich teaching explanation shown on correct completion (not the raw answer). */
+  teachingExplanation?: TeachingExplanation
   hints: ProblemHint[]
   completionRule: string
   masteryTags: string[]
+  /** Canonical slug (`ev-l{N}-p{M}`); optional metadata mirrored from the model. */
+  canonicalSlug?: string
+  /** Prior canonical slug for backward-compatible references. */
+  legacyProblemId?: string
+  /** PRD workspace layout hints (descriptive metadata). */
+  desktopWorkspaceLayout?: string
+  mobileWorkspaceLayout?: string
 }
 
 export interface CheckResult {
@@ -65,19 +84,9 @@ export interface CheckResult {
   canComplete: boolean
 }
 
-export type Problem1Choice = 0 | 5 | 10
-
-export interface Problem1CheckInput {
-  predictionSubmitted: boolean
-  totalSpins: number
-  finalAnswer: Problem1Choice | null
-}
-
-export interface Problem2CheckInput {
-  slots: [string, string, string, string]
-  evAnswer: string
-}
-
+// CheckInput shapes for the three checkers that still live in
+// `src/lib/answerChecker.ts` (problem-3/4/6). The other twelve problems define
+// their CheckInput types co-located with their component/checker files.
 export interface Problem3CheckInput {
   allRevealed: boolean
   rows: Array<{ outcome: number; count: string; probability: string }>
@@ -88,38 +97,6 @@ export interface Problem4CheckInput {
   evAnswer: string
 }
 
-export interface Problem5CheckInput {
-  formulaSelected: boolean
-  profitAnswer: string
-}
-
 export interface Problem6CheckInput {
   assignments: Record<string, string>
 }
-
-export interface Problem7CheckInput {
-  probabilities: [string, string, string]
-  contributions: [string, string, string]
-  expectedPayout: string
-  expectedProfit: string
-  decision: string
-}
-
-export interface Problem8CheckInput {
-  gameASimulated: boolean
-  gameBSimulated: boolean
-  evA: string
-  evB: string
-  higherRisk: string
-  reason: string
-}
-
-export type ProblemCheckInput =
-  | Problem1CheckInput
-  | Problem2CheckInput
-  | Problem3CheckInput
-  | Problem4CheckInput
-  | Problem5CheckInput
-  | Problem6CheckInput
-  | Problem7CheckInput
-  | Problem8CheckInput

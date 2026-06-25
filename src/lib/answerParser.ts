@@ -12,47 +12,55 @@ function preClean(value: unknown): string {
   return String(value)
     .trim()
     .toLowerCase()
+    .replace(/\u2212/g, '-')
     .replace(/[$,]/g, '')
     .replace(MONEY_WORDS, '')
     .replace(RATE_WORDS, '')
     .trim()
 }
 
-/** Accepts 5, 5.0, 5.00, $5, $5.00, "5 dollars", "5 per spin", whitespace variants. */
-export function normalizeMoneyAnswer(value: unknown): number | null {
-  const cleaned = preClean(value)
-  if (cleaned === '') {
-    return null
-  }
-  const num = Number(cleaned)
-  return Number.isFinite(num) ? num : null
-}
+const NUMBER_PART = String.raw`[+-]?\s*(?:\d+(?:\.\d*)?|\.\d+)`
+const FRACTION_RE = new RegExp(String.raw`^(${NUMBER_PART})\s*\/\s*(${NUMBER_PART})$`)
 
-/** Accepts money/decimal/percent/fraction forms and returns the literal numeric value. */
-export function normalizeNumericAnswer(value: unknown): number | null {
-  const cleaned = preClean(value)
+function parseFiniteNumber(cleaned: string, options: { allowPercent: boolean }): number | null {
   if (cleaned === '') {
     return null
   }
   if (cleaned.includes('/')) {
-    const parts = cleaned.split('/')
-    if (parts.length !== 2) {
+    const match = cleaned.match(FRACTION_RE)
+    if (!match) {
       return null
     }
-    const a = Number(parts[0].trim())
-    const b = Number(parts[1].trim())
-    if (Number.isFinite(a) && Number.isFinite(b) && b !== 0) {
-      return a / b
+    const numerator = Number(match[1].replace(/\s+/g, ''))
+    const denominator = Number(match[2].replace(/\s+/g, ''))
+    if (Number.isFinite(numerator) && Number.isFinite(denominator) && denominator !== 0) {
+      return numerator / denominator
     }
     return null
   }
+
   const isPercent = cleaned.endsWith('%')
+  if (isPercent && !options.allowPercent) {
+    return null
+  }
   const core = isPercent ? cleaned.slice(0, -1).trim() : cleaned
   const num = Number(core)
   if (!Number.isFinite(num)) {
     return null
   }
   return isPercent ? num / 100 : num
+}
+
+/** Accepts 5, 5.0, 5.00, $5, $5.00, "5 dollars", fractions, negative values, "5 per spin", whitespace variants. */
+export function normalizeMoneyAnswer(value: unknown): number | null {
+  const cleaned = preClean(value)
+  return parseFiniteNumber(cleaned, { allowPercent: false })
+}
+
+/** Accepts money/decimal/percent/fraction forms and returns the literal numeric value. */
+export function normalizeNumericAnswer(value: unknown): number | null {
+  const cleaned = preClean(value)
+  return parseFiniteNumber(cleaned, { allowPercent: true })
 }
 
 /**
@@ -66,23 +74,14 @@ export function parseProbabilityAnswer(value: unknown): number | null {
     return null
   }
   if (cleaned.endsWith('%')) {
-    const n = Number(cleaned.slice(0, -1).trim())
-    return Number.isFinite(n) ? n / 100 : null
+    const n = parseFiniteNumber(cleaned.slice(0, -1).trim(), { allowPercent: false })
+    return n === null ? null : n / 100
   }
   if (cleaned.includes('/')) {
-    const parts = cleaned.split('/')
-    if (parts.length !== 2) {
-      return null
-    }
-    const a = Number(parts[0].trim())
-    const b = Number(parts[1].trim())
-    if (Number.isFinite(a) && Number.isFinite(b) && b !== 0) {
-      return a / b
-    }
-    return null
+    return parseFiniteNumber(cleaned, { allowPercent: false })
   }
-  const n = Number(cleaned)
-  if (!Number.isFinite(n)) {
+  const n = parseFiniteNumber(cleaned, { allowPercent: false })
+  if (n === null) {
     return null
   }
   return n > 1 ? n / 100 : n

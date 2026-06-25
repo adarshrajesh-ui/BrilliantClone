@@ -12,9 +12,9 @@ export function ProblemPlaceholderPage() {
       <div className="page">
         <section className="card">
           <h1>Problem not found</h1>
-          <p>This problem does not exist in the Expected Value chapter.</p>
+          <p>This problem does not exist in this course.</p>
           <Link to={CHAPTER_PATH} className="btn-secondary">
-            Back to chapter
+            Back to course map
           </Link>
         </section>
       </div>
@@ -30,12 +30,12 @@ export function ProblemPlaceholderPage() {
         <h1>{problem.title}</h1>
         <p>{problem.concept}</p>
         <p className="placeholder-note">
-          Interactive visuals and answer checking for this problem will be added in a later
-          checkpoint. Your progress is saved when you complete problems.
+          This problem page is being updated. Your progress stays saved as you complete
+          available problems.
         </p>
         <div className="placeholder-actions">
           <Link to={CHAPTER_PATH} className="btn-secondary">
-            Back to chapter
+            Back to course map
           </Link>
         </div>
       </section>

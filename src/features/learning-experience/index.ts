@@ -14,11 +14,17 @@ export {
 } from './ProblemStepChecklist'
 export { LearningCoachPanel } from './LearningCoachPanel'
 export type { LearningCoachPanelProps } from './LearningCoachPanel'
+export { TeachingExplanationSection } from './TeachingExplanationSection'
+export type { TeachingExplanationSectionProps } from './TeachingExplanationSection'
+export { QuestionPrompt } from './QuestionPrompt'
+export type { QuestionPromptProps } from './QuestionPrompt'
 export { InlineFieldStatus, toInlineStatus } from './InlineFieldStatus'
 export { ReviewModeBanner } from './ReviewModeBanner'
 export { RestartProblemAction } from './RestartProblemAction'
 export { ShowDemoAgainAction } from './ShowDemoAgainAction'
 export { ResponsiveProblemShell } from './ResponsiveProblemShell'
+export { WorkspaceSteps } from './WorkspaceSteps'
+export type { WorkspaceStepDef, WorkspaceStepsProps } from './WorkspaceSteps'
 
 export { useDemoVisibility } from './useDemoVisibility'
 export type { DemoVisibility } from './useDemoVisibility'
@@ -45,6 +51,7 @@ export {
   animationClass,
   usePrefersReducedMotion,
   getPrefersReducedMotion,
+  prefersReducedMotion,
 } from './animations'
 export type { AnimationName } from './animations'
 

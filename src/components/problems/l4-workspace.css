@@ -1,0 +1,84 @@
+/* Lesson 4 no-scroll workspace presentation helpers (T-104).
+   Layout/compaction ONLY — no math/validation/checker behavior lives here.
+   The .ws-* affordance classes are owned by the foundation (workspace.css);
+   these rules only arrange the existing problem markup inside a step panel. */
+
+/* Each step body is a single compact column so the foundation's .ws-compact
+   gap applies (gap needs a flex/grid container). */
+.l4-sort-step,
+.l4-better-step {
+  display: flex;
+  flex-direction: column;
+}
+
+/* The fairness number line is a short helper visual that shares the sort step
+   with the cards + buckets, so it must NOT grow to fill the panel (the
+   foundation's .ws-visual is flex:1 by default for full-panel visuals). */
+.l4-sort-step .l4-numberline {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+/* Keep the sort's card + bucket rows centered and wrapping so nothing forces
+   horizontal scroll on narrow screens. */
+.l4-sort-step .game-cards,
+.l4-sort-step .bucket-row {
+  justify-content: center;
+}
+
+/* Compact the better-game cards on small screens so the compare step fits one
+   phone screen without page scroll. */
+@media (max-width: 390px) {
+  .l4-better-step .better-game-cards {
+    gap: 0.6rem;
+  }
+  .l4-better-step .better-game-profit-row {
+    gap: 0.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .l4-sort-step .game-cards,
+  .l4-sort-step .bucket-row {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .l4-sort-step .game-card {
+    padding: 0.65rem;
+  }
+
+  .l4-sort-step .bucket {
+    min-height: 58px;
+    padding: 0.55rem;
+  }
+
+  .l4-sort-step .fairness-line {
+    margin: 0.4rem 0;
+  }
+
+  .l4-sort-step .placeholder-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin: 0.4rem -0.15rem 0;
+    padding: 0.55rem 0.15rem 0.15rem;
+    background: var(--bg, #f8fafc);
+    border-top: 1px solid var(--border, #e5e7eb);
+  }
+
+  .l4-sort-step .placeholder-actions .btn-secondary,
+  .l4-sort-step .placeholder-actions .btn-text,
+  .l4-better-step .ws-step-check {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .problem-workspace:has(.l4-sort-step) .ws-advance-hint,
+  .problem-workspace:has(.l4-better-step) .ws-advance-hint {
+    display: inline;
+    max-width: none;
+  }
+}

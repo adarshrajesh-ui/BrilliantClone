@@ -7,18 +7,14 @@ export function LoginPage() {
   return (
     <div className="page-center">
       <div className="card login-card">
-        <h1>Expected Value Lab</h1>
+        <h1>Midpoint</h1>
         <p className="subtitle">
-          Learn expected value through visual, interactive problems.
+          A hands-on course on expected value.
         </p>
 
         {!firebaseConfigured ? (
           <div className="setup-notice">
-            <p>
-              Firebase is not configured yet. Copy <code>.env.example</code> to{' '}
-              <code>.env</code> and add your Firebase web app credentials.
-            </p>
-            <p>See README.md for step-by-step Firebase console setup.</p>
+            <p>Sign-in is temporarily unavailable. You can still continue as a guest.</p>
           </div>
         ) : (
           <GoogleSignInButton />

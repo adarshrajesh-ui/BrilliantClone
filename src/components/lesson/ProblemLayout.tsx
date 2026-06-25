@@ -1,26 +1,37 @@
 import type { ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import type { CheckResult, ProblemDefinition, ProblemHint } from '../../types/problem'
-import { CHAPTER_PROBLEMS, getAdjacentNextProblemId, getProblemMeta } from '../../data/chapter'
-import { getNextImplementedProblemId } from '../../data/implementedProblems'
+import {
+  CHAPTER_PROBLEMS,
+  getAdjacentNextProblemId,
+  getAdjacentPreviousProblemId,
+  getProblemMeta,
+} from '../../data/chapter'
+import {
+  getNextImplementedProblemId,
+  getPreviousImplementedProblemId,
+} from '../../data/implementedProblems'
 import { HintPanel } from './HintPanel'
 import {
   ResponsiveProblemShell,
+  WorkspaceSteps,
   LearningCoachPanel,
   ProblemIntroDemo,
   ReviewModeBanner,
   ShowDemoAgainAction,
+  TeachingExplanationSection,
   useDemoVisibility,
   checkResultToCoachFeedback,
   configKeyFor,
 } from '../../features/learning-experience'
-import type { DemoStepConfig } from '../../features/learning-experience'
+import type { DemoStepConfig, WorkspaceStepDef } from '../../features/learning-experience'
 
 const CHAPTER_PATH = '/chapter/expected-value-intro'
 
 const VISUAL_CUES: Record<string, string> = {
   spinner: 'the running-average graph',
   'spinner-graph': 'the running-average graph',
+  'dice-tray': 'the running-average graph and the sum histogram',
   'formula-builder': 'the formula you built',
   'weighted-average': 'the formula you built',
   'mystery-boxes': 'the revealed boxes',
@@ -39,7 +50,11 @@ interface ProblemLayoutProps {
   problem: ProblemDefinition
   problemNumber: number
   totalProblems?: number
-  children: ReactNode
+  /**
+   * Legacy stacked problem content. Optional: when `steps` is provided the
+   * workspace renders those instead and `children` is ignored.
+   */
+  children?: ReactNode
   feedback: CheckResult | null
   completed: boolean
   revealedHintIds: string[]
@@ -71,59 +86,41 @@ interface ProblemLayoutProps {
   demoFinalCta?: string
   /** Short concept reinforcement shown by the coach on a correct answer. */
   conceptSummary?: string
+  /**
+   * Ordered no-scroll step panels. When provided (and the problem is in the
+   * interactive, non-review state), the workspace renders ONE step at a time
+   * inside a fixed-viewport panel with a Prev/Next bottom bar + step indicator.
+   * The Learning Coach feedback and Continue action render in the same bottom
+   * bar (same panel as the attempted action). When omitted, `children` render
+   * as before (legacy scroll fallback).
+   */
+  steps?: WorkspaceStepDef[]
+  /**
+   * Forwarded to WorkspaceSteps.onStepChange. Pass `session.clearFeedback` so
+   * stale coach feedback clears when the learner moves between steps and never
+   * bleeds across them.
+   */
+  onStepChange?: () => void
 }
 
 /**
- * Render a recorded final answer for review. Most problems store a short string,
- * but defensively handle any legacy structured answers (e.g. a JSON array of
- * probability-table rows) so learners never see raw JSON in review/completed state.
+ * Completed-problem review: confirmation, teaching explanation, and attempt stats.
+ * Never surfaces a bare "your final answer" recap — the teaching block carries the
+ * intuition instead.
  */
-function ReviewAnswer({ value }: { value: string }) {
-  const trimmed = value.trim()
-  if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-    try {
-      const parsed = JSON.parse(trimmed)
-      const rows = Array.isArray(parsed) ? parsed : [parsed]
-      const looksLikeTableRows = rows.every(
-        (r) => r && typeof r === 'object' && ('outcome' in r || 'count' in r || 'probability' in r),
-      )
-      if (looksLikeTableRows) {
-        return (
-          <ul className="review-answer-rows">
-            {rows.map((r, i) => {
-              const outcome = r.outcome != null ? String(r.outcome) : '—'
-              const count = r.count != null && r.count !== '' ? String(r.count) : '—'
-              const probability =
-                r.probability != null && r.probability !== '' ? String(r.probability) : '—'
-              return (
-                <li key={i}>
-                  {outcome} → count {count} → probability {probability}
-                </li>
-              )
-            })}
-          </ul>
-        )
-      }
-    } catch {
-      // Not valid JSON — fall through and render as plain text.
-    }
-  }
-  return <p className="review-row-value">{value}</p>
-}
-
 function ReviewDetail({
   problem,
   completionMessage,
+  previousProblemId,
   nextProblemId,
   attemptCount,
-  lastSubmittedAnswer,
   reviewHintUsed,
 }: {
   problem: ProblemDefinition
   completionMessage?: string
+  previousProblemId?: string
   nextProblemId?: string
   attemptCount?: number
-  lastSubmittedAnswer?: string | null
   reviewHintUsed?: boolean
 }) {
   const correctFeedback =
@@ -140,11 +137,8 @@ function ReviewDetail({
         <p className="review-row-value">{correctFeedback}</p>
       </div>
 
-      {lastSubmittedAnswer != null && lastSubmittedAnswer !== '' && (
-        <div className="review-row">
-          <span className="review-row-label">Your final answer</span>
-          <ReviewAnswer value={lastSubmittedAnswer} />
-        </div>
+      {problem.teachingExplanation && (
+        <TeachingExplanationSection explanation={problem.teachingExplanation} />
       )}
 
       {completionMessage && (
@@ -172,16 +166,59 @@ function ReviewDetail({
       </ul>
 
       <div className="placeholder-actions">
-        {nextProblemId && (
-          <Link to={`${CHAPTER_PATH}/problem/${nextProblemId}`} className="btn-secondary">
-            Continue to next problem
-          </Link>
-        )}
+        <ProblemNavigationControls
+          previousProblemId={previousProblemId}
+          nextProblemId={nextProblemId}
+          nextEnabled
+        />
         <Link to={CHAPTER_PATH} className="btn-text-link">
-          Back to chapter
+          Back to course map
         </Link>
       </div>
     </section>
+  )
+}
+
+function problemHref(problemId: string): string {
+  return `${CHAPTER_PATH}/problem/${problemId}`
+}
+
+function ProblemNavigationControls({
+  previousProblemId,
+  nextProblemId,
+  nextEnabled,
+}: {
+  previousProblemId?: string
+  nextProblemId?: string
+  nextEnabled: boolean
+}) {
+  if (!previousProblemId && !nextProblemId) {
+    return null
+  }
+
+  return (
+    <nav className="problem-nav-controls" aria-label="Problem navigation">
+      {previousProblemId && (
+        <Link to={problemHref(previousProblemId)} className="btn-text problem-prev-link">
+          ← Previous problem
+        </Link>
+      )}
+      {nextProblemId &&
+        (nextEnabled ? (
+          <Link to={problemHref(nextProblemId)} className="btn-secondary touch-target problem-next-link">
+            Next problem →
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className="btn-secondary touch-target problem-next-link"
+            disabled
+            title="Answer this problem correctly to unlock Next."
+          >
+            Next problem →
+          </button>
+        ))}
+    </nav>
   )
 }
 
@@ -202,15 +239,17 @@ export function ProblemLayout({
   onRestart,
   onReview,
   attemptCount,
-  lastSubmittedAnswer,
   reviewHintUsed,
   demoSteps,
   demoFinalCta,
   conceptSummary,
+  steps: workspaceSteps,
+  onStepChange,
 }: ProblemLayoutProps) {
-  const navigate = useNavigate()
-  const showReview = completed && !restarted
-  const showInteractive = !completed || restarted
+  const freshlyCompleted = feedback?.canComplete === true && !restarted
+  const showReview = completed && !restarted && !freshlyCompleted
+  const showInteractive = !showReview
+  const useWorkspace = !!workspaceSteps && workspaceSteps.length > 0
 
   // Single source of truth for ordering: derive the displayed problem number and
   // the "next problem" target from the canonical chapter model (keyed by storage
@@ -225,6 +264,10 @@ export function ProblemLayout({
     getNextImplementedProblemId(problem.problemId) ??
     getAdjacentNextProblemId(problem.problemId) ??
     nextProblemId
+  const resolvedPreviousProblemId =
+    getPreviousImplementedProblemId(problem.problemId) ??
+    getAdjacentPreviousProblemId(problem.problemId)
+  const canNavigateNextProblem = completed || feedback?.canComplete === true
 
   // A demo exists only when the problem introduces a brand-new UI interaction
   // and supplies steps for it. Otherwise there is no demo at all.
@@ -241,7 +284,7 @@ export function ProblemLayout({
   const header = (
     <>
       <nav className="problem-nav">
-        <Link to={CHAPTER_PATH}>← Back to chapter</Link>
+        <Link to={CHAPTER_PATH}>← Back to course map</Link>
       </nav>
       <header className="problem-header">
         <p className="chapter-eyebrow">
@@ -270,7 +313,10 @@ export function ProblemLayout({
   }
 
   const coachFeedback = feedback
-    ? checkResultToCoachFeedback(feedback, { conceptSummary })
+    ? checkResultToCoachFeedback(feedback, {
+        conceptSummary,
+        teaching: problem.teachingExplanation,
+      })
     : null
   const hintsRemaining = problem.hints.length - revealedHintIds.length
   const revealNextHint = () => {
@@ -278,6 +324,79 @@ export function ProblemLayout({
     if (next) {
       onRevealHint(next.id)
     }
+  }
+
+  // Shared pieces reused by both the no-scroll workspace and the legacy shell.
+  const restartBanner =
+    completed && restarted ? (
+      <section className="card restart-banner" role="status">
+        <p className="restart-banner-title">Restarted practice attempt</p>
+        <p className="restart-banner-sub">
+          This is a fresh attempt — your chapter progress is already saved and won't change.
+        </p>
+        {onReview && (
+          <button type="button" className="btn-text" onClick={onReview}>
+            ← Back to review
+          </button>
+        )}
+      </section>
+    ) : undefined
+
+  const learningCoachNode = coachFeedback ? (
+    <LearningCoachPanel
+      feedback={coachFeedback}
+      onRequestHint={hideHints ? undefined : revealNextHint}
+      hintsRemaining={hideHints ? 0 : hintsRemaining}
+    />
+  ) : null
+  const problemNavigationNode = (
+    <ProblemNavigationControls
+      previousProblemId={resolvedPreviousProblemId}
+      nextProblemId={resolvedNextProblemId}
+      nextEnabled={canNavigateNextProblem}
+    />
+  )
+  const coachPanelNode = learningCoachNode || !useWorkspace ? (
+    <div className="problem-coach-stack">
+      {learningCoachNode}
+      {!useWorkspace && problemNavigationNode}
+    </div>
+  ) : null
+
+  const hintPanelNode = !hideHints ? (
+    <HintPanel
+      hints={problem.hints}
+      revealedHintIds={revealedHintIds}
+      onRevealHint={onRevealHint}
+      visualCue={visualCueFor(problem.visualType)}
+    />
+  ) : undefined
+
+  // No-scroll Brilliant-like workspace. Applies only to the interactive solving
+  // state; review/demo keep their existing rendering. The workspace renders its
+  // own compact header, so the legacy back-nav/header stack is omitted here.
+  if (useWorkspace && showInteractive) {
+    return (
+      <div className="page problem-page">
+        <WorkspaceSteps
+          problemTitle={problem.title}
+          scenarioText={problem.scenarioText}
+          problemNumber={resolvedProblemNumber}
+          totalProblems={totalProblems}
+          steps={workspaceSteps!}
+          banner={restartBanner}
+          coachPanel={coachPanelNode}
+          previousProblemHref={
+            resolvedPreviousProblemId ? problemHref(resolvedPreviousProblemId) : undefined
+          }
+          nextProblemHref={resolvedNextProblemId ? problemHref(resolvedNextProblemId) : undefined}
+          nextProblemEnabled={canNavigateNextProblem}
+          hintPanel={hintPanelNode}
+          backHref={CHAPTER_PATH}
+          onStepChange={() => onStepChange?.()}
+        />
+      </div>
+    )
   }
 
   return (
@@ -293,9 +412,9 @@ export function ProblemLayout({
           <ReviewDetail
             problem={problem}
             completionMessage={completionMessage}
+            previousProblemId={resolvedPreviousProblemId}
             nextProblemId={resolvedNextProblemId}
             attemptCount={attemptCount}
-            lastSubmittedAnswer={lastSubmittedAnswer}
             reviewHintUsed={reviewHintUsed}
           />
         </>
@@ -303,22 +422,7 @@ export function ProblemLayout({
 
       {showInteractive && (
         <ResponsiveProblemShell
-          banner={
-            completed && restarted ? (
-              <section className="card restart-banner" role="status">
-                <p className="restart-banner-title">Restarted practice attempt</p>
-                <p className="restart-banner-sub">
-                  This is a fresh attempt — your chapter progress is already saved and
-                  won't change.
-                </p>
-                {onReview && (
-                  <button type="button" className="btn-text" onClick={onReview}>
-                    ← Back to review
-                  </button>
-                )}
-              </section>
-            ) : undefined
-          }
+          banner={restartBanner}
           taskPanel={
             taskGuide ? (
               <div className="task-area">
@@ -331,29 +435,8 @@ export function ProblemLayout({
               </div>
             ) : undefined
           }
-          coachPanel={
-            <LearningCoachPanel
-              feedback={coachFeedback}
-              onContinue={
-                feedback?.canComplete && resolvedNextProblemId
-                  ? () => navigate(`${CHAPTER_PATH}/problem/${resolvedNextProblemId}`)
-                  : undefined
-              }
-              continueLabel="Continue to next problem"
-              onRequestHint={hideHints ? undefined : revealNextHint}
-              hintsRemaining={hideHints ? 0 : hintsRemaining}
-            />
-          }
-          hintPanel={
-            !hideHints ? (
-              <HintPanel
-                hints={problem.hints}
-                revealedHintIds={revealedHintIds}
-                onRevealHint={onRevealHint}
-                visualCue={visualCueFor(problem.visualType)}
-              />
-            ) : undefined
-          }
+          coachPanel={coachPanelNode}
+          hintPanel={hintPanelNode}
         >
           {children}
         </ResponsiveProblemShell>

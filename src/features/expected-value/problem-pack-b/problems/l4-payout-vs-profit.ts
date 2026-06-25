@@ -22,7 +22,7 @@ export const L4_PAYOUT_VS_PROFIT: PackProblemDefinition = {
   requiredActions: ['place-cost', 'submit-profit'],
   answerInputs: ['profit'],
   correctAnswers: { profit: 1 },
-  acceptedFormats: { profit: ['1', '1.0', '1.00', '$1', '$1.00'] },
+  acceptedFormats: { profit: ['1', '1.0', '1.00', '$1', '$1.00', '1/1', '2/2'] },
   mistakeRules: [
     { mistakeType: 'answered-payout', feedback: 'That is the expected payout ($4), not the expected profit. Subtract the $3 cost.' },
     { mistakeType: 'added-cost', feedback: 'Cost lowers the value of the game, so it is subtracted: payout − cost, not payout + cost.' },

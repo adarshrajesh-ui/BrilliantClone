@@ -33,7 +33,7 @@ export function ReviewModeBanner({ onRestart, onShowDemo, children }: ReviewMode
           Review Problem
         </span>
         {onShowDemo && (
-          <button type="button" className="btn-text" onClick={onShowDemo}>
+          <button type="button" className="btn-text touch-target" onClick={onShowDemo}>
             Show demo
           </button>
         )}

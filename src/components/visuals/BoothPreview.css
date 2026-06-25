@@ -1,0 +1,182 @@
+/* Co-located styles for the Lesson 5 Problem 1 "Carnival Booth Preview" visual.
+   Class names are prefixed `booth-` so they never collide with global styles.
+   Entrance keyframes ease elements in from a hidden state to their resting,
+   fully-visible base state; the global prefers-reduced-motion rule collapses the
+   duration so the resting state appears instantly (deterministic outcomes). */
+
+.booth-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  padding: 1rem;
+  background: #fff;
+}
+
+.booth-card-steady {
+  border-top: 4px solid #16a34a;
+}
+
+.booth-card-jumpy {
+  border-top: 4px solid #2563eb;
+}
+
+.booth-card-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.booth-card-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted, #6b7280);
+}
+
+.booth-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.booth-strip-empty {
+  font-size: 0.85rem;
+  color: var(--text-muted, #9ca3af);
+}
+
+.booth-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4rem;
+  height: 2.4rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #fff;
+  /* Resting state is fully visible; the entrance animation only eases it in. */
+  opacity: 1;
+}
+
+.booth-chip-anim {
+  animation: booth-chip-in 320ms ease-out both;
+}
+
+.booth-chip-coin {
+  background: #16a34a;
+}
+
+.booth-chip-coin.booth-chip-anim {
+  animation-name: booth-coin-drop;
+}
+
+.booth-chip-win {
+  background: #2563eb;
+}
+
+.booth-chip-zero {
+  background: #9ca3af;
+}
+
+.booth-chip-win.booth-chip-anim,
+.booth-chip-zero.booth-chip-anim {
+  animation-name: booth-spin-pop;
+}
+
+.booth-meter-readout {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text, #374151);
+}
+
+.booth-meter-readout strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.booth-range-band {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted, #6b7280);
+}
+
+.booth-range-band .booth-band-high {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.booth-range-band .booth-band-low {
+  color: #6b7280;
+  font-weight: 700;
+}
+
+@keyframes booth-coin-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes booth-spin-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotate(-12deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes booth-chip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .booth-card {
+    padding: 0.85rem;
+    overflow: visible;
+  }
+
+  .booth-strip {
+    align-items: flex-end;
+    gap: 0.3rem;
+    overflow: visible;
+  }
+
+  .booth-chip {
+    min-width: 2.15rem;
+    height: 2.15rem;
+    padding: 0 0.4rem;
+    font-size: 0.82rem;
+  }
+
+  .booth-meter-readout {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .booth-chip-anim,
+  .booth-chip-coin.booth-chip-anim,
+  .booth-chip-win.booth-chip-anim,
+  .booth-chip-zero.booth-chip-anim {
+    animation: none !important;
+  }
+}

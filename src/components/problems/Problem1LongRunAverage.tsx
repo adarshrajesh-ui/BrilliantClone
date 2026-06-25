@@ -1,146 +1,289 @@
 import { useCallback, useMemo } from 'react'
-import { ConfigurableSpinner, SPINNER_P1, spinFromSegments } from '../visuals/ConfigurableSpinner'
+import { DiceTray3D } from '../visuals/DiceTray3D'
 import { RunningAverageGraph } from '../visuals/RunningAverageGraph'
+import { SumHistogram } from '../visuals/SumHistogram'
 import { ProblemLayout } from '../lesson/ProblemLayout'
-import { TaskGuide } from '../lesson/TaskGuide'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
-import { PROBLEM_1 } from '../../data/problems/problem-1'
-import { PROBLEM_1_DEMO, PROBLEM_1_DEMO_CTA } from '../lesson/problemDemos'
-import { checkProblem1Completion, checkProblem1Prediction } from '../../lib/answerChecker'
-import type { Problem1Choice } from '../../types/problem'
+import { QuestionPrompt, usePrefersReducedMotion } from '../../features/learning-experience'
+import type { DemoStepConfig, WorkspaceStepDef } from '../../features/learning-experience'
+import './l1-workspace.css'
+import {
+  PROBLEM_1,
+  checkProblem1Dice,
+  diceRollForThrow,
+} from '../../data/problems/problem-1'
 
-const CHOICES: Problem1Choice[] = [0, 5, 10]
+const DICE_DEMO: DemoStepConfig[] = [
+  {
+    id: 'p1d-pickup',
+    title: 'Pick up the dice',
+    body: 'Grab the two dice with your cursor (or finger) and drag them into the felt tray, then release. You can also tap the dice, then tap the tray, or press Enter.',
+  },
+  {
+    id: 'p1d-throw',
+    title: 'Throw and read the sum',
+    body: 'The dice lift, tumble, bounce, and settle on two faces. Their sum — somewhere from 2 to 12 — is the result of that roll.',
+  },
+  {
+    id: 'p1d-watch',
+    title: 'Watch both graphs',
+    body: 'Every roll adds a point to the running-average graph and a tally to the distribution histogram. Early throws jump around; after many throws the average settles toward the dashed reference line while the histogram shape stabilizes.',
+  },
+  {
+    id: 'p1d-go',
+    title: 'Roll and watch the average',
+    body: 'Throw the dice yourself, or use Roll 10 / Roll 100 to reach 100+ total rolls and watch the running average settle.',
+  },
+]
+const DICE_DEMO_CTA = 'Throw the dice, speed up with batches, then identify the long-run average sum.'
 
 interface P1State {
-  prediction: Problem1Choice | null
-  predictionSubmitted: boolean
-  finalAnswer: Problem1Choice | null
-  totalSpins: number
-  totalWinnings: number
+  seed: number
+  totalThrows: number
+  sumTotal: number
   runningAverages: number[]
-  rotation: number
-  lastOutcome: number | null
+  counts: number[]
+  lastDice: { d1: number; d2: number } | null
+  lastSum: number | null
+  throwSeq: number
+  finalAnswer: string
+  liveMessage: string
 }
 
+const emptyCounts = (): number[] => Array.from({ length: 11 }, () => 0)
+
 const DEFAULT: P1State = {
-  prediction: null,
-  predictionSubmitted: false,
-  finalAnswer: null,
-  totalSpins: 0,
-  totalWinnings: 0,
+  seed: 0,
+  totalThrows: 0,
+  sumTotal: 0,
   runningAverages: [],
-  rotation: 0,
-  lastOutcome: null,
+  counts: emptyCounts(),
+  lastDice: null,
+  lastSum: null,
+  throwSeq: 0,
+  finalAnswer: '',
+  liveMessage: '',
+}
+
+function ensureSeed(seed: number): number {
+  if (seed !== 0) return seed
+  const candidate = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0
+  return candidate === 0 ? 0x1a2b3c4d : candidate
+}
+
+/** Length-11 sum-count array (sums 2..12), defensive against stale persisted shapes. */
+function normalizeCounts(counts: unknown): number[] {
+  const base = emptyCounts()
+  if (Array.isArray(counts)) {
+    for (let i = 0; i < 11; i += 1) {
+      const v = counts[i]
+      if (typeof v === 'number' && Number.isFinite(v) && v > 0) base[i] = v
+    }
+  }
+  return base
 }
 
 export function Problem1LongRunAverage() {
   const { state, setState, loaded, reset } = usePersistedProblemState<P1State>('problem-1', DEFAULT)
   const session = useProblemSession(PROBLEM_1, state)
+  const reducedMotion = usePrefersReducedMotion()
 
-  const runSpins = useCallback(
-    async (count: number) => {
-      if (!state.predictionSubmitted) return
-      await new Promise((r) => setTimeout(r, 350))
+  const runThrows = useCallback(
+    (count: number) => {
       setState((prev) => {
-        let spins = prev.totalSpins, winnings = prev.totalWinnings
-        const avgs = [...prev.runningAverages]
-        let last = prev.lastOutcome
+        const seed = ensureSeed(prev.seed)
+        let throws = prev.totalThrows
+        let sumTotal = prev.sumTotal ?? 0
+        const avgs = Array.isArray(prev.runningAverages) ? [...prev.runningAverages] : []
+        const counts = normalizeCounts(prev.counts)
+        let lastDice = prev.lastDice
+        let lastSum = prev.lastSum
         for (let i = 0; i < count; i += 1) {
-          const o = spinFromSegments(SPINNER_P1)
-          winnings += o; spins += 1; avgs.push(winnings / spins); last = o
+          const roll = diceRollForThrow(seed, throws)
+          throws += 1
+          sumTotal += roll.sum
+          avgs.push(sumTotal / throws)
+          counts[roll.sum - 2] += 1
+          lastDice = { d1: roll.d1, d2: roll.d2 }
+          lastSum = roll.sum
         }
-        return { ...prev, totalSpins: spins, totalWinnings: winnings, runningAverages: avgs, rotation: prev.rotation + count * 47 + 360, lastOutcome: last }
+        const avg = sumTotal / throws
+        return {
+          ...prev,
+          seed,
+          totalThrows: throws,
+          sumTotal,
+          runningAverages: avgs,
+          counts,
+          lastDice,
+          lastSum,
+          throwSeq: prev.throwSeq + 1,
+          liveMessage: lastDice
+            ? `Rolled ${lastDice.d1} and ${lastDice.d2}, sum ${lastSum}. Average sum after ${throws} rolls: ${avg.toFixed(2)}.`
+            : prev.liveMessage,
+        }
       })
     },
-    [state.predictionSubmitted, setState],
+    [setState],
   )
 
-  const stats = useMemo(() => [
-    { label: 'Total spins', value: String(state.totalSpins) },
-    { label: 'Total winnings', value: `$${state.totalWinnings}` },
-    { label: 'Average per spin', value: `$${state.totalSpins ? (state.totalWinnings / state.totalSpins).toFixed(2) : '0'}` },
-  ], [state.totalSpins, state.totalWinnings])
+  const counts = useMemo(() => normalizeCounts(state.counts), [state.counts])
+  const average = state.totalThrows ? (state.sumTotal ?? 0) / state.totalThrows : 0
+  const stats = useMemo(
+    () => [
+      { label: 'Rolls', value: String(state.totalThrows) },
+      { label: 'Last sum', value: state.lastSum === null ? '—' : String(state.lastSum) },
+      { label: 'Average sum', value: state.totalThrows ? average.toFixed(2) : '0.00' },
+    ],
+    [state.totalThrows, state.lastSum, average],
+  )
 
   if (!loaded || !session.sessionLoaded) {
-    return <div className="loading-screen"><div className="spinner" /><p>Loading problem…</p></div>
+    return (
+      <div className="loading-screen">
+        <div className="spinner" />
+        <p>Loading problem…</p>
+      </div>
+    )
   }
 
-  const currentTask = !state.predictionSubmitted
-    ? 'First, predict the long-run average, then submit it.'
-    : state.totalSpins < 100
-      ? `Now spin at least 100 times (${state.totalSpins}/100).`
-      : state.finalAnswer === null
-        ? 'Watch where the average settles, then choose the long-run average.'
-        : 'Submit your long-run average answer.'
-
-  const taskGuide = (
-    <TaskGuide
-      currentTask={currentTask}
-      steps={[
-        { id: 'predict', label: 'Predict the long-run average', done: state.predictionSubmitted },
-        { id: 'spin', label: 'Spin at least 100 times', done: state.totalSpins >= 100 },
-        { id: 'identify', label: 'Identify the $5 long-run average', done: session.completed },
-      ]}
-    />
-  )
+  const steps: WorkspaceStepDef[] = [
+    {
+      id: 'throw',
+      title: 'Throw the dice',
+      prompt: (
+        <QuestionPrompt>
+          Throw the dice or use batch rolls to reach 100 total rolls ({state.totalThrows}/100).
+        </QuestionPrompt>
+      ),
+      canAdvance: state.totalThrows >= 100,
+      advanceHint: 'Reach 100 total rolls to continue.',
+      content: (
+        <>
+          <div className="l1-play">
+            <div className="ws-visual">
+              <DiceTray3D
+                dice={state.lastDice}
+                throwSeq={state.throwSeq}
+                lastSum={state.lastSum}
+                totalThrows={state.totalThrows}
+                onThrow={() => runThrows(1)}
+                disabled={false}
+                reducedMotion={reducedMotion}
+              />
+            </div>
+            <div className="l1-side">
+              <ul className="stat-list">
+                {stats.map((s) => (
+                  <li key={s.label}>
+                    <span>{s.label}</span>
+                    <strong>{s.value}</strong>
+                  </li>
+                ))}
+              </ul>
+              <div className="spin-buttons">
+                <button
+                  type="button"
+                  className="btn-secondary touch-target"
+                  onClick={() => runThrows(1)}
+                >
+                  Roll 1
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary touch-target"
+                  onClick={() => runThrows(10)}
+                >
+                  Roll 10
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary touch-target"
+                  onClick={() => runThrows(100)}
+                >
+                  Roll 100
+                </button>
+              </div>
+              {state.totalThrows < 100 && (
+                <p className="l1-mobile-gate-hint">Reach 100 total rolls to unlock Next.</p>
+              )}
+            </div>
+            <div className="l1-graphs">
+              <RunningAverageGraph averages={state.runningAverages} target={7} maxY={12} label="Running average sum per roll" />
+              <SumHistogram counts={counts} label="Distribution of sums" />
+            </div>
+          </div>
+          <p className="sr-only" aria-live="polite">
+            {state.liveMessage}
+            {state.totalThrows > 0 && ` Running average sum: ${average.toFixed(2)} after ${state.totalThrows} rolls.`}
+          </p>
+        </>
+      ),
+    },
+    {
+      id: 'identify',
+      title: 'Identify the long-run average sum',
+      prompt: <QuestionPrompt>What is the long-run average sum per roll?</QuestionPrompt>,
+      content: (
+        <>
+          <label className="ws-field field-label">
+            Long-run average sum per roll
+            <input
+              type="text"
+              className="touch-input"
+              inputMode="decimal"
+              value={state.finalAnswer}
+              onChange={(e) => setState((p) => ({ ...p, finalAnswer: e.target.value }))}
+              placeholder="Type the average sum"
+              disabled={state.totalThrows < 100}
+            />
+          </label>
+          <button
+            type="button"
+            className="btn-secondary touch-target"
+            disabled={state.totalThrows < 100 || session.submitting}
+            onClick={() =>
+              void session.handleCheck(
+                checkProblem1Dice({
+                  totalThrows: state.totalThrows,
+                  finalAnswer: state.finalAnswer,
+                }),
+                'final',
+                state.finalAnswer,
+                state.finalAnswer,
+              )
+            }
+          >
+            {session.submitting ? 'Saving…' : 'Submit answer'}
+          </button>
+        </>
+      ),
+    },
+  ]
 
   return (
-    <ProblemLayout problem={PROBLEM_1} problemNumber={1} feedback={session.feedback} completed={session.completed}
-      revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-2"
-      restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
-      attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
-      taskGuide={taskGuide}
-      demoSteps={PROBLEM_1_DEMO} demoFinalCta={PROBLEM_1_DEMO_CTA}
-      completionMessage="You predicted, ran 100+ spins, and identified $5 as the long-run average.">
-      <section className="card problem-section">
-        <h2>Step 1 — Predict the long-run average</h2>
-        <div className="choice-row">
-          {CHOICES.map((c) => (
-            <button key={c} type="button" className={`choice-btn touch-target${state.prediction === c ? ' choice-btn-selected' : ''}`}
-              onClick={() => setState((p) => ({ ...p, prediction: c }))} disabled={state.predictionSubmitted}>${c}</button>
-          ))}
-        </div>
-        {!state.predictionSubmitted && (
-          <button type="button" className="btn-secondary touch-target" onClick={() => {
-            if (state.prediction === null) { session.setFeedback({ isCorrect: false, mistakeType: null, feedback: 'Choose a prediction.', canComplete: false }); return }
-            setState((p) => ({ ...p, predictionSubmitted: true }))
-            session.setFeedback(checkProblem1Prediction(state.prediction, state.totalSpins))
-          }}>Submit prediction</button>
-        )}
-        {state.predictionSubmitted && <p className="step-done">Prediction submitted: ${state.prediction}</p>}
-      </section>
-      <section className={`card problem-section${!state.predictionSubmitted ? ' section-disabled' : ''}`}>
-        <h2>Step 2 — Spin and observe</h2>
-        <div className="problem-visual-row">
-          <ConfigurableSpinner segments={SPINNER_P1} rotation={state.rotation} spinning={false} lastOutcome={state.lastOutcome} />
-          <div className="problem-side-panel">
-            <ul className="stat-list">{stats.map((s) => <li key={s.label}><span>{s.label}</span><strong>{s.value}</strong></li>)}</ul>
-            <div className="spin-buttons">
-              {[1, 10, 100].map((n) => (
-                <button key={n} type="button" className="btn-secondary touch-target" disabled={!state.predictionSubmitted}
-                  onClick={() => void runSpins(n)}>Spin {n === 1 ? 'once' : `${n} times`}</button>
-              ))}
-            </div>
-            {state.totalSpins < 100 && state.predictionSubmitted && <p className="spin-requirement">Run at least 100 spins ({state.totalSpins}/100).</p>}
-          </div>
-        </div>
-        <RunningAverageGraph averages={state.runningAverages} target={5} />
-      </section>
-      <section className={`card problem-section${state.totalSpins < 100 ? ' section-disabled' : ''}`}>
-        <h2>Step 3 — Identify the long-run average</h2>
-        <div className="choice-row">
-          {CHOICES.map((c) => (
-            <button key={c} type="button" className={`choice-btn touch-target${state.finalAnswer === c ? ' choice-btn-selected' : ''}`}
-              onClick={() => setState((p) => ({ ...p, finalAnswer: c }))} disabled={state.totalSpins < 100}>${c}</button>
-          ))}
-        </div>
-        <button type="button" className="btn-secondary touch-target" disabled={state.totalSpins < 100 || state.finalAnswer === null || session.submitting}
-          onClick={() => void session.handleCheck(
-            checkProblem1Completion({ predictionSubmitted: state.predictionSubmitted, totalSpins: state.totalSpins, finalAnswer: state.finalAnswer }),
-            'final', String(state.finalAnswer), state.finalAnswer ?? '',
-          )}>{session.submitting ? 'Saving…' : 'Submit answer'}</button>
-      </section>
-    </ProblemLayout>
+    <ProblemLayout
+      problem={PROBLEM_1}
+      problemNumber={1}
+      feedback={session.feedback}
+      completed={session.completed}
+      revealedHintIds={session.revealedHintIds}
+      onRevealHint={session.revealHint}
+      nextProblemId="ev-l1-p2"
+      restarted={session.restarted}
+      onRestart={() => {
+        reset()
+        session.restart()
+      }}
+      onReview={session.backToReview}
+      attemptCount={session.finalAttemptCount}
+      lastSubmittedAnswer={session.lastSubmittedAnswer}
+      reviewHintUsed={session.reviewHintUsed}
+      demoSteps={DICE_DEMO}
+      demoFinalCta={DICE_DEMO_CTA}
+      completionMessage="You rolled two dice past 100 total rolls and identified 7 as the long-run average sum."
+      steps={steps}
+    />
   )
 }

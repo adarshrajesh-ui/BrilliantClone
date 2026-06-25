@@ -27,8 +27,8 @@ export const L4_CHOOSE_BETTER_GAME_AFTER_COST: PackProblemDefinition = {
   answerInputs: ['profitA', 'profitB', 'betterGame'],
   correctAnswers: { profitA: 2, profitB: 3, betterGame: 'B' },
   acceptedFormats: {
-    profitA: ['2', '2.0', '$2'],
-    profitB: ['3', '3.0', '$3'],
+    profitA: ['2', '2.0', '$2', '4/2'],
+    profitB: ['3', '3.0', '$3', '9/3'],
     betterGame: ['B', 'Game B', 'game-b'],
   },
   mistakeRules: [

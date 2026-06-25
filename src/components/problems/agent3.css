@@ -1,0 +1,270 @@
+/* Shared styles for Agent 3 Lesson 1 & 2 problems. Component-scoped class
+   names only — no overrides of global classes. */
+
+/* Stacked multiple-choice column (ev-l1-p3, ev-l2-p3). */
+.choice-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.choice-column .choice-btn {
+  text-align: left;
+  width: 100%;
+}
+
+/* ev-l1-p3 — compare two spinner cards */
+.compare-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.compare-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.compare-card h3 {
+  margin: 0;
+}
+
+.compare-odds {
+  font-size: 0.82rem;
+  color: #4b5563;
+  text-align: center;
+  margin: 0;
+}
+
+.compare-avg {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+/* ev-l2-p2 — match outcomes to probabilities */
+.match-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.match-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.match-outcome {
+  min-width: 56px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 0.4rem 0.6rem;
+  background: #ecfdf5;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.match-link {
+  color: #9ca3af;
+  font-weight: 700;
+}
+
+.match-slot {
+  min-width: 72px;
+  min-height: 44px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.match-slot-filled {
+  border-style: solid;
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.match-slot-ready {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.25);
+}
+
+.match-clear {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 0.78rem;
+  text-decoration: underline;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.match-bank {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+/* ev-l2-p3 — diagnose bad EV setups */
+.diagnose-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.diagnose-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: left;
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.diagnose-card-selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.diagnose-card-name {
+  font-weight: 700;
+}
+
+.diagnose-card-expr {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92rem;
+  color: #111827;
+}
+
+.diagnose-checklist {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.diagnose-pick {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.diagnose-defect {
+  margin-top: 0.75rem;
+}
+
+.diagnose-defect-label {
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  margin: 0 0 0.25rem;
+}
+
+@media (max-width: 480px) {
+  .match-grid {
+    gap: 0.5rem;
+    margin-bottom: 0.55rem;
+  }
+
+  .match-row {
+    display: grid;
+    grid-template-columns: minmax(52px, 0.65fr) minmax(76px, 1fr) auto;
+    gap: 0.4rem;
+    align-items: stretch;
+  }
+
+  .match-link {
+    display: none;
+  }
+
+  .match-outcome,
+  .match-slot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    width: 100%;
+    padding: 0.35rem 0.45rem;
+  }
+
+  .match-clear {
+    padding: 0 0.25rem;
+  }
+
+  .match-bank {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+    margin-bottom: 0.55rem;
+  }
+
+  .match-bank .choice-btn {
+    min-width: 0;
+    width: 100%;
+    padding-inline: 0.5rem;
+  }
+
+  .diagnose-cards {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+
+  .diagnose-card {
+    padding: 0.65rem;
+  }
+
+  .diagnose-card-expr,
+  .diagnose-defect-label {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .diagnose-checklist {
+    font-size: 0.74rem;
+  }
+
+  .diagnose-defect {
+    margin-top: 0.45rem;
+  }
+
+  .diagnose-defect .choice-btn {
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .diagnose-defect .ws-step-check {
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .match-row {
+    grid-template-columns: minmax(46px, 0.55fr) minmax(70px, 1fr);
+  }
+
+  .match-clear {
+    grid-column: 2;
+    justify-self: start;
+    min-height: 36px;
+  }
+
+  .match-bank {
+    grid-template-columns: 1fr;
+  }
+}

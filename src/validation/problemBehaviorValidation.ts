@@ -1,191 +1,193 @@
-// Validation and Test Coverage — Expected Value Lab MVP
-// ------------------------------------------------------
-// Structured behaviour expectations for the established 8-problem MVP. This file
-// is documentation-as-data: it does NOT import or alter app behaviour. It records
-// what each problem requires to complete, the actions/hints/feedback it must
-// expose, and the global session behaviours (direct correction, attempt
-// counting, persistence). The runner can cross-check the deterministic parts
-// (e.g. expected mistake types) against the matrix; the React/session behaviours
-// below are verified structurally and via manual QA, since they require the
-// running app.
+// Validation and Test Coverage — Expected Value Lab (15-problem chapter)
+// ----------------------------------------------------------------------
+// Structured behaviour expectations for all 15 problems (5 lessons × 3). This is
+// documentation-as-data: it does NOT alter app behaviour. It records what each
+// problem requires to complete, the actions it gates on, the deterministic
+// mistake types its LIVE checker can emit, and the global session behaviours
+// (direct correction, attempt counting, persistence).
+//
+// The mistake types and completion gates here mirror the LIVE co-located
+// checkers (problem-1 = checkProblem1Dice, problem-7 = checkBoothPreview,
+// problem-8 = checkWiderSpread, etc.), NOT the stale `checkProblem` dispatcher.
 
 export interface ProblemBehavior {
-  problemId: string
+  storageId: string
+  canonicalSlug: string
+  lesson: number
   title: string
   /** What must be true for the problem to be markable complete (canComplete). */
   completionRequires: string[]
-  /** Learner interactions required before a graded answer is possible. */
+  /** Learner interactions required (gates) before a graded answer is possible. */
   requiredActions: string[]
-  /** Deterministic mistakeType strings the checker can emit for this problem. */
+  /** Deterministic mistakeType strings the LIVE checker can emit. */
   expectedMistakeTypes: string[]
   /** What hints must do (visual-first, hand-written, no AI). */
   hintBehavior: string[]
-  /** What feedback must do (specific, deterministic, <100ms). */
+  /** What feedback must do (specific, deterministic, <100ms, beside the input). */
   feedbackBehavior: string[]
 }
 
 export const problemBehaviors: ProblemBehavior[] = [
   {
-    problemId: 'problem-1',
-    title: 'The Long-Run Average',
-    completionRequires: [
-      'prediction submitted',
-      'at least 100 total spins run',
-      '$5 identified as the long-run average',
-    ],
+    storageId: 'problem-1',
+    canonicalSlug: 'ev-l1-p1',
+    lesson: 1,
+    title: 'Two-Dice Roll Average',
+    completionRequires: ['≥100 total rolls', '7 identified as the long-run average sum'],
+    requiredActions: ['throw-dice', 'reach-100-rolls', 'identify-average-sum'],
+    expectedMistakeTypes: ['chose-extreme-outcome', 'used-single-die-average', 'assumed-sample-equals-ev'],
+    hintBehavior: ['H1 points at the running-average graph; H2 gives one die\'s average (3.5); H3 adds the two dice (3.5 + 3.5 = 7) — all hand-written.'],
+    feedbackBehavior: ['The ≥100 total-roll guard does NOT count as an attempt.', 'Reduced-motion preserves the seeded two-dice roll sequence; tap == drag == keyboard for the same throw index.'],
+  },
+  {
+    storageId: 'ev-l1-p2',
+    canonicalSlug: 'ev-l1-p2',
+    lesson: 1,
+    title: 'Unequal Section Game',
+    completionRequires: ['prediction submitted', '≥100 total spins', '$5 identified'],
     requiredActions: ['submit-prediction', 'spin-100', 'identify-average'],
-    expectedMistakeTypes: ['chose-extreme-outcome', 'confused-single-spin'],
-    hintBehavior: [
-      'Hint 1 explains the average sits halfway between equally likely outcomes.',
-      'Hint 2 prompts running at least 100 spins to let the running average settle.',
-      'Hints are hand-written; revealing any hint sets hintUsed = true.',
-    ],
-    feedbackBehavior: [
-      'Correct feedback explains $10 and $0 average to $5 per spin.',
-      'Extreme-outcome feedback explains the average is not an individual outcome.',
-      'Guard messages (run more spins / submit prediction) do not count as attempts.',
-    ],
+    expectedMistakeTypes: ['used-largest-payout', 'divided-payout-by-percent', 'ignored-payout', 'short-run-variation'],
+    hintBehavior: ['Hints connect section size to probability and weight each payout.'],
+    feedbackBehavior: ['$0.80 answer is classified as divided-payout-by-percent — a distinct, hand-written diagnosis.'],
   },
   {
-    problemId: 'problem-2',
-    title: 'Build the Weighted Average',
-    completionRequires: [
-      'both outcome-probability pairs placed correctly ($20↔25%, $0↔75%)',
-      'final EV submitted equal to 5',
-    ],
-    requiredActions: ['tap-to-place-cards', 'submit-ev'],
-    expectedMistakeTypes: ['reversed-outcome-probability', 'omitted-probability', 'used-largest-payout'],
-    hintBehavior: [
-      'Hints show each payout multiplied by its own probability.',
-      'No drag/drop is required — tap-to-select/tap-to-place must work.',
-    ],
-    feedbackBehavior: [
-      'Reversed pairs produce a reversed-outcome-probability message.',
-      'Answering 20 explains EV weights outcomes by probability.',
-    ],
+    storageId: 'ev-l1-p3',
+    canonicalSlug: 'ev-l1-p3',
+    lesson: 1,
+    title: 'Which Game Has the Best Long-Run Average?',
+    completionRequires: ['Game A selected', 'Game B selected', 'Game C not selected', 'reason = A/B tied at $5'],
+    requiredActions: ['select-highest-ev-games', 'choose-reason'],
+    expectedMistakeTypes: ['chose-bigger-prize', 'chose-highest-win-rate', 'missed-tie', 'ignored-probabilities', 'expected-value-is-guaranteed'],
+    hintBehavior: ['Hints compute A (10×0.5), B (25×0.2), and C (6×0.8).'],
+    feedbackBehavior: ['B only diagnoses biggest-prize thinking; C diagnoses highest-win-rate thinking; A only diagnoses missing the tie.'],
   },
   {
-    problemId: 'problem-3',
-    title: 'Mystery Box Outcomes',
-    completionRequires: [
-      'all six boxes revealed',
-      'all table cells correct',
-      'counts correct ($12→1, $6→2, $0→3)',
-      'probabilities correct (1/6, 2/6, 3/6)',
-    ],
-    requiredActions: ['reveal-all-boxes', 'fill-counts', 'fill-probabilities'],
-    expectedMistakeTypes: ['counts-as-probabilities', 'probabilities-not-one', 'unknown'],
-    hintBehavior: [
-      'Hints highlight matching boxes for the active row.',
-      'Probability hint shows count ÷ total boxes.',
-    ],
-    feedbackBehavior: [
-      'Typing a raw count into a probability cell produces counts-as-probabilities.',
-      'Note: per-row probability equivalence is enforced before the sum check, so probabilities-not-one is a defensive guard rather than a commonly reachable path.',
-    ],
+    storageId: 'problem-2',
+    canonicalSlug: 'ev-l2-p1',
+    lesson: 2,
+    title: 'Claw Machine Expected Value',
+    completionRequires: ['ran ≥8 claw drops', 'viewed contribution compression', 'both outcome↔probability pairs placed', 'EV = 5'],
+    requiredActions: ['run-8-grabs', 'view-contribution-compression', 'place-formula-pairs', 'submit-ev'],
+    expectedMistakeTypes: ['reversed-outcome-probability', 'omitted-probability', 'used-largest-payout', 'arithmetic-error'],
+    hintBehavior: ['Hints run the claw grabs, match pairs, then multiply and add. Tap-to-place equals drag.'],
+    feedbackBehavior: ['Formula is LOCKED until ≥8 claw drops are run and the contribution compression is viewed (grabs-before-formula gate) — guard, not graded.'],
   },
   {
-    problemId: 'problem-4',
-    title: 'Calculate EV from the Table',
-    completionRequires: [
-      'all three contributions submitted (2, 2, 0)',
-      'final EV submitted equal to 4',
-    ],
+    storageId: 'ev-l2-p2',
+    canonicalSlug: 'ev-l2-p2',
+    lesson: 2,
+    title: 'Match Outcomes to Probabilities',
+    completionRequires: ['all three correct pairs: $12↔1/3, $3↔1/2, $0↔1/6'],
+    requiredActions: ['match-all-pairs'],
+    expectedMistakeTypes: ['ranked-by-size', 'reused-probability', 'wrong-pairing'],
+    hintBehavior: ['Hints read the game data, identify the most-likely $3, and enforce single-use cards.'],
+    feedbackBehavior: ['Unmatched outcome → guard (not graded); ranking by size → ranked-by-size.'],
+  },
+  {
+    storageId: 'ev-l2-p3',
+    canonicalSlug: 'ev-l2-p3',
+    lesson: 2,
+    title: 'Diagnose Bad EV Setups',
+    completionRequires: ['valid = C', 'defect A = no-probability', 'defect B = omits-zero'],
+    requiredActions: ['select-valid', 'diagnose-a', 'diagnose-b'],
+    expectedMistakeTypes: ['chose-raw-sum', 'chose-incomplete', 'wrong-defect-a', 'wrong-defect-b'],
+    hintBehavior: ['Hints check probability weighting, all-outcomes, and total probability.'],
+    feedbackBehavior: ['Choosing A → chose-raw-sum; B → chose-incomplete (it matches numerically but omits $0).'],
+  },
+  {
+    storageId: 'problem-4',
+    canonicalSlug: 'ev-l3-p2',
+    lesson: 3,
+    title: 'Dealt-Hand Contributions',
+    completionRequires: ['contributions 0.5, 1.0, 5.0 (ascending value 2,4,10)', 'final EV = 6.5'],
     requiredActions: ['fill-contributions', 'submit-ev'],
-    expectedMistakeTypes: ['unweighted-sum', 'omitted-zero-row', 'arithmetic-error'],
-    hintBehavior: [
-      'Hints animate outcome × probability per row.',
-      'Colors link each contribution to its outcome group.',
-    ],
-    feedbackBehavior: [
-      'Raw payouts (12, 6) produce unweighted-sum.',
-      'A nonzero $0 row produces omitted-zero-row.',
-    ],
+    expectedMistakeTypes: ['forgot-to-weight', 'unweighted-sum', 'arithmetic-error'],
+    hintBehavior: ['Hints multiply each card value by its probability (2×1/4, 4×1/4, 10×1/2) and sum.'],
+    feedbackBehavior: ['Raw value as contribution → forgot-to-weight; EV 16 (2+4+10) → unweighted-sum; empty contribution → guard.'],
   },
   {
-    problemId: 'problem-5',
-    title: 'Expected Payout vs Expected Profit',
-    completionRequires: [
-      'payout − cost formula selected',
-      'expected profit submitted equal to 1',
-    ],
-    requiredActions: ['select-cost-formula', 'submit-profit'],
-    expectedMistakeTypes: ['answered-payout', 'added-cost', 'unknown'],
-    hintBehavior: [
-      'Balance scale / equation strip shows cost pulling $4 down to $1.',
-    ],
-    feedbackBehavior: [
-      'Answer 4 → answered-payout. Answer 7 → added-cost.',
-      'Treating cost as a probability falls through to a generic corrective message.',
-    ],
+    storageId: 'ev-l3-p3',
+    canonicalSlug: 'ev-l3-p3',
+    lesson: 3,
+    title: 'Mini-Deck EV Table',
+    completionRequires: ['counts 3,3,4', 'probabilities 3/10,3/10,4/10', 'contributions 0.3,2.1,4.0', 'EV = 6.4'],
+    requiredActions: ['fill-counts', 'fill-probabilities', 'fill-contributions', 'submit-ev'],
+    expectedMistakeTypes: ['count-probability-confusion', 'wrong-denominator', 'used-total-card-value', 'omitted-row', 'arithmetic-error'],
+    hintBehavior: ['Hints convert counts ÷ 10 and multiply by card value per row.'],
+    feedbackBehavior: ['Raw total card value (64) rejected as used-total-card-value; count typed as probability → count-probability-confusion; empty cells → guard.'],
   },
   {
-    problemId: 'problem-6',
+    storageId: 'problem-5',
+    canonicalSlug: 'ev-l4-p1',
+    lesson: 4,
+    title: 'Pay to Play',
+    completionRequires: ['cost token placed', 'expected profit = 1'],
+    requiredActions: ['place-cost-token', 'submit-profit'],
+    expectedMistakeTypes: ['answered-payout', 'added-cost', 'reversed-subtraction', 'cost-as-probability', 'unknown'],
+    hintBehavior: ['Hints place the $3 cost and subtract from the $4 payout.'],
+    feedbackBehavior: ['Cost-before-profit gate: profit input locked until cost placed (guard).', 'Answer 4 → answered-payout, 7 → added-cost, fractional 0..1 → cost-as-probability.'],
+  },
+  {
+    storageId: 'problem-6',
+    canonicalSlug: 'ev-l4-p2',
+    lesson: 4,
     title: 'Fair, Favorable, or Unfavorable?',
-    completionRequires: [
-      'all three cards placed',
-      'A = fair, B = favorable, C = unfavorable',
-    ],
+    completionRequires: ['all three placed: A = fair, B = favorable, C = unfavorable'],
     requiredActions: ['place-all-cards'],
     expectedMistakeTypes: ['confused-fair-favorable', 'positive-payout-favorable', 'forgot-subtract-cost'],
-    hintBehavior: [
-      'Fairness number line places expected profit at negative/zero/positive.',
-      'Tap-to-place buckets must work without drag/drop.',
-    ],
-    feedbackBehavior: [
-      'C marked favorable → positive-payout-favorable.',
-      'A marked favorable → confused-fair-favorable.',
-    ],
+    hintBehavior: ['Fairness number line places profit at negative/zero/positive; tap-to-place buckets work without drag.'],
+    feedbackBehavior: ['C marked favorable → positive-payout-favorable; A marked favorable → confused-fair-favorable; missing card → guard.'],
   },
   {
-    problemId: 'problem-7',
-    title: 'Build the Whole EV Model',
-    completionRequires: [
-      'all probabilities filled (1/10, 2/10, 7/10)',
-      'all contributions filled (3, 2, 0)',
-      'expected payout = 5',
-      'expected profit = 0',
-      'decision = fair',
-    ],
-    requiredActions: ['group-wheel-sections', 'fill-probabilities', 'fill-contributions', 'submit-payout', 'submit-profit', 'select-decision'],
-    expectedMistakeTypes: ['count-not-probability', 'wrong-denominator', 'payout-not-profit', 'fair-marked-favorable', 'unknown'],
-    hintBehavior: [
-      'Probability hint highlights selected sections over 10 total.',
-      'Profit hint balances payout $5 and cost $5 to zero.',
-      'Decision hint places the profit dot at 0 on the fairness line.',
-    ],
-    feedbackBehavior: [
-      'Section counts as probabilities → count-not-probability.',
-      'Profit left equal to payout → payout-not-profit.',
-      'Fair marked favorable → fair-marked-favorable.',
-    ],
+    storageId: 'ev-l4-p3',
+    canonicalSlug: 'ev-l4-p3',
+    lesson: 4,
+    title: 'Choose the Better Game After Cost',
+    completionRequires: ['profit A = 2', 'profit B = 3', 'better game = B'],
+    requiredActions: ['compute-profit-a', 'compute-profit-b', 'select-better-game'],
+    expectedMistakeTypes: ['chose-larger-payout', 'forgot-subtract-cost', 'added-cost', 'reversed-payout-cost', 'arithmetic-error'],
+    hintBehavior: ['Hints subtract each cost and compare remaining profit.'],
+    feedbackBehavior: ['Correct profits but choosing A → chose-larger-payout (the bigger-payout trap).'],
   },
   {
-    problemId: 'problem-8',
-    title: 'Same Expected Value, Different Risk',
-    completionRequires: [
-      'both simulations run (20 trials each)',
-      'EV for each game submitted (EV(A)=5, EV(B)=5)',
-      'higher-risk game selected (Game B)',
-      'correct reason selected (variable outcomes despite same long-run average)',
-    ],
-    requiredActions: ['simulate-game-a', 'simulate-game-b', 'submit-ev-a', 'submit-ev-b', 'select-higher-risk', 'select-reason'],
-    expectedMistakeTypes: ['average-vs-guaranteed', 'b-higher-ev', 'identical-games'],
-    hintBehavior: [
-      'Risk comparison graph contrasts a flat line with a jagged line at the same average.',
-    ],
-    feedbackBehavior: [
-      'EV(B)=10 → b-higher-ev.',
-      'Identical reasoning → identical-games.',
-      'Wrong EV(A) → average-vs-guaranteed.',
-    ],
+    storageId: 'problem-7',
+    canonicalSlug: 'ev-l5-p1',
+    lesson: 5,
+    title: 'Carnival Booth Preview',
+    completionRequires: ['both 5-round previews run', 'feel = No', 'average = Yes ($5)'],
+    requiredActions: ['preview-booth-a', 'preview-booth-b', 'answer-feel', 'answer-average'],
+    expectedMistakeTypes: ['claimed-same-feel', 'claimed-different-average', 'confused-single-round-with-ev'],
+    hintBehavior: ['Hints separate "feel" (round-to-round swing) from "average" (long-run payout).'],
+    feedbackBehavior: ['Both-preview gate blocks the MC (guard). Qualitative only — no probability table / cost / fairness here (reserved for L5P3).'],
+  },
+  {
+    storageId: 'problem-8',
+    canonicalSlug: 'ev-l5-p2',
+    lesson: 5,
+    title: 'Wider Spread, Same Average',
+    completionRequires: ['both 20-trial sims run', 'EV(A) = 6', 'EV(B) = 6', 'riskier = Game B', 'approved explanation'],
+    requiredActions: ['simulate-both', 'submit-ev-a', 'submit-ev-b', 'select-risk', 'select-reason'],
+    expectedMistakeTypes: ['claimed-game-b-has-higher-ev', 'claimed-games-identical', 'selected-game-a-as-riskier', 'ev-arithmetic-error'],
+    hintBehavior: ['Hints compute 12×0.5 + 0×0.5 = $6 and compare spread.'],
+    feedbackBehavior: ['Distinct from L5P1: the checker rejects the L5P1 booth payouts ($5/$10) as ev-arithmetic-error.', 'Numbers ($6 vs $12/$0) are deliberately different from L5P1 ($5 vs $10/$0).'],
+  },
+  {
+    storageId: 'ev-l5-p3',
+    canonicalSlug: 'ev-l5-p3',
+    lesson: 5,
+    title: 'Final Carnival Decision (capstone)',
+    completionRequires: ['wheel grouped', 'probabilities 1/12,3/12,8/12', 'contributions 3,3,0', 'payout 6', 'profit 0', 'decision fair', 'risk = variable-outcomes'],
+    requiredActions: ['group-wheel', 'fill-table', 'submit-payout', 'submit-profit', 'select-decision', 'select-risk'],
+    expectedMistakeTypes: ['counts-not-probability', 'wrong-denominator', 'omitted-zero-row', 'arithmetic-error', 'payout-not-profit', 'fair-marked-favorable', 'confused-ev-with-guaranteed', 'believed-fair-has-no-risk'],
+    hintBehavior: ['Hints walk sections ÷ 12 → contributions → profit → fair ≠ risk-free.'],
+    feedbackBehavior: ['Tap-to-group gate (guard); sequential one-active-row checklist avoids scroll chasing. Covers all 8 PRD capstone mistake types.'],
   },
 ]
 
 /**
  * Global behaviour expectations that span all problems. Each item names whether
- * it is deterministically checkable by the runner (`isGradedAttempt`-style) or
- * verified structurally / via manual QA (session hook + persistence layer).
+ * it is deterministically checkable by the runner or verified structurally /
+ * via manual QA (session hook + persistence layer).
  */
 export interface GlobalBehaviorExpectation {
   id: string
@@ -200,19 +202,13 @@ export const globalBehaviorExpectations: GlobalBehaviorExpectation[] = [
     id: 'direct-correction-no-reset',
     requirement: 'Direct correction should not require a reset — fixing the answer and resubmitting passes.',
     verifiedBy: 'deterministic',
-    notes: 'The checker is pure; directCorrectionCases prove a corrected resubmit returns canComplete=true.',
-  },
-  {
-    id: 'stale-feedback-clears',
-    requirement: 'Stale feedback should clear after the learner edits their input.',
-    verifiedBy: 'structural',
-    notes: 'useProblemSession compares a JSON state signature and clears feedback when the input changes after a submit.',
+    notes: 'Live checkers are pure; a corrected resubmit returns canComplete=true (see liveCheckerValidation correction pair).',
   },
   {
     id: 'guard-not-graded',
     requirement: 'Incomplete guard submits must not count as graded attempts.',
     verifiedBy: 'deterministic',
-    notes: 'isGradedAttempt returns false when isCorrect=false and mistakeType is empty/null.',
+    notes: 'isGradedAttempt returns false when isCorrect=false and mistakeType is empty/null (both guard conventions covered).',
   },
   {
     id: 'wrong-graded-counts',
@@ -227,16 +223,34 @@ export const globalBehaviorExpectations: GlobalBehaviorExpectation[] = [
     notes: 'isGradedAttempt returns true when isCorrect=true; canComplete drives completion.',
   },
   {
-    id: 'hints-set-hintused',
-    requirement: 'Revealing any hint should set hintUsed = true and persist on the attempt record.',
+    id: 'mastery-strong-threshold',
+    requirement: 'Mastery requires ≥11 of 15 problems completed in ≤2 graded attempts, all 15 complete, capstone + payout-vs-profit + same-EV-vs-risk correct.',
+    verifiedBy: 'deterministic',
+    notes: 'evaluateChapterMastery + STRONG_ATTEMPT_THRESHOLD=11 asserted in prdCoverage.test.ts.',
+  },
+  {
+    id: 'no-scroll-chasing',
+    requirement: 'Visual + controls + feedback stay spatially connected; feedback never buried at page bottom.',
     verifiedBy: 'structural',
-    notes: 'useProblemSession derives hintUsed from revealedHintIds.length > 0 and records it on attempts.',
+    notes: 'Two-region desktop / sticky-task mobile layout — manual a11y audit (docs/validation-plan.md §A11y).',
+  },
+  {
+    id: 'tap-to-place',
+    requirement: 'Every drag/drop interaction also supports tap-to-select / tap-to-place; correctness never depends on drag.',
+    verifiedBy: 'structural',
+    notes: 'Checkers receive state regardless of input modality — manual QA per interactive problem.',
+  },
+  {
+    id: 'reduced-motion-deterministic',
+    requirement: 'Reduced-motion paths produce identical deterministic outcomes (seeded RNG per throw/spin index).',
+    verifiedBy: 'structural',
+    notes: 'Seeded outcome functions for simulation problems are unit-tested in feature suites; dry fluency checks use deterministic checkers.',
   },
   {
     id: 'progress-preserves-completed-ids',
-    requirement: 'Progress should preserve completed problem IDs across sessions.',
-    verifiedBy: 'structural',
-    notes: 'chapterProgress.completedProblemIds is persisted; completion marks the ID and survives resume.',
+    requirement: 'Progress preserves completed problem IDs across sessions; removed legacy slugs resolve to successors.',
+    verifiedBy: 'deterministic',
+    notes: 'resolveCanonicalProblem + REMOVED_SLUG_SUCCESSORS asserted in prdCoverage.test.ts.',
   },
 ]
 
@@ -252,5 +266,5 @@ export const gradedAttemptExpectations: GradedAttemptExpectation[] = [
   { id: 'graded-correct', description: 'correct answer', result: { isCorrect: true, mistakeType: null, feedback: '', canComplete: true }, expectedGraded: true },
   { id: 'graded-wrong', description: 'wrong with mistakeType', result: { isCorrect: false, mistakeType: 'chose-extreme-outcome', feedback: '', canComplete: false }, expectedGraded: true },
   { id: 'graded-guard-empty', description: 'guard with empty mistakeType', result: { isCorrect: false, mistakeType: '', feedback: 'Fill all fields.', canComplete: false }, expectedGraded: false },
-  { id: 'graded-guard-null', description: 'guard with null mistakeType', result: { isCorrect: false, mistakeType: null, feedback: 'Run 100 spins.', canComplete: false }, expectedGraded: false },
+  { id: 'graded-guard-null', description: 'guard with null mistakeType (booth/risk/capstone convention)', result: { isCorrect: false, mistakeType: null, feedback: 'Run both previews.', canComplete: false }, expectedGraded: false },
 ]

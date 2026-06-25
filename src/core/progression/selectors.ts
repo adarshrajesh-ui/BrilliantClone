@@ -17,7 +17,7 @@ import {
   type CanonicalProblem,
 } from './canonical'
 
-/** Ordered, immutable list of all 20 problems. */
+/** Ordered, immutable list of all 15 problems. */
 export function orderedChapterProblems(): readonly CanonicalProblem[] {
   return CANONICAL_PROBLEMS
 }
@@ -46,7 +46,7 @@ export function completedIndexSet(completedProblemIds: string[]): Set<number> {
   return set
 }
 
-/** Count of unique, recognized completed problems (0..20). */
+/** Count of unique, recognized completed problems (0..15). */
 export function uniqueCompletedCount(completedProblemIds: string[]): number {
   return completedIndexSet(completedProblemIds).size
 }

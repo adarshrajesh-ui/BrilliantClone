@@ -36,9 +36,9 @@ export const L3_REPAIR_PROBABILITY_TABLE: PackProblemDefinition = {
     ],
   },
   acceptedFormats: {
-    '16': ['1/8', '0.125'],
-    '4': ['3/8', '0.375'],
-    '0': ['4/8', '1/2', '0.5', '.5'],
+    '16': ['1/8', '0.125', '12.5%'],
+    '4': ['3/8', '0.375', '37.5%'],
+    '0': ['4/8', '1/2', '0.5', '.5', '50%'],
   },
   mistakeRules: [
     { mistakeType: 'wrong-denominator', feedback: 'There are 8 tickets total, so every probability uses 8 as its denominator (e.g. 3/8, not 3/10).' },

@@ -1,10 +1,10 @@
 // Registry of problems that have a real interactive implementation.
 //
-// The chapter models 20 canonical problems, but only a subset currently have
-// built interactive components (the rest intentionally render a placeholder).
-// This module is the single source of truth for *which* problems are
-// implemented, so routing and "continue / next" navigation never send a learner
-// into a placeholder when an implemented problem is the intended destination.
+// The chapter models 14 active canonical problems after removing Average Card Value.
+// This module is the single source of truth for
+// *which* problems are implemented, so routing and "continue / next" navigation
+// never send a learner into a placeholder when an implemented problem is the
+// intended destination.
 //
 // Keys are STORAGE IDs (the same ids used by PROBLEM_COMPONENTS in ProblemPage).
 
@@ -13,16 +13,22 @@ import {
   resolveCanonicalProblem,
 } from '../core/progression/canonical'
 
-/** Storage IDs of problems with an interactive implementation, in any order. */
+/** Storage IDs of problems with an interactive implementation (all active problems). */
 export const IMPLEMENTED_PROBLEM_IDS = [
-  'problem-1',
-  'problem-2',
-  'problem-3',
-  'problem-4',
-  'problem-5',
-  'problem-6',
-  'problem-7',
-  'problem-8',
+  'problem-1', // ev-l1-p1
+  'ev-l1-p2',
+  'ev-l1-p3',
+  'problem-2', // ev-l2-p1
+  'ev-l2-p2',
+  'ev-l2-p3',
+  'problem-4', // ev-l3-p2
+  'ev-l3-p3',
+  'problem-5', // ev-l4-p1
+  'problem-6', // ev-l4-p2
+  'ev-l4-p3',
+  'problem-7', // ev-l5-p1
+  'problem-8', // ev-l5-p2
+  'ev-l5-p3',
 ] as const
 
 export type ImplementedProblemId = (typeof IMPLEMENTED_PROBLEM_IDS)[number]
@@ -49,6 +55,21 @@ export function getNextImplementedProblemId(problemId: string): string | undefin
     (p) => p.globalProblemIndex > fromIndex && IMPLEMENTED.has(p.storageId),
   )
   return next?.storageId
+}
+
+/**
+ * Storage ID of the previous implemented problem before the given one in
+ * canonical chapter order, skipping any unimplemented placeholders.
+ */
+export function getPreviousImplementedProblemId(problemId: string): string | undefined {
+  const fromIndex = resolveCanonicalProblem(problemId)?.globalProblemIndex
+  if (fromIndex == null) {
+    return undefined
+  }
+  const previous = CANONICAL_PROBLEMS
+    .filter((p) => p.globalProblemIndex < fromIndex && IMPLEMENTED.has(p.storageId))
+    .at(-1)
+  return previous?.storageId
 }
 
 /**

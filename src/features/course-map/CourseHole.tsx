@@ -33,9 +33,14 @@ export function CourseHole({ hole, href, side, continueLabel }: CourseHoleProps)
       <Link to={href} className="coursemap-node-link">
         <span className="coursemap-disc" aria-hidden="true">
           {hole.isCurrent && <span className="coursemap-marker" />}
-          <span className="coursemap-disc-face">{hole.isComplete ? '✓' : ''}</span>
+          <span className="coursemap-disc-face">
+            {hole.isComplete ? '✓' : hole.isFinal ? '🏆' : ''}
+          </span>
         </span>
-        <span className="coursemap-node-label">{hole.title}</span>
+        <span className="coursemap-node-label">
+          {hole.title}
+          {hole.isFinal && <span className="coursemap-node-capstone-tag">Capstone</span>}
+        </span>
       </Link>
 
       {hole.isCurrent && (

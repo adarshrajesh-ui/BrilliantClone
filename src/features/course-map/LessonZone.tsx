@@ -18,7 +18,7 @@ export function LessonZone({ zone, continueLabel, problemHref, startIndex }: Les
   return (
     <li className="coursemap-level">
       <div className={`coursemap-level-header coursemap-level-${zoneState}`}>
-        <span className="coursemap-level-eyebrow">Level {zone.order}</span>
+        <span className="coursemap-level-eyebrow">Lesson {zone.order}</span>
         <span className="coursemap-level-title">{zone.title}</span>
       </div>
 

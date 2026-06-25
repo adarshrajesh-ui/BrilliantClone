@@ -1,0 +1,168 @@
+/* Pay to Play official-phase layout (ev-l4-p1): tray, cost slot, profit meter. */
+.pay-to-play {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1.25rem;
+  margin: 1rem 0;
+}
+
+.pay-to-play-cost {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pay-to-play-cost-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.cost-slot {
+  width: 104px;
+  min-height: 70px;
+  border: 2px dashed #fca5a5;
+  border-radius: 12px;
+  background: #fef2f2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b91c1c;
+  font-weight: 700;
+  transition: box-shadow 150ms ease, background 150ms ease;
+}
+
+.cost-slot-ready {
+  box-shadow: 0 0 0 3px #fecaca;
+  background: #fee2e2;
+}
+
+.cost-slot-filled {
+  border-style: solid;
+  border-color: #ef4444;
+}
+
+.cost-slot-hint {
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.cost-token {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-weight: 800;
+  border: 2px solid #dc2626;
+}
+
+.cost-token-draggable {
+  cursor: grab;
+}
+
+.cost-token-selected {
+  box-shadow: 0 0 0 3px #fca5a5;
+  transform: translateY(-1px);
+}
+
+.cost-token-placed {
+  animation: cost-token-swallow 250ms ease both;
+}
+
+@keyframes cost-token-swallow {
+  from { transform: translateY(-12px) scale(0.85); opacity: 0.4; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cost-token-placed {
+    animation: none;
+  }
+  .cost-slot,
+  .cost-token-selected {
+    transition: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .payout-playground {
+    padding: 0.85rem;
+  }
+
+  .payout-playground h2 {
+    font-size: 1.05rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .payout-playground .section-note,
+  .payout-playground-profit-hint {
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
+  .payout-playground-scale {
+    max-width: 220px;
+    margin-bottom: 0.65rem;
+  }
+
+  .payout-playground-side-controls {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .payout-playground-side {
+    padding: 0.5rem;
+  }
+
+  .payout-playground-clicker-row,
+  .payout-playground-continue {
+    width: 100%;
+  }
+
+  .payout-playground-clicker {
+    flex: 1 1 0;
+  }
+
+  .payout-playground-profit {
+    margin-bottom: 0.65rem;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .pay-to-play {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 0.75rem;
+  }
+
+  .pay-to-play .payout-tray-basin {
+    max-width: 220px;
+    min-height: 72px;
+    padding: 0.45rem;
+  }
+
+  .pay-to-play .payout-coin {
+    width: 30px;
+    height: 30px;
+  }
+
+  .pay-to-play .profit-meter-track {
+    height: 104px;
+    width: 40px;
+  }
+
+  .pay-to-play + .ws-step-check,
+  .pay-to-play .cost-token-draggable {
+    width: 100%;
+  }
+}

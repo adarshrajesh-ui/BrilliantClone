@@ -1,0 +1,275 @@
+/* Co-located styles shared by the Lesson 5 problem components (booth preview,
+   wider-spread, final-decision capstone). Class names are prefixed `l5-` so they
+   never collide with global styles. */
+
+.l5-booths {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.l5-question {
+  margin: 0 0 1rem;
+  border: 0;
+  padding: 0;
+}
+
+.l5-question legend {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  padding: 0;
+}
+
+.l5-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.l5-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.l5-option:hover {
+  border-color: #94a3b8;
+}
+
+.l5-option input {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.l5-option-selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+/* Visually-hidden live region for screen-reader announcements. */
+.l5-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- Capstone stepped checklist ---- */
+
+.l5-step {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.75rem;
+  background: #fff;
+  opacity: 0.55;
+}
+
+.l5-step-active {
+  opacity: 1;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.l5-step-done {
+  opacity: 1;
+  border-color: #16a34a;
+}
+
+.l5-step-locked {
+  pointer-events: none;
+}
+
+.l5-step-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.l5-step-title {
+  font-weight: 600;
+}
+
+.l5-step-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.l5-cost-block {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  background: #fef3c7;
+  font-weight: 600;
+}
+
+.l5-section-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.l5-section-table th,
+.l5-section-table td {
+  border: 1px solid var(--border, #e5e7eb);
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+}
+
+.l5-section-table input {
+  width: 100%;
+  min-height: 40px;
+}
+
+@media (max-width: 768px) {
+  .l5-booths {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .l5-section-table,
+  .l5-section-table thead,
+  .l5-section-table tbody,
+  .l5-section-table tr,
+  .l5-section-table th,
+  .l5-section-table td {
+    display: block;
+  }
+
+  .l5-section-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 0;
+  }
+
+  .l5-section-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .l5-section-table tr {
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 12px;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .l5-section-table tr + tr {
+    margin-top: 0.6rem;
+  }
+
+  .l5-section-table td {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, 38%) minmax(0, 1fr);
+    align-items: center;
+    gap: 0.65rem;
+    border: 0;
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    padding: 0.5rem 0.65rem;
+    min-width: 0;
+  }
+
+  .l5-section-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .l5-section-table td::before {
+    content: attr(data-label);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #64748b;
+  }
+
+  .l5-section-table input {
+    min-width: 0;
+  }
+
+  .l5-step {
+    padding: 0.75rem;
+  }
+
+  .l5-step-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .l5-cost-block {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .l5-options {
+    gap: 0.4rem;
+  }
+
+  .l5-option {
+    align-items: flex-start;
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+
+  .l5-option input {
+    margin-top: 0.1rem;
+    flex: 0 0 auto;
+  }
+
+  .l5-section-table + .ws-step-check,
+  .l5-step .ws-step-check,
+  .l5-step + .btn-secondary,
+  .l5-question + .btn-secondary {
+    width: 100%;
+  }
+
+  .risk-cards,
+  .risk-comparison,
+  .field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .risk-card {
+    padding: 0.75rem;
+  }
+
+  .risk-card h3 {
+    margin-top: 0;
+    font-size: 1rem;
+  }
+
+  .risk-comparison .running-graph {
+    max-height: 118px;
+  }
+}
+
+@media (max-width: 768px) {
+  .problem-workspace:has(.l5-section-table) .ws-advance-hint,
+  .problem-workspace:has(.l5-step) .ws-advance-hint,
+  .problem-workspace:has(.risk-cards) .ws-advance-hint,
+  .problem-workspace:has(.l5-question) .ws-advance-hint {
+    display: inline;
+    max-width: none;
+  }
+}

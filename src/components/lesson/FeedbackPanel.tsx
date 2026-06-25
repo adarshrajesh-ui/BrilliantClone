@@ -7,7 +7,7 @@ interface FeedbackPanelProps {
 
 const META: Record<FeedbackPanelProps['type'], { icon: string; title: string }> = {
   success: { icon: '✓', title: 'Nice work!' },
-  error: { icon: '!', title: "Let's fix this" },
+  error: { icon: '!', title: 'Not quite' },
   info: { icon: 'i', title: 'Keep going' },
 }
 

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { TeachingExplanation } from '../../types/problem'
 
 /**
  * Presentation-layer types for the reusable learning shell. These intentionally
@@ -65,6 +66,8 @@ export interface CoachFeedback {
   message?: string
   /** Short concept reinforcement shown on correct answers. */
   conceptSummary?: string
+  /** Rich hand-written teaching shown on correct answers. */
+  teaching?: TeachingExplanation
 }
 
 /** Inline field status mirroring `lib/fieldStatus.ts` plus a neutral default. */

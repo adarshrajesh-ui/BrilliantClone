@@ -13,9 +13,7 @@ import {
   areNumbersClose,
   areProbabilitiesEquivalent,
   detectMistakeType,
-  matchesNumeric,
   normalizeClassificationAnswer,
-  normalizeMoneyAnswer,
   normalizeNumericAnswer,
   parseProbabilityAnswer,
 } from '../../../lib/answerParser'
@@ -57,6 +55,27 @@ const fail = (mistakeType: string, feedback: string): CheckResult => ({
   feedback,
   canComplete: false,
 })
+
+const hasPercentSymbol = (value: unknown): boolean => String(value ?? '').includes('%')
+
+/**
+ * Money/profit/EV fields should accept equivalent numeric forms like 4, 4.0,
+ * $4, and 8/2. Percent notation is reserved for probability fields.
+ */
+const normalizeFreeNumericAnswer = (value: unknown): number | null => {
+  if (hasPercentSymbol(value)) {
+    return null
+  }
+  return normalizeNumericAnswer(value)
+}
+
+const matchesFreeNumeric = (value: string, targets: number[], tolerance = 0.01): boolean => {
+  const parsed = normalizeFreeNumericAnswer(value)
+  if (parsed === null) {
+    return false
+  }
+  return targets.some((target) => areNumbersClose(parsed, target, tolerance))
+}
 
 /**
  * Mirror of the shared isGradedAttempt so the pack is self-contained and tests
@@ -190,10 +209,10 @@ const PRIZE_ROWS = [
 const PRIZE_TOTAL = 10
 
 export function checkPrizeBagEvTable(input: PrizeBagInput): CheckResult {
-  const counts = PRIZE_ROWS.map((_, i) => normalizeNumericAnswer(input.rows[i]?.count))
+  const counts = PRIZE_ROWS.map((_, i) => normalizeFreeNumericAnswer(input.rows[i]?.count))
   const probs = PRIZE_ROWS.map((_, i) => parseProbabilityAnswer(input.rows[i]?.probability))
-  const contribs = PRIZE_ROWS.map((_, i) => normalizeMoneyAnswer(input.rows[i]?.contribution))
-  const ev = normalizeMoneyAnswer(input.evAnswer)
+  const contribs = PRIZE_ROWS.map((_, i) => normalizeFreeNumericAnswer(input.rows[i]?.contribution))
+  const ev = normalizeFreeNumericAnswer(input.evAnswer)
 
   if (counts.some((c) => c === null) || probs.some((p) => p === null) || contribs.some((c) => c === null) || ev === null) {
     return guard('Fill the count, probability, and contribution for every row, then enter the final EV.')
@@ -253,7 +272,7 @@ export function checkPayoutVsProfit(input: PayoutVsProfitInput): CheckResult {
     return guard('Tap the cost block to build the expected payout − cost equation.')
   }
 
-  const profit = normalizeMoneyAnswer(input.profitAnswer)
+  const profit = normalizeFreeNumericAnswer(input.profitAnswer)
   if (profit === null) {
     return guard('Enter the expected profit in dollars.')
   }
@@ -324,9 +343,9 @@ export function checkFairnessSort(input: FairnessSortInput): CheckResult {
 // ===========================================================================
 
 export function checkFindFairPrice(input: FindFairPriceInput): CheckResult {
-  const payout = normalizeMoneyAnswer(input.expectedPayout)
-  const cost = normalizeMoneyAnswer(input.fairCost)
-  const profit = normalizeMoneyAnswer(input.expectedProfit)
+  const payout = normalizeFreeNumericAnswer(input.expectedPayout)
+  const cost = normalizeFreeNumericAnswer(input.fairCost)
+  const profit = normalizeFreeNumericAnswer(input.expectedProfit)
 
   if (payout === null || cost === null || profit === null || input.classification.trim() === '') {
     return guard('Find the expected payout, the fair cost, the expected profit at that cost, then classify the game.')
@@ -367,8 +386,8 @@ export function checkFindFairPrice(input: FindFairPriceInput): CheckResult {
 // ===========================================================================
 
 export function checkChooseBetterGame(input: ChooseBetterGameInput): CheckResult {
-  const profitA = normalizeMoneyAnswer(input.profitA)
-  const profitB = normalizeMoneyAnswer(input.profitB)
+  const profitA = normalizeFreeNumericAnswer(input.profitA)
+  const profitB = normalizeFreeNumericAnswer(input.profitB)
 
   if (profitA === null || profitB === null || input.betterGame.trim() === '') {
     return guard('Compute expected profit for each game, then choose the better game.')
@@ -423,7 +442,7 @@ const WHOLE_MODEL = {
 
 export function checkWholeEvModel(input: WholeEvModelInput): CheckResult {
   const probs = WHOLE_MODEL.probs.map((_, i) => parseProbabilityAnswer(input.probabilities[i]))
-  const contribs = WHOLE_MODEL.contribs.map((_, i) => normalizeMoneyAnswer(input.contributions[i]))
+  const contribs = WHOLE_MODEL.contribs.map((_, i) => normalizeFreeNumericAnswer(input.contributions[i]))
 
   if (probs.some((p) => p === null) || contribs.some((c) => c === null)) {
     return guard('Fill in every probability and contribution in the table.')
@@ -442,12 +461,12 @@ export function checkWholeEvModel(input: WholeEvModelInput): CheckResult {
     }
   }
 
-  if (!matchesNumeric(input.expectedPayout, [5])) {
+  if (!matchesFreeNumeric(input.expectedPayout, [5])) {
     return fail('wrong-expected-payout', 'Expected payout is the sum of the contributions: 3 + 2 + 0 = $5.')
   }
 
-  if (!matchesNumeric(input.expectedProfit, [0])) {
-    if (matchesNumeric(input.expectedProfit, [5])) {
+  if (!matchesFreeNumeric(input.expectedProfit, [0])) {
+    if (matchesFreeNumeric(input.expectedProfit, [5])) {
       return fail('payout-not-profit', 'You left profit equal to the payout. Expected profit = $5 payout − $5 cost = $0.')
     }
     return fail('payout-not-profit', 'Expected profit = expected payout ($5) − cost ($5) = $0.')
@@ -481,17 +500,17 @@ export function checkSameEvDifferentRisk(input: SameEvDifferentRiskInput): Check
     return guard('Run all 20 simulated trials for each game before answering.')
   }
 
-  if (!matchesNumeric(input.evA, [5])) {
-    if (matchesNumeric(input.evA, [10])) {
+  if (!matchesFreeNumeric(input.evA, [5])) {
+    if (matchesFreeNumeric(input.evA, [10])) {
       return fail('average-vs-guaranteed', 'Game A pays $5 every single time, so its EV is exactly $5.')
     }
     return fail('average-vs-guaranteed', 'Game A is a guaranteed $5, so EV(A) = $5.')
   }
 
-  if (matchesNumeric(input.evB, [10])) {
+  if (matchesFreeNumeric(input.evB, [10])) {
     return fail('b-higher-ev', 'Game B can pay $10, but only half the time. Its EV is 10 × 0.5 + 0 × 0.5 = $5 — the same as Game A.')
   }
-  if (!matchesNumeric(input.evB, [5])) {
+  if (!matchesFreeNumeric(input.evB, [5])) {
     return fail('b-higher-ev', 'Game B: 50% of $10 + 50% of $0 = $5.')
   }
 
@@ -529,17 +548,17 @@ export function checkLowVsHighRisk(input: LowVsHighRiskInput): CheckResult {
     return guard('Run all 20 simulated trials for each game before answering.')
   }
 
-  if (!matchesNumeric(input.evA, [6])) {
-    if (matchesNumeric(input.evA, [12])) {
+  if (!matchesFreeNumeric(input.evA, [6])) {
+    if (matchesFreeNumeric(input.evA, [12])) {
       return fail('average-vs-guaranteed', 'Game A pays $6 every time, so its EV is exactly $6.')
     }
     return fail('average-vs-guaranteed', 'Game A is a guaranteed $6, so EV(A) = $6.')
   }
 
-  if (matchesNumeric(input.evB, [12])) {
+  if (matchesFreeNumeric(input.evB, [12])) {
     return fail('b-higher-ev', 'Game B can pay $12, but only half the time. Its EV is 12 × 0.5 + 0 × 0.5 = $6 — the same as Game A.')
   }
-  if (!matchesNumeric(input.evB, [6])) {
+  if (!matchesFreeNumeric(input.evB, [6])) {
     return fail('b-higher-ev', 'Game B: 50% of $12 + 50% of $0 = $6.')
   }
 
@@ -588,7 +607,7 @@ const CAPSTONE_RISK: ExplanationRule = {
 
 export function checkCapstone(input: CapstoneInput): CheckResult {
   const probs = CAPSTONE.probs.map((_, i) => parseProbabilityAnswer(input.probabilities[i]))
-  const contribs = CAPSTONE.contribs.map((_, i) => normalizeMoneyAnswer(input.contributions[i]))
+  const contribs = CAPSTONE.contribs.map((_, i) => normalizeFreeNumericAnswer(input.contributions[i]))
 
   if (probs.some((p) => p === null) || contribs.some((c) => c === null)) {
     return guard('Fill in every probability and contribution in the table.')
@@ -607,12 +626,12 @@ export function checkCapstone(input: CapstoneInput): CheckResult {
     }
   }
 
-  if (!matchesNumeric(input.expectedPayout, [6])) {
+  if (!matchesFreeNumeric(input.expectedPayout, [6])) {
     return fail('wrong-expected-payout', 'Expected payout is the sum of the contributions: 3 + 3 + 0 = $6.')
   }
 
-  if (!matchesNumeric(input.expectedProfit, [0])) {
-    if (matchesNumeric(input.expectedProfit, [6])) {
+  if (!matchesFreeNumeric(input.expectedProfit, [0])) {
+    if (matchesFreeNumeric(input.expectedProfit, [6])) {
       return fail('payout-not-profit', 'You left profit equal to the payout. Expected profit = $6 payout − $6 cost = $0.')
     }
     return fail('payout-not-profit', 'Expected profit = expected payout ($6) − cost ($6) = $0.')

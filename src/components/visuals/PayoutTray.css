@@ -1,0 +1,92 @@
+/* Payout tray + streaming coins (ev-l4-p1). Coins slide in one per dollar. */
+.payout-tray {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.payout-tray-label {
+  font-weight: 800;
+  color: #b45309;
+  animation: payout-label-fade 200ms ease both;
+}
+
+.payout-tray-basin {
+  width: 100%;
+  max-width: 260px;
+  min-height: 88px;
+  border: 3px solid #d97706;
+  border-top: none;
+  border-radius: 0 0 16px 16px;
+  background: linear-gradient(180deg, #fffbeb, #fef3c7);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.6rem;
+  box-shadow: inset 0 -6px 0 rgba(217, 119, 6, 0.15);
+}
+
+.payout-tray-coins {
+  display: flex;
+  flex-wrap: wrap-reverse;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+.payout-coin {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fde68a, #f59e0b 70%, #b45309);
+  border: 2px solid #d97706;
+  color: #7c2d12;
+  font-size: 0.7rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 -2px 0 rgba(124, 45, 18, 0.25);
+  animation: payout-coin-drop 320ms ease both;
+}
+
+@keyframes payout-coin-drop {
+  from { transform: translateY(-28px) scale(0.6); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes payout-label-fade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+  .payout-tray {
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  .payout-tray-basin {
+    max-width: min(260px, 100%);
+    min-height: 78px;
+    padding: 0.5rem;
+    overflow: visible;
+  }
+
+  .payout-tray-coins {
+    gap: 0.28rem;
+  }
+
+  .payout-coin {
+    width: 30px;
+    height: 30px;
+    font-size: 0.64rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .payout-coin,
+  .payout-tray-label {
+    animation: none;
+  }
+}

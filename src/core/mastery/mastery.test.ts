@@ -8,11 +8,11 @@ import {
 
 const ALL_IDS = CANONICAL_PROBLEMS.map((p) => p.storageId)
 
+// Keyed by STORAGE ID (the form persisted in completedProblemIds / attempts).
 const REQUIRED = {
-  capstone: 'l5-final-capstone-ev-decision',
-  fullModel: 'problem-7',
-  payout: 'problem-5',
-  risk: 'problem-8',
+  capstone: 'ev-l5-p3', // ev-l5-p3
+  payout: 'problem-5', // ev-l4-p1
+  risk: 'problem-8', // ev-l5-p2
 }
 
 function allCorrect(): Record<string, boolean> {
@@ -44,17 +44,19 @@ describe('deriveMasteryStatus', () => {
   it('maps completion count + mastered flag to a coarse status', () => {
     expect(deriveMasteryStatus({ completedCount: 0, mastered: false })).toBe('Not Started')
     expect(deriveMasteryStatus({ completedCount: 1, mastered: false })).toBe('Learning')
-    expect(deriveMasteryStatus({ completedCount: 10, mastered: false })).toBe('Developing')
-    expect(deriveMasteryStatus({ completedCount: 20, mastered: false })).toBe('Developing')
-    expect(deriveMasteryStatus({ completedCount: 20, mastered: true })).toBe('Mastered')
+    expect(deriveMasteryStatus({ completedCount: 7, mastered: false })).toBe('Learning')
+    // ceil(15/2) = 8 is the Developing threshold.
+    expect(deriveMasteryStatus({ completedCount: 8, mastered: false })).toBe('Developing')
+    expect(deriveMasteryStatus({ completedCount: 15, mastered: false })).toBe('Developing')
+    expect(deriveMasteryStatus({ completedCount: 15, mastered: true })).toBe('Mastered')
   })
 })
 
 describe('evaluateChapterMastery', () => {
-  it('is not mastered when fewer than 20 are complete', () => {
+  it('is not mastered when fewer than 15 are complete', () => {
     const result = evaluateChapterMastery({
       ...masteredInput(),
-      completedProblemIds: ALL_IDS.slice(0, 19),
+      completedProblemIds: ALL_IDS.slice(0, 14),
     })
     expect(result.allComplete).toBe(false)
     expect(result.mastered).toBe(false)
@@ -88,31 +90,23 @@ describe('evaluateChapterMastery', () => {
     )
   })
 
-  it('is not mastered when the full-model problem is missing', () => {
-    const correct = allCorrect()
-    correct[REQUIRED.fullModel] = false
-    expect(evaluateChapterMastery({ ...masteredInput(), correctByProblem: correct }).mastered).toBe(
-      false,
-    )
-  })
-
-  it('enforces the 15-of-20 strong-attempt threshold', () => {
-    // 6 problems took 3 graded attempts -> only 14 strong completions.
+  it('enforces the 11-of-15 strong-attempt threshold', () => {
+    // 5 problems took 3 graded attempts -> only 10 strong completions.
     const attempts = attemptsFor(1)
-    for (const id of ALL_IDS.slice(0, 6)) {
+    for (const id of ALL_IDS.slice(0, 5)) {
       attempts[id] = 3
     }
     const failing = evaluateChapterMastery({
       ...masteredInput(),
       gradedFinalAttemptsByProblem: attempts,
     })
-    expect(failing.strongCompletions).toBe(14)
+    expect(failing.strongCompletions).toBe(10)
     expect(failing.strongThresholdMet).toBe(false)
     expect(failing.mastered).toBe(false)
 
-    // Exactly 5 weak completions -> 15 strong -> threshold met.
+    // Exactly 4 weak completions -> 11 strong -> threshold met.
     const attempts2 = attemptsFor(1)
-    for (const id of ALL_IDS.slice(0, 5)) {
+    for (const id of ALL_IDS.slice(0, 4)) {
       attempts2[id] = 3
     }
     const passing = evaluateChapterMastery({
@@ -124,9 +118,6 @@ describe('evaluateChapterMastery', () => {
   })
 
   it('practice restarts (excluded by caller) do not reduce strong completions', () => {
-    // The graded-attempt map already excludes practice restarts, so a problem
-    // with 1 graded attempt stays "strong" no matter how many times it is
-    // practiced afterwards.
-    expect(evaluateChapterMastery(masteredInput()).strongCompletions).toBe(20)
+    expect(evaluateChapterMastery(masteredInput()).strongCompletions).toBe(15)
   })
 })

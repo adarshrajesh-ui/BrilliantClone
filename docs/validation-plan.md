@@ -1,144 +1,156 @@
-# Validation and Test Coverage — Expected Value Lab MVP
+# Validation and Test Coverage — Midpoint (15-problem chapter)
 
-> This is **not a new PRD**. It is a new *Validation and Test Coverage* section
-> that sits alongside the existing PRD (`prd.md`) and verifies the **current,
-> stable 8-problem MVP**. It intentionally does **not** evaluate the in-progress
-> UI / interaction / animation / pathway-homepage work being done in parallel.
+> Source of truth: `prd.md` (binding, not edited). This plan verifies the
+> **fully-built** 5-lesson × 3-problem chapter (15 problems). The deterministic
+> layer executes the **real, co-located answer checkers** (not a spec mirror);
+> everything requiring the live app, Firebase, animation, or a screen reader is
+> captured as a manual audit below.
 
 ## 1. Purpose
 
-This validation plan checks whether the current 8-problem Expected Value Lab MVP
-follows the PRD. The MVP is:
+Confirm the chapter follows the PRD:
 
 - one login-based **Expected Value** chapter,
-- **8 visual, interactive problems**,
-- **deterministic** answer checking (no AI),
-- **hand-written** hints and feedback,
-- **saved progress** per user,
-- **mistake-type tracking**,
-- and explicitly **no AI** anywhere.
+- **5 lessons × 3 problems = 15** visual, interactive problems,
+- **deterministic** answer checking (no AI / no model calls),
+- **hand-written** hints and feedback shown beside the active control,
+- backward-compatible **progress migration** (20 → 15, legacy IDs preserved),
+- **mastery** = all 15 + capstone + payout-vs-profit + same-EV-vs-risk + ≥11/15
+  within ≤2 graded attempts,
+- **no scroll-chasing**, **tap-to-place** everywhere, **reduced-motion** parity.
 
-The deterministic portions are encoded as runnable cases under
-`src/validation/` so they can be executed by the existing Vitest runner or a
-standalone script. Everything that requires the live app, Firebase, or a mobile
-device is captured as a manual QA checklist instead of a false "pass".
+## 2. Deterministic layer (`src/validation/`)
 
-## 2. Scope
+| File | Role |
+|------|------|
+| `liveCheckers.ts` | Dispatch (`runLiveChecker`) to all 15 **real** checkers. |
+| `answerValidationMatrix.ts` | Normalizer cases + per-problem live-checker cases (correct / mistake / guard) + `problemSpecs` summary. |
+| `problemBehaviorValidation.ts` | Per-problem completion rules, gates, mistake types; global session behaviors; `isGradedAttempt` fixtures. |
+| `prdValidationChecklist.ts` | PRD checklist by category with `pass` / `not_run` status + `checklistSummary()`. |
+| `runValidation.ts` | Self-contained runner over all cases (`runAllValidations`). |
+| `liveCheckerValidation.test.ts` | **Executable** per-problem PRD verification (correct passes, mistake classified, gates non-graded). |
+| `prdCoverage.test.ts` | Structure / migration / mastery assertions against the live core model. |
 
-**In scope**
+Run scoped:
 
-- answer normalization (`normalizeMoneyAnswer`, `parseProbabilityAnswer`, `normalizeClassificationAnswer`),
-- answer checking (`checkProblem1..8` / `checkProblem`),
-- accepted answer formats,
-- incorrect answer rejection (and the correct `mistakeType`),
-- direct correction behavior (fix-and-resubmit, no reset),
-- completion rules per problem,
-- mistake-type expectations,
-- high-level user flow.
+```bash
+npx vitest run src/validation
+npx oxlint src/validation
+npx tsc --noEmit -p tsconfig.app.json
+```
 
-**Out of scope**
+### CHECKER → STORAGE ID map (what the live components actually call)
 
-- the future 5-lesson architecture,
-- new problems,
-- the UI redesign currently being made by another agent,
-- animations currently being made by another agent,
-- the pathway / golf-course homepage redesign currently being made by another agent,
-- Firebase deployment,
-- production hosting,
-- visual regression screenshots.
+| Storage ID | Slug | Live checker (file) |
+|------------|------|---------------------|
+| problem-1 | ev-l1-p1 | `checkProblem1Dice` (data/problems/problem-1.ts) |
+| ev-l1-p2 | ev-l1-p2 | `checkEvL1P2` (ev-l1-p2.ts) |
+| ev-l1-p3 | ev-l1-p3 | `checkEvL1P3` (ev-l1-p3.ts) |
+| problem-2 | ev-l2-p1 | `checkProblem2PrizeBoard` (problem-2.ts) |
+| ev-l2-p2 | ev-l2-p2 | `checkEvL2P2` (ev-l2-p2.ts) |
+| ev-l2-p3 | ev-l2-p3 | `checkEvL2P3` (ev-l2-p3.ts) |
+| problem-3 | ev-l3-p1 | `checkProblem3` (lib/answerChecker.ts) |
+| problem-4 | ev-l3-p2 | `checkProblem4` (lib/answerChecker.ts) |
+| ev-l3-p3 | ev-l3-p3 | `checkEvL3P3` (EvL3P3PrizeBagTable.checker.ts) |
+| problem-5 | ev-l4-p1 | `checkEvL4P1` (Problem5PayoutVsProfit.checker.ts) |
+| problem-6 | ev-l4-p2 | `checkProblem6` (lib/answerChecker.ts) |
+| ev-l4-p3 | ev-l4-p3 | `checkEvL4P3` (EvL4P3BetterGame.checker.ts) |
+| problem-7 | ev-l5-p1 | `checkBoothPreview` (problem-7.ts) |
+| problem-8 | ev-l5-p2 | `checkWiderSpread` (problem-8.ts) |
+| ev-l5-p3 | ev-l5-p3 | `checkFinalDecision` (ev-l5-p3.ts) |
 
-## 3. PRD Guardrails
+> The legacy `checkProblem` switch in `lib/answerChecker.ts` still routes
+> problem-1/2/5/7/8 to PRE-15 semantics and is **dead code** — validation
+> deliberately wires each ID to the checker the live component uses.
 
-Validation must confirm the MVP keeps **all** of these true:
+## 3. Problem-by-problem matrix (15 problems)
 
-- no AI tutor,
-- no AI hints,
-- no generated problems,
-- no model calls,
-- no additional chapters,
-- no leaderboards,
-- no payments,
-- no teacher dashboards,
-- no social features,
-- no drag/drop-only correctness,
-- tap-to-select / tap-to-place remains required wherever relevant.
+| Slug | Title | Correct | Representative mistake → type | Gate (non-graded) |
+|------|-------|---------|------------------------------|-------------------|
+| ev-l1-p1 | Dice Toss Average | `$5` (`5`,`$5`,`5 dollars`,`5 per throw`) | `$0` → `chose-extreme-outcome`; `$10` → `selected-largest-payout` | prediction + ≥5 manual + ≥100 total |
+| ev-l1-p2 | Unequal Section Game | `$5` | `$20` → `used-largest-payout`; `$0.80` → `divided-payout-by-percent` | prediction + ≥100 spins |
+| ev-l1-p3 | Compare Two Games | same EV | B → `chose-bigger-prize`; A → `chose-more-frequent` | choice required |
+| ev-l2-p1 | Prize Board Weight Drop | `$5` | reversed pair → `reversed-outcome-probability`; EV `20` → `used-largest-payout` | **board-before-formula** |
+| ev-l2-p2 | Match Outcomes | $12↔1/3, $3↔1/2, $0↔1/6 | $12↔1/2 → `ranked-by-size`; dup → `reused-probability` | all matched |
+| ev-l2-p3 | Diagnose Bad Setups | C valid | A → `chose-raw-sum`; B → `chose-incomplete` | valid selected |
+| ev-l3-p1 | Mystery Box Reveal | 1/6,2/6,3/6 | count in prob cell → `counts-as-probabilities` | **all six boxes open** |
+| ev-l3-p2 | Calculate EV from Table | 2,2,0 → `$4` | raw payouts → `unweighted-sum`; nonzero $0 → `omitted-zero-row` | all cells filled |
+| ev-l3-p3 | Prize Bag EV Table | `$4.50` | total payout 45 → `used-total-token-payout` | all cells filled |
+| ev-l4-p1 | Pay to Play | `$1` | `4` → `answered-payout`; `7` → `added-cost`; `0.75` → `cost-as-probability` | **cost-before-profit** |
+| ev-l4-p2 | Fair/Favorable/Unfavorable | A=fair,B=fav,C=unfav | C=fav → `positive-payout-favorable`; A=fav → `confused-fair-favorable` | all placed |
+| ev-l4-p3 | Choose Better Game | A=2,B=3 → B | chose A → `chose-larger-payout`; `9` → `forgot-subtract-cost` | both profits + choice |
+| ev-l5-p1 | Carnival Booth Preview | feel=No, avg=Yes($5) | feel=Yes → `claimed-same-feel`; diff avg → `claimed-different-average` | **both previews** |
+| ev-l5-p2 | Wider Spread, Same Average | EV(A)=EV(B)=$6; B riskier | EV(B)=12 → `claimed-game-b-has-higher-ev`; **$5 → `ev-arithmetic-error`** | both 20-trial sims |
+| ev-l5-p3 | Final Carnival Decision | payout $6, profit $0, fair | count→`counts-not-probability`; profit=6→`payout-not-profit`; fav→`fair-marked-favorable` | **group wheel** + cells |
 
-These are tracked in `src/validation/prdValidationChecklist.ts` (category
-`guardrails` and others). They are left `not_run` because they are confirmed by
-code review and manual QA, not by the deterministic runner.
+**L5P1 ≠ L5P2:** L5P1 uses $5 / $10-$0 (qualitative); L5P2 uses $6 / $12-$0
+(EV calculation). The L5P2 checker actively rejects the L5P1 numbers
+(`$5` → `ev-arithmetic-error`), asserted in `liveCheckerValidation.test.ts`.
 
-## 4. Problem-by-problem validation matrix
+## 4. Manual audit checklist — a11y / tap-to-place / reduced-motion / no-scroll
 
-The full machine-readable matrix lives in
-`src/validation/answerValidationMatrix.ts`. Summary of expected correct/incorrect
-cases:
+Run at **two viewports**: desktop **1280×720** (min supported 1024×640) and a
+**mobile** viewport (**390×844**, iPhone-class). Use keyboard + a screen reader
+(VoiceOver / NVDA). The deterministic layer cannot see layout/animation, so this
+is the binding sign-off for those PRD rules.
 
-| # | Title | Accepted (correct) | Rejected (mistakeType) |
-|---|-------|--------------------|------------------------|
-| 1 | Long-Run Average | `$5` / `5` / `5.0` / `5.00` / `5 dollars` / `5 per spin` after ≥100 spins | `$0`, `$10` → `chose-extreme-outcome`; pre-100 spins / no prediction → guard (not graded) |
-| 2 | Weighted Average | `$20×25% + $0×75%`, either pair order, EV `5`/`5.0`/`$5` | reversed pair → `reversed-outcome-probability`; empty slot → `omitted-probability`; EV `20` → `used-largest-payout` |
-| 3 | Mystery Boxes | `1/6,2/6,3/6` or `0.1667,1/3,1/2` etc. with all boxes revealed | count typed as probability → `counts-as-probabilities`; bad `$0` row → `unknown`; probabilities not summing to 1 → `probabilities-not-one` (defensive*); not revealed → guard |
-| 4 | Calculate EV | contributions `2,2,0`, EV `4`/`4.0`/`$4` | raw payouts → `unweighted-sum`; nonzero `$0` row → `omitted-zero-row`; bad row math → `arithmetic-error`; empty cell → guard |
-| 5 | Payout vs Profit | profit `1`/`1.0`/`$1` | `4` → `answered-payout`; `7` → `added-cost`; cost-as-probability → `unknown`; no formula → guard |
-| 6 | Fairness Sort | `A=fair, B=favorable, C=unfavorable` (case-insensitive + synonyms) | `C=favorable` → `positive-payout-favorable`; `A=favorable` → `confused-fair-favorable`; other → `forgot-subtract-cost`; missing card → guard |
-| 7 | Whole EV Model | probs `1/10,2/10,7/10` (or `.1,.2,.7`), contribs `3,2,0`, payout `5`, profit `0`, decision `fair` | section counts as probs → `count-not-probability`; wrong denom → `wrong-denominator`; profit=payout → `payout-not-profit`; fair→favorable → `fair-marked-favorable`; empty cell → guard |
-| 8 | Same EV, Different Risk | `EV(A)=5`, `EV(B)=5`, higher risk = Game B, reason = variable outcomes / same average but more spread | `EV(B)=10` → `b-higher-ev`; "identical" → `identical-games`; `EV(A)≠5` → `average-vs-guaranteed`; sims not run → guard |
+### 4a. No-scroll-chasing (per problem, 1280×720)
+- [ ] Title, current instruction, required visual, active interaction, check/submit, and feedback location are all visible **without page scroll** in the initial viewport.
+- [ ] After a **wrong** check, the feedback is visible **without return scroll** (beneath/beside the active control, never at page bottom).
+- [ ] Corrected answers are editable in place; Continue appears in the same workspace.
+- [ ] Secondary/collapsible help does not push the active task out of view when expanded.
+- [ ] Capstone (ev-l5-p3) uses a sequential one-active-row checklist that stays within the viewport.
 
-\* For Problem 3 the per-row probability equivalence checks run before the
-sum-to-1 check, so with the correct counts the `probabilities-not-one` branch is
-a defensive guard rather than a commonly reachable path. It is documented but not
-asserted as a runnable case (see `problemBehaviorValidation.ts`).
+### 4b. Mobile (390×844)
+- [ ] No horizontal scrolling on any problem.
+- [ ] Sticky current-task/action strip remains visible while typing.
+- [ ] Feedback auto-scrolls into view beneath the checked input (learner never returns to page top).
+- [ ] Compact visual summary stays present while interacting.
+- [ ] Repeat the horizontal-overflow smoke check at **320×568** for the densest
+  table/workspace routes: `/login`, `/home`, `/chapter/expected-value-intro`,
+  `/chapter/expected-value-intro/problem/problem-1`,
+  `/chapter/expected-value-intro/problem/problem-2`,
+  `/chapter/expected-value-intro/problem/ev-l3-p3`,
+  `/chapter/expected-value-intro/problem/problem-5`, and
+  `/chapter/expected-value-intro/problem/ev-l5-p3`.
 
-## 5. Manual QA checklist (browser flows)
+### 4c. Tap-to-place (every drag interaction)
+- [ ] ev-l2-p1 token drops + formula cards: tap-to-select then tap-to-place works with no drag.
+- [ ] ev-l2-p2 match: tap outcome → tap probability; tap again to replace; clear-row works.
+- [ ] ev-l4-p1 cost token: tap-to-place equals drag.
+- [ ] ev-l4-p2 bucket sort: tap card → tap bucket; tap again to move.
+- [ ] ev-l1-p1 dice: tap die → tap throw zone produces the **same** seeded outcome as drag-release for the same throw index.
+- [ ] **Correctness never depends on drag** (disable pointer drag, complete each problem by tap only).
 
-Run these against the **current stable build** (not the in-progress redesign):
+### 4d. Reduced-motion (OS "Reduce Motion" on)
+- [ ] ev-l1-p1: no tumble/bounce/sparkle; die instant-reveals the **same** seeded face; graph point appears without arc.
+- [ ] ev-l3-p1: lids fade open, instant token + row values, same counts.
+- [ ] ev-l5-p1 / ev-l5-p2: outcomes list instantly; meters/averages update without spin/bounce; outcomes identical to animated path.
+- [ ] No confetti / no sparkle; EV reference-line highlight uses opacity step only.
 
-1. **Sign in** with Google; confirm a user profile is created.
-2. **Start chapter** — land on Problem 1.
-3. **Complete Problem 1** — submit a prediction, run ≥100 spins, choose `$5`.
-4. **Submit a wrong answer and correct it** — e.g. on Problem 2 place a reversed
-   pair, see the specific feedback, fix it, resubmit, and confirm it passes with
-   **no reset** and that stale feedback cleared on edit.
-5. **Use a hint** — reveal a hint and confirm `hintUsed` is recorded on the
-   attempt.
-6. **Resume mid-chapter** — leave after a few problems, return, and confirm you
-   land back on the same problem with prior state intact.
-7. **Complete progress update** — finish a problem and confirm completion
-   percentage and completed-problem IDs update.
-8. **Verify mobile width** — repeat a representative interactive problem at phone
-   width; confirm tap-to-select / tap-to-place works without drag/drop.
-9. **Verify no `.env` committed** — check `git status` / `.gitignore`; no secrets
-   in the repo.
+### 4e. Keyboard + screen reader
+- [ ] Focus order per problem: task → visual controls → input → check → feedback → continue.
+- [ ] Live region announces each result/feedback within ~100ms (e.g. dice roll + running average; profit; classification).
+- [ ] Graphs/meters expose a text summary of the latest average/state.
+- [ ] Touch targets ≥44px (≥48px on the dice + throw zone).
+- [ ] ev-l1-p1 keyboard throw path (Tab → Enter → arrows → Enter; Space for batch when unlocked).
 
-## 6. How to run the deterministic validation
+### 4f. Flow / persistence (live app + Firebase)
+- [ ] Google sign-in creates a profile; chapter/problem routes require auth.
+- [ ] Continue routes to the first incomplete problem (globalProblemIndex 0..14).
+- [ ] Resume mid-chapter returns to the same problem with prior state.
+- [ ] Completing a problem updates chapter % (÷15) and lesson % (÷3); completed IDs persist.
+- [ ] Restart This Problem resets interaction only; completion record preserved.
+- [ ] A saved **removed** legacy slug (e.g. `l5-low-risk-vs-high-risk`) counts as its successor complete.
+- [ ] No `.env` / secrets committed (`git status`, `.gitignore`).
 
-The deterministic layer is in `src/validation/`:
+## 5. What is automated vs manual
 
-- `answerValidationMatrix.ts` — accepted/rejected cases (money, probability,
-  classification, per-problem, direct correction, completion rules).
-- `problemBehaviorValidation.ts` — completion rules, required actions, mistake
-  types, hint/feedback behavior, and global session behaviors.
-- `prdValidationChecklist.ts` — PRD checklist by category (mostly `not_run`).
-- `runValidation.ts` — a safe, self-contained runner. It imports the existing
-  (unmodified) `answerParser` / `answerChecker` and reports pass/fail.
-
-**No config or `package.json` changes were made.** The main agent can wire this
-up later by:
-
-- **Vitest (preferred):** create a new file `src/validation/runValidation.test.ts`
-  that imports `runAllValidations()` and asserts `report.failed` is empty. The
-  existing `npm run test` and `npm run validate:answers` scripts (`vitest run`)
-  will then execute it.
-- **Standalone script:** add a dev dependency such as `tsx` and run
-  `npx tsx src/validation/runValidation.ts`, which prints the report and exits
-  nonzero on any failure.
-
-## 7. Known gaps requiring manual QA
-
-- Auth, persistence, resume, completion percentage, mastery state, and mobile
-  layout are **not** asserted by the deterministic runner (they need the live app
-  + Firebase). They are tracked in the checklist as `not_run`.
-- The "stale feedback clears on edit" and "hints set hintUsed" behaviors are
-  structural (verified by reading `useProblemSession.ts`) and by manual QA.
-- The `probabilities-not-one` mistake type is documented but practically
-  unreachable given the per-row checks; treat it as defensive.
+- **Automated (deterministic, executes live checkers):** accepted formats, every
+  mistake type, completion gates, attempt-counting (guard vs graded), direct
+  correction, L5P1/L5P2 cohesion, structure (15 / 3-per-lesson / 0..14), legacy
+  ID preservation, removed-slug migration, chapter/lesson %, mastery 11/15 + key
+  problems + status boundaries. See `npx vitest run src/validation`.
+- **Manual (this §4 audit):** layout / no-scroll, tap-to-place parity,
+  reduced-motion parity, live regions / keyboard / touch targets, animation
+  fidelity, auth / persistence / resume.

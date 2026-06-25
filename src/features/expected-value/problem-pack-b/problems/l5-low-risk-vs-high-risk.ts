@@ -26,7 +26,7 @@ export const L5_LOW_RISK_VS_HIGH_RISK: PackProblemDefinition = {
   answerInputs: ['evA', 'evB', 'higherRisk', 'reason'],
   correctAnswers: { evA: 6, evB: 6, higherRisk: 'B', reason: 'wider-spread' },
   acceptedFormats: {
-    ev: ['6', '6.0', '$6'],
+    ev: ['6', '6.0', '$6', '12/2'],
     higherRisk: ['B', 'Game B', 'game-b'],
     reason: ['wider-spread', 'variable-outcomes', 'same-ev-different-risk'],
   },

@@ -1,6 +1,6 @@
-# Expected Value Lab
+# Midpoint
 
-A learn-by-doing web app that teaches expected value through 8 visual, interactive problems. Built per the MVP PRD — no AI, all hand-built feedback.
+A learn-by-doing web app that teaches expected value through 14 visual, interactive problems.
 
 ## Build order status
 
@@ -45,7 +45,7 @@ Run through this flow on desktop and at 375px width:
 - [ ] **Problem 3:** reveal boxes, submit wrong answer → see specific feedback
 - [ ] Show hint on P3 → feedback references visual help
 - [ ] Leave mid-problem (close tab), return → **same problem, saved reveals/inputs/hints**
-- [ ] Complete all 8 problems
+- [ ] Complete all 14 problems
 - [ ] See completion %, streak, milestones (including chapter-complete)
 - [ ] If mastery criteria met: status **Mastered**, chapter-mastered milestone
 - [ ] **Suggested review** shows areas to revisit (wrong attempts, hints used)

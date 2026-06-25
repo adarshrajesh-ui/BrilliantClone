@@ -1,0 +1,335 @@
+.dt3-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: center;
+  width: 100%;
+}
+
+/* --- Felt tray / board area --- */
+.dt3-tray {
+  width: 100%;
+  max-width: 360px;
+  min-height: 120px;
+  max-height: 24vh;
+  border-radius: 20px;
+  padding: 10px;
+  position: relative;
+  cursor: pointer;
+  /* Raised outer wood-ish rail */
+  background: linear-gradient(145deg, #6b4a2b, #4a3018);
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: box-shadow 200ms ease;
+}
+
+.dt3-tray-inner {
+  width: 100%;
+  height: 100%;
+  min-height: 100px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+  perspective: 600px;
+  /* Felt surface with raised inner walls (inset shadow) */
+  background:
+    radial-gradient(circle at 50% 38%, #2f7d4f 0%, #1f5e3a 75%);
+  box-shadow:
+    inset 0 0 0 3px rgba(0, 0, 0, 0.18),
+    inset 0 6px 14px rgba(0, 0, 0, 0.45),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.dt3-tray-armed {
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.28),
+    0 0 0 4px rgba(251, 191, 36, 0.45);
+}
+
+.dt3-tray-hover .dt3-tray-inner {
+  box-shadow:
+    inset 0 0 0 3px rgba(251, 191, 36, 0.6),
+    inset 0 6px 14px rgba(0, 0, 0, 0.45);
+}
+
+.dt3-tray-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ecfdf5;
+  text-align: center;
+  padding: 0 0.75rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.dt3-sum-badge {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1f2937;
+  background: #fbbf24;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Dice layout --- */
+.dt3-rest-pair {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.dt3-die {
+  --dt3-size: 52px;
+  width: var(--dt3-size);
+  height: var(--dt3-size);
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.dt3-spin {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+/* --- 3D cube --- */
+.dt3-cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.dt3-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+.dt3-pip-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.dt3-pip-body {
+  fill: #fafafa;
+  stroke: #d1d5db;
+  stroke-width: 2;
+}
+
+.dt3-pip {
+  fill: #111827;
+}
+
+/* Cube face positioning (half of --dt3-size = 26px) */
+.dt3-face-front { transform: translateZ(26px); }
+.dt3-face-back { transform: rotateY(180deg) translateZ(26px); }
+.dt3-face-right { transform: rotateY(90deg) translateZ(26px); }
+.dt3-face-left { transform: rotateY(-90deg) translateZ(26px); }
+.dt3-face-top { transform: rotateX(90deg) translateZ(26px); }
+.dt3-face-bottom { transform: rotateX(-90deg) translateZ(26px); }
+
+/* Subtle face shading so side faces read as 3D during tumble */
+.dt3-face-right .dt3-pip-body,
+.dt3-face-left .dt3-pip-body { fill: #e8eaed; }
+.dt3-face-top .dt3-pip-body { fill: #ffffff; }
+.dt3-face-bottom .dt3-pip-body,
+.dt3-face-back .dt3-pip-body { fill: #d7dade; }
+
+/* --- Pick-up-able hand dice control --- */
+.dt3-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dt3-hand {
+  display: inline-flex;
+  gap: 0.7rem;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: grab;
+  padding: 6px;
+  touch-action: none;
+  perspective: 600px;
+  min-height: 48px;
+}
+
+.dt3-hand:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.dt3-hand-dragging {
+  cursor: grabbing;
+  z-index: 5;
+}
+
+.dt3-hand-die {
+  --dt3-size: 46px;
+  width: var(--dt3-size);
+  height: var(--dt3-size);
+  position: relative;
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.3));
+}
+
+.dt3-hand-die .dt3-face-front { transform: translateZ(23px); }
+.dt3-hand-die .dt3-face-back { transform: rotateY(180deg) translateZ(23px); }
+.dt3-hand-die .dt3-face-right { transform: rotateY(90deg) translateZ(23px); }
+.dt3-hand-die .dt3-face-left { transform: rotateY(-90deg) translateZ(23px); }
+.dt3-hand-die .dt3-face-top { transform: rotateX(90deg) translateZ(23px); }
+.dt3-hand-die .dt3-face-bottom { transform: rotateX(-90deg) translateZ(23px); }
+
+.dt3-hand-armed .dt3-hand-die {
+  filter: drop-shadow(0 0 7px rgba(251, 191, 36, 0.9));
+}
+
+.dt3-rest-label {
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin: 0;
+  text-align: center;
+}
+
+.dt3-converge-note {
+  font-size: 0.78rem;
+  color: #1f8a4c;
+  font-weight: 600;
+  margin: 0;
+  text-align: center;
+}
+
+/* --- Throw animation: lift -> arc -> tumble -> bounce -> roll -> settle ---
+   Outer die handles the arc/bounce position; inner .dt3-spin handles the
+   tumble rotation and resolves to identity so the cube's settled face shows. */
+.dt3-throwing.dt3-die-a {
+  animation: dt3-arc 900ms cubic-bezier(0.3, 0.9, 0.4, 1);
+}
+.dt3-throwing.dt3-die-b {
+  animation: dt3-arc 900ms cubic-bezier(0.3, 0.9, 0.4, 1) 70ms;
+}
+
+.dt3-throwing.dt3-die-a .dt3-spin {
+  animation: dt3-tumble-a 900ms cubic-bezier(0.25, 0.7, 0.3, 1);
+}
+.dt3-throwing.dt3-die-b .dt3-spin {
+  animation: dt3-tumble-b 900ms cubic-bezier(0.25, 0.7, 0.3, 1) 70ms;
+}
+
+@keyframes dt3-arc {
+  /* lift */
+  0% { transform: translate(-46px, -64px) scale(0.82); }
+  /* arc apex */
+  22% { transform: translate(-20px, -78px) scale(0.95); }
+  /* drop into tray */
+  46% { transform: translate(0, 0) scale(1.05); }
+  /* first bounce */
+  60% { transform: translate(4px, -16px) scale(1); }
+  /* roll across felt */
+  78% { transform: translate(-3px, 0) scale(1); }
+  /* small settle */
+  90% { transform: translate(1px, -3px) scale(1); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes dt3-tumble-a {
+  0% { transform: rotateX(-220deg) rotateY(140deg) rotateZ(40deg); }
+  50% { transform: rotateX(-110deg) rotateY(70deg) rotateZ(18deg); }
+  80% { transform: rotateX(-18deg) rotateY(12deg) rotateZ(4deg); }
+  100% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+}
+
+@keyframes dt3-tumble-b {
+  0% { transform: rotateX(200deg) rotateY(-160deg) rotateZ(-50deg); }
+  50% { transform: rotateX(110deg) rotateY(-80deg) rotateZ(-22deg); }
+  80% { transform: rotateX(20deg) rotateY(-14deg) rotateZ(-6deg); }
+  100% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+}
+
+/* Reduced motion: no throw animation, settled dice shown immediately. */
+.dt3-static,
+.dt3-static .dt3-spin {
+  animation: none;
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  .dt3-wrap,
+  .dt3-tray,
+  .dt3-tray-inner {
+    overflow: visible;
+  }
+
+  .dt3-tray {
+    min-height: 136px;
+    max-height: none;
+    padding-top: 20px;
+    touch-action: manipulation;
+  }
+
+  .dt3-tray-inner {
+    min-height: 104px;
+  }
+
+  .dt3-hand {
+    touch-action: pan-y;
+    will-change: transform;
+  }
+
+  .dt3-hand-dragging {
+    touch-action: none;
+  }
+
+  .dt3-throwing.dt3-die-a,
+  .dt3-throwing.dt3-die-b {
+    animation-name: dt3-arc-phone;
+  }
+}
+
+@keyframes dt3-arc-phone {
+  0% { transform: translate(-30px, -46px) scale(0.86); }
+  22% { transform: translate(-14px, -54px) scale(0.94); }
+  46% { transform: translate(0, 0) scale(1.04); }
+  60% { transform: translate(3px, -12px) scale(1); }
+  78% { transform: translate(-2px, 0) scale(1); }
+  90% { transform: translate(1px, -2px) scale(1); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dt3-throwing,
+  .dt3-throwing.dt3-die-a,
+  .dt3-throwing.dt3-die-b,
+  .dt3-throwing.dt3-die-a .dt3-spin,
+  .dt3-throwing.dt3-die-b .dt3-spin {
+    animation: none;
+  }
+  .dt3-tray,
+  .dt3-tray-inner {
+    transition: none;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .dt3-hand {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .dt3-rest-label {
+    max-width: 18rem;
+    font-size: 0.76rem;
+  }
+}

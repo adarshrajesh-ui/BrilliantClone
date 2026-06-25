@@ -51,8 +51,8 @@ export function HomePage() {
 
     card = (
       <CurrentChapterCard
-        title="Expected Value Course"
-        subtitle="Master long-run average, payout, profit, fairness, and risk."
+        title="Midpoint"
+        subtitle="Interactive expected value course."
         completionPercentage={progress.completionPercentage}
         streakCount={progress.streakCount}
         masteryStatus={progress.masteryStatus}
@@ -77,8 +77,8 @@ export function HomePage() {
           <section className="card hero-card">
             <h1>Welcome, {displayName}</h1>
             <p>
-              Learn expected value through visual, interactive problems — no AI, just
-              hand-built feedback and hints.
+              Build expected value intuition with simulations, weighted models, payout,
+              profit, fairness, and risk.
             </p>
           </section>
 
@@ -128,7 +128,7 @@ export function HomePage() {
                 Work through {CHAPTER_LESSONS.length} lessons ({CHAPTER_PROBLEMS.length} visual
                 problems) on expected value.
               </li>
-              <li>Get instant, specific feedback — every answer is hand-built.</li>
+              <li>Get instant feedback as you test and revise each answer.</li>
             </ol>
           </section>
         </div>

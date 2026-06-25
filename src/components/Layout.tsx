@@ -10,12 +10,12 @@ export function Layout() {
       <SyncWarningBanner />
       <header className="header">
         <Link to="/home" className="brand">
-          Expected Value Lab
+          Midpoint
         </Link>
         {user && (
           <nav className="header-nav">
             <Link to="/home">Home</Link>
-            <Link to="/chapter/expected-value-intro">Chapter</Link>
+            <Link to="/chapter/expected-value-intro">Course map</Link>
             <Link to="/profile">Profile</Link>
             <button type="button" className="btn-text" onClick={() => void signOut()}>
               Sign out

@@ -14,7 +14,7 @@ interface ProbabilityTableProps {
   activeRow?: number | null
   onChange?: (rowIndex: number, field: 'count' | 'probability', value: string) => void
   readOnly?: boolean
-  /** Render the "Number of Boxes" column as given (read-only) text even when other cells are editable. */
+  /** Render the count column as given (read-only) text even when other cells are editable. */
   countReadOnly?: boolean
   countStatus?: FieldStatus[]
   probabilityStatus?: FieldStatus[]
@@ -53,7 +53,7 @@ export function ProbabilityTable({
         <thead>
           <tr>
             <th>Outcome</th>
-            <th>Number of Boxes</th>
+            <th>Count</th>
             <th>Probability</th>
             {extraColumns.map((col) => (
               <th key={col.key}>{col.label}</th>

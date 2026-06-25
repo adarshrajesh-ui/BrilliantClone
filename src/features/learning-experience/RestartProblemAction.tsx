@@ -15,7 +15,7 @@ export function RestartProblemAction({
   variant = 'outline',
   label = 'Restart This Problem',
 }: RestartProblemActionProps) {
-  const className = variant === 'text' ? 'btn-text' : 'btn-outline touch-target'
+  const className = variant === 'text' ? 'btn-text touch-target' : 'btn-outline touch-target'
   return (
     <button type="button" className={className} onClick={onRestart}>
       {label}

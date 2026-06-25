@@ -1,0 +1,35 @@
+/* Probability-sum meter (ev-l3-p1): fills toward 100% as counts become probabilities. */
+.prob-sum-meter {
+  margin: 0.85rem 0 0.5rem;
+}
+
+.prob-sum-meter-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.3rem;
+}
+
+.prob-sum-meter-track {
+  height: 14px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid var(--border, #e2e8f0);
+  overflow: hidden;
+}
+
+.prob-sum-meter-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #60a5fa, #3b82f6);
+  transition: width 400ms ease;
+}
+
+.prob-sum-meter-full {
+  background: linear-gradient(90deg, #34d399, #10b981);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prob-sum-meter-fill {
+    transition: none;
+  }
+}

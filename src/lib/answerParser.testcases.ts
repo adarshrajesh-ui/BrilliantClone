@@ -28,6 +28,11 @@ export const MONEY_ACCEPTED_CASES: MoneyCase[] = [
   { input: '  5  ', expected: 5 },
   { input: '$1', expected: 1 },
   { input: '4', expected: 4 },
+  { input: '1/2', expected: 0.5 },
+  { input: '2 / 4', expected: 0.5 },
+  { input: '$1 / 2', expected: 0.5 },
+  { input: '-1/2', expected: -0.5 },
+  { input: '−1 / 2', expected: -0.5 },
 ]
 
 interface ProbabilityCase {
@@ -40,7 +45,10 @@ export const PROBABILITY_ACCEPTED_CASES: ProbabilityCase[] = [
   { input: '0.25', target: 0.25 },
   { input: '.25', target: 0.25 },
   { input: '1/4', target: 0.25 },
+  { input: '2 / 8', target: 0.25 },
   { input: '25 / 100', target: 0.25 },
+  { input: '50%', target: 0.5 },
+  { input: '50 %', target: 0.5 },
   { input: '1/6', target: 1 / 6 },
   { input: '0.1667', target: 1 / 6 },
   { input: '0.167', target: 1 / 6 },
@@ -82,6 +90,8 @@ export const CLASSIFICATION_ACCEPTED_CASES: ClassificationCase[] = [
   { input: 'bad for player', expected: 'unfavorable' },
 ]
 
+const MONEY_REJECTED_CASES = ['50%', '1/0', '1/2/3', 'abc']
+
 export function runAnswerNormalizationSelfTests(): { passed: number; failed: string[] } {
   const failed: string[] = []
   let passed = 0
@@ -92,6 +102,15 @@ export function runAnswerNormalizationSelfTests(): { passed: number; failed: str
       passed += 1
     } else {
       failed.push(`money "${c.input}" -> ${got}, expected ${c.expected}`)
+    }
+  }
+
+  for (const input of MONEY_REJECTED_CASES) {
+    const got = normalizeMoneyAnswer(input)
+    if (got === null) {
+      passed += 1
+    } else {
+      failed.push(`money "${input}" -> ${got}, expected null`)
     }
   }
 

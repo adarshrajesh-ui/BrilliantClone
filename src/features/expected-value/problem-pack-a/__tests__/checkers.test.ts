@@ -19,10 +19,14 @@ import {
 
 describe('l1-long-run-average', () => {
   it('completes on $5 and accepts money variants', () => {
-    for (const v of ['5', '5.0', '5.00', '$5', '$5.00', '5 dollars', '5 per spin']) {
+    for (const v of ['5', '5.0', '5.00', '$5', '$5.00', '5 dollars', '5 per spin', '10/2', ' 10 / 2 ']) {
       const r = checkLongRunAverage({ predictionSubmitted: true, totalSpins: 100, finalAnswer: v })
       expect(r.canComplete, `variant ${v}`).toBe(true)
     }
+  })
+
+  it('does not accept percent syntax for money answers', () => {
+    expect(checkLongRunAverage({ predictionSubmitted: true, totalSpins: 100, finalAnswer: '500%' }).canComplete).toBe(false)
   })
 
   it('distinguishes extreme ($0), largest ($10), and sample-equals-EV mistakes', () => {
@@ -46,8 +50,9 @@ describe('l1-long-run-average', () => {
 })
 
 describe('l1-unequal-spinner', () => {
-  it('completes on $5', () => {
+  it('completes on $5 and equivalent fractions', () => {
     expect(checkUnequalSpinner({ predictionSubmitted: true, totalSpins: 100, finalAnswer: '$5' }).canComplete).toBe(true)
+    expect(checkUnequalSpinner({ predictionSubmitted: true, totalSpins: 100, finalAnswer: '10 / 2' }).canComplete).toBe(true)
   })
   it('detects largest payout, misapplied, and ignored-probability mistakes', () => {
     expect(checkUnequalSpinner({ predictionSubmitted: true, totalSpins: 100, finalAnswer: '20' }).mistakeType).toBe('selected-largest-payout')
@@ -103,6 +108,8 @@ describe('l2-build-weighted-average', () => {
   it('accepts both pair orders and EV variants', () => {
     expect(checkBuildWeightedAverage({ slots: ['$20', '25%', '$0', '75%'], evAnswer: '5' }).canComplete).toBe(true)
     expect(checkBuildWeightedAverage({ slots: ['$0', '75%', '$20', '25%'], evAnswer: '$5.00' }).canComplete).toBe(true)
+    expect(checkBuildWeightedAverage({ slots: ['$20', '25%', '$0', '75%'], evAnswer: '10 / 2' }).canComplete).toBe(true)
+    expect(checkBuildWeightedAverage({ slots: ['$20', '25%', '$0', '75%'], evAnswer: '500%' }).canComplete).toBe(false)
   })
   it('detects reversed types, wrong pairing, omitted probability, largest payout', () => {
     expect(checkBuildWeightedAverage({ slots: ['25%', '$20', '75%', '$0'], evAnswer: '5' }).mistakeType).toBe('reversed-outcome-probability')
@@ -113,9 +120,11 @@ describe('l2-build-weighted-average', () => {
 })
 
 describe('l2-match-outcomes-probabilities', () => {
-  it('completes on correct pairing with fraction or decimal', () => {
+  it('completes on correct pairing with fraction, decimal, percent, or equivalent fraction', () => {
     expect(checkMatchOutcomes({ assignments: { '12': '1/3', '3': '1/2', '0': '1/6' } }).canComplete).toBe(true)
     expect(checkMatchOutcomes({ assignments: { '12': '0.333', '3': '0.5', '0': '0.167' } }).canComplete).toBe(true)
+    expect(checkMatchOutcomes({ assignments: { '12': '2 / 6', '3': '50%', '0': '2/12' } }).canComplete).toBe(true)
+    expect(checkMatchOutcomes({ assignments: { '12': '33.333%', '3': '50', '0': '16.667%' } }).canComplete).toBe(true)
   })
   it('detects ranked-by-size, reuse, omitted zero', () => {
     expect(checkMatchOutcomes({ assignments: { '12': '1/2', '3': '1/3', '0': '1/6' } }).mistakeType).toBe('ranked-by-size')
@@ -125,10 +134,15 @@ describe('l2-match-outcomes-probabilities', () => {
 })
 
 describe('l2-fill-missing-formula', () => {
-  it('completes on 10 / 0.5 / 6.5 with money variants', () => {
-    for (const ev of ['6.5', '6.50', '$6.50', '$6.5']) {
+  it('completes on 10 / 0.5 / 6.5 with numeric, probability, and money variants', () => {
+    for (const ev of ['6.5', '6.50', '$6.50', '$6.5', '13/2']) {
       expect(checkFillMissingFormula({ outcomeSlot: '10', probabilitySlot: '0.5', evAnswer: ev }).canComplete, ev).toBe(true)
     }
+    expect(checkFillMissingFormula({ outcomeSlot: '20 / 2', probabilitySlot: '50%', evAnswer: '13 / 2' }).canComplete).toBe(true)
+    expect(checkFillMissingFormula({ outcomeSlot: '10.0', probabilitySlot: '50', evAnswer: '$6.50' }).canComplete).toBe(true)
+  })
+  it('does not accept percent syntax in the outcome slot', () => {
+    expect(checkFillMissingFormula({ outcomeSlot: '1000%', probabilitySlot: '50%', evAnswer: '13/2' }).canComplete).toBe(false)
   })
   it('detects slot-type, unweighted-sum, arithmetic', () => {
     expect(checkFillMissingFormula({ outcomeSlot: '0.5', probabilitySlot: '10', evAnswer: '6.5' }).mistakeType).toBe('slot-type-error')
@@ -168,6 +182,11 @@ describe('l3-mystery-box-outcomes', () => {
     expect(checkMysteryBoxOutcomes({ allRevealed: true, rows: mbRows('0.167', '0.3333', '0.5') }).canComplete).toBe(true)
     expect(checkMysteryBoxOutcomes({ allRevealed: true, rows: mbRows('1/6', '0.333', '50%') }).canComplete).toBe(true)
     expect(checkMysteryBoxOutcomes({ allRevealed: true, rows: mbRows('1/6', '2/6', '.5') }).canComplete).toBe(true)
+    expect(checkMysteryBoxOutcomes({ allRevealed: true, rows: mbRows('16.667%', '33.333%', '50%') }).canComplete).toBe(true)
+  })
+  it('accepts count fractions but not count percentages', () => {
+    expect(checkMysteryBoxOutcomes({ allRevealed: true, rows: mbRows('1/6', '1/3', '1/2', '2/2', '4 / 2', '6/2') }).canComplete).toBe(true)
+    expect(checkMysteryBoxOutcomes({ allRevealed: true, rows: mbRows('1/6', '1/3', '1/2', '100%', '2', '3') }).canComplete).toBe(false)
   })
   it('detects count-as-probability, wrong-denominator, omitted-zero, total-as-count', () => {
     expect(checkMysteryBoxOutcomes({ allRevealed: true, rows: mbRows('1/6', '2', '3/6') }).mistakeType).toBe('counts-as-probabilities')
@@ -184,6 +203,8 @@ describe('l3-calculate-ev-from-table', () => {
   it('accepts contributions 2,2,0 with money variants and EV 4', () => {
     expect(checkCalculateEvFromTable({ contributions: ['2', '2', '0'], evAnswer: '4' }).canComplete).toBe(true)
     expect(checkCalculateEvFromTable({ contributions: ['$2.00', '2', '$0'], evAnswer: '$4.00' }).canComplete).toBe(true)
+    expect(checkCalculateEvFromTable({ contributions: ['4 / 2', '8/4', '0/3'], evAnswer: '8 / 2' }).canComplete).toBe(true)
+    expect(checkCalculateEvFromTable({ contributions: ['200%', '2', '0'], evAnswer: '4' }).canComplete).toBe(false)
   })
   it('detects unweighted-sum, omitted-zero-row, added-probabilities, arithmetic', () => {
     expect(checkCalculateEvFromTable({ contributions: ['12', '6', '0'], evAnswer: '18' }).mistakeType).toBe('unweighted-sum')

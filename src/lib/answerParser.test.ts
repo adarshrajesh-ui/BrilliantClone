@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   areNumbersClose,
   areProbabilitiesEquivalent,
+  matchesNumeric,
   normalizeClassificationAnswer,
   normalizeMoneyAnswer,
   normalizeNumericAnswer,
@@ -17,9 +18,21 @@ describe('normalizeMoneyAnswer', () => {
     expect(normalizeMoneyAnswer('4')).toBeCloseTo(4, 5)
   })
 
+  it('accepts fraction and negative money equivalents', () => {
+    for (const v of ['1/2', '2/4', '1 / 2', '$1 / 2', '0.5 dollars']) {
+      expect(normalizeMoneyAnswer(v)).toBeCloseTo(0.5, 5)
+    }
+    for (const v of ['-1/2', '- 1 / 2', '−1 / 2', '-0.5']) {
+      expect(normalizeMoneyAnswer(v)).toBeCloseTo(-0.5, 5)
+    }
+  })
+
   it('rejects non-numeric input', () => {
     expect(normalizeMoneyAnswer('')).toBeNull()
     expect(normalizeMoneyAnswer('abc')).toBeNull()
+    expect(normalizeMoneyAnswer('50%')).toBeNull()
+    expect(normalizeMoneyAnswer('1/0')).toBeNull()
+    expect(normalizeMoneyAnswer('1/2/3')).toBeNull()
     expect(normalizeMoneyAnswer(null)).toBeNull()
   })
 })
@@ -27,10 +40,22 @@ describe('normalizeMoneyAnswer', () => {
 describe('normalizeNumericAnswer', () => {
   it('handles fractions, percents and decimals literally', () => {
     expect(normalizeNumericAnswer('1/4')).toBeCloseTo(0.25, 5)
+    expect(normalizeNumericAnswer('2 / 4')).toBeCloseTo(0.5, 5)
+    expect(normalizeNumericAnswer('- 1 / 2')).toBeCloseTo(-0.5, 5)
+    expect(normalizeNumericAnswer('−1/2')).toBeCloseTo(-0.5, 5)
     expect(normalizeNumericAnswer('25%')).toBeCloseTo(0.25, 5)
     expect(normalizeNumericAnswer('.25')).toBeCloseTo(0.25, 5)
     expect(normalizeNumericAnswer('12')).toBeCloseTo(12, 5)
     expect(normalizeNumericAnswer('$2.00')).toBeCloseTo(2, 5)
+  })
+})
+
+describe('matchesNumeric', () => {
+  it('accepts equivalent numeric and money fractions without accepting percent syntax', () => {
+    expect(matchesNumeric('2/4', [0.5])).toBe(true)
+    expect(matchesNumeric('$1 / 2', [0.5])).toBe(true)
+    expect(matchesNumeric('- 1 / 2', [-0.5])).toBe(true)
+    expect(matchesNumeric('50%', [0.5])).toBe(false)
   })
 })
 
@@ -40,6 +65,8 @@ describe('parseProbabilityAnswer', () => {
     expect(parseProbabilityAnswer('0.25')).toBeCloseTo(0.25, 5)
     expect(parseProbabilityAnswer('.25')).toBeCloseTo(0.25, 5)
     expect(parseProbabilityAnswer('1/4')).toBeCloseTo(0.25, 5)
+    expect(parseProbabilityAnswer('2 / 8')).toBeCloseTo(0.25, 5)
+    expect(parseProbabilityAnswer('25 %')).toBeCloseTo(0.25, 5)
     expect(parseProbabilityAnswer('25 / 100')).toBeCloseTo(0.25, 5)
     expect(parseProbabilityAnswer('1/6')).toBeCloseTo(1 / 6, 5)
   })
@@ -65,6 +92,9 @@ describe('areProbabilitiesEquivalent', () => {
     third.forEach((v) => expect(areProbabilitiesEquivalent(v, 2 / 6)).toBe(true))
     const half: string[] = ['3/6', '1/2', '0.5', '.5']
     half.forEach((v) => expect(areProbabilitiesEquivalent(v, 0.5)).toBe(true))
+    expect(areProbabilitiesEquivalent('50%', 0.5)).toBe(true)
+    expect(areProbabilitiesEquivalent('50 %', 0.5)).toBe(true)
+    expect(areProbabilitiesEquivalent('2 / 4', 0.5)).toBe(true)
     expect(areProbabilitiesEquivalent('1/10', 0.1)).toBe(true)
     expect(areProbabilitiesEquivalent('2/10', 0.2)).toBe(true)
     expect(areProbabilitiesEquivalent('1/5', 0.2)).toBe(true)
@@ -74,6 +104,8 @@ describe('areProbabilitiesEquivalent', () => {
   it('rejects clearly wrong values', () => {
     expect(areProbabilitiesEquivalent('0.9', 1 / 6)).toBe(false)
     expect(areProbabilitiesEquivalent('0.02', 1 / 3)).toBe(false)
+    expect(areProbabilitiesEquivalent('51%', 0.5)).toBe(false)
+    expect(areProbabilitiesEquivalent('2/5', 0.5)).toBe(false)
   })
 })
 

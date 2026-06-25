@@ -13,7 +13,7 @@ export function ShowDemoAgainAction({
   label = 'Show demo again',
   variant = 'text',
 }: ShowDemoAgainActionProps) {
-  const className = variant === 'outline' ? 'btn-outline touch-target' : 'btn-text'
+  const className = variant === 'outline' ? 'btn-outline touch-target' : 'btn-text touch-target'
   return (
     <button type="button" className={className} onClick={onShowDemo}>
       {label}

@@ -1,7 +1,10 @@
+import { useEffect, useId, useRef, useState } from 'react'
 import type { CoachFeedback } from './types'
+import { TeachingExplanationSection } from './TeachingExplanationSection'
+import { getPrefersReducedMotion } from './animations'
 
 export interface LearningCoachPanelProps {
-  /** The current coach message, or null for the idle state. */
+  /** The current feedback message, or null for the idle state. */
   feedback: CoachFeedback | null
   /** Continue/next action shown on a correct answer. */
   onContinue?: () => void
@@ -9,12 +12,20 @@ export interface LearningCoachPanelProps {
   /** Reveal the next hint (rendered as a quick link when hints remain). */
   onRequestHint?: () => void
   hintsRemaining?: number
-  /** Idle guidance shown before any submission. */
+  /** Idle guidance shown before any submission. Kept for API compatibility; idle panels are not rendered. */
   idleMessage?: string
+  /**
+   * Auto-scroll the panel into the viewport when fresh feedback arrives. PRD
+   * requirement: on mobile (where the coach sits above the answer controls)
+   * feedback must enter the viewport so the learner never returns to the page
+   * top to read a result. Defaults to true; `block: 'nearest'` keeps it a no-op
+   * on desktop where the sticky rail is already visible.
+   */
+  scrollIntoViewOnFeedback?: boolean
 }
 
 /**
- * Learning Coach panel. Lives in the right rail on desktop (sticky, visible
+ * Feedback panel. Lives in the right rail on desktop (sticky, visible
  * without scrolling) and directly below the current task on mobile. Never
  * buried at the bottom of the page.
  *
@@ -31,83 +42,133 @@ export function LearningCoachPanel({
   continueLabel = 'Continue',
   onRequestHint,
   hintsRemaining = 0,
-  idleMessage = "Work through the steps, then submit. I'll check your answer and help if it isn't right yet.",
+  idleMessage: _idleMessage = 'Work through the steps, then submit to get feedback.',
+  scrollIntoViewOnFeedback = true,
 }: LearningCoachPanelProps) {
-  const tone = feedback?.tone ?? 'idle'
+  const [expanded, setExpanded] = useState(true)
+  const bodyId = useId()
+  const panelRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (feedback) {
+      setExpanded(true)
+    }
+  }, [feedback])
+
+  // Bring fresh, non-idle feedback into the viewport. `block: 'nearest'` means a
+  // panel already on screen (e.g. the sticky desktop rail) does not move, while
+  // an off-screen mobile panel scrolls just into view beneath the checked input.
+  useEffect(() => {
+    if (!feedback) {
+      return
+    }
+    if (!scrollIntoViewOnFeedback) {
+      return
+    }
+    const node = panelRef.current
+    if (!node || typeof node.scrollIntoView !== 'function') {
+      return
+    }
+    node.scrollIntoView({
+      block: 'nearest',
+      behavior: getPrefersReducedMotion() ? 'auto' : 'smooth',
+    })
+  }, [feedback, scrollIntoViewOnFeedback])
+
+  if (!feedback) {
+    return null
+  }
+
+  const tone = feedback.tone
 
   const showHint = onRequestHint && hintsRemaining > 0
 
   return (
     <section
+      ref={panelRef}
       className={`card coach-panel coach-${tone}`}
       role="status"
       aria-live="polite"
-      aria-label="Learning coach"
+      aria-label="Feedback"
     >
-      <div className="coach-head">
+      <button
+        type="button"
+        className="coach-head coach-toggle touch-target"
+        aria-expanded={expanded}
+        aria-controls={bodyId}
+        onClick={() => setExpanded((open) => !open)}
+      >
         <span className="coach-avatar" aria-hidden="true">
-          {tone === 'correct' ? '✓' : tone === 'incorrect' ? '!' : '🧭'}
+          {tone === 'correct' ? '✓' : tone === 'incorrect' ? '!' : 'i'}
         </span>
-        <div>
-          <p className="coach-title">{feedback?.title ?? 'Learning coach'}</p>
-          {feedback?.mistakeLabel && (
+        <span className="coach-heading-copy">
+          <span className="coach-title">{feedback.title}</span>
+          {feedback.mistakeLabel && (
             <span className="coach-mistake-label">{feedback.mistakeLabel}</span>
           )}
-        </div>
-      </div>
+        </span>
+        <span className="coach-toggle-label">{expanded ? 'Minimize' : 'Show'}</span>
+      </button>
 
-      {tone === 'idle' && <p className="coach-idle">{idleMessage}</p>}
-
-      {tone === 'correct' && feedback && (
-        <div className="coach-body">
-          {feedback.message && <p className="coach-confirm">{feedback.message}</p>}
-          {feedback.conceptSummary && (
-            <p className="coach-concept">{feedback.conceptSummary}</p>
-          )}
-        </div>
-      )}
-
-      {tone === 'info' && feedback && (
-        <div className="coach-body">
-          <p>{feedback.message}</p>
-        </div>
-      )}
-
-      {tone === 'incorrect' && feedback && (
-        <div className="coach-body coach-structured">
-          {feedback.whatHappened && (
-            <div className="coach-section">
-              <span className="coach-section-label">What happened</span>
-              <p>{feedback.whatHappened}</p>
-            </div>
-          )}
-          {feedback.whyWrong && (
-            <div className="coach-section">
-              <span className="coach-section-label">Why it isn't right yet</span>
-              <p>{feedback.whyWrong}</p>
-            </div>
-          )}
-          {feedback.whatNext && (
-            <div className="coach-section">
-              <span className="coach-section-label">What to do next</span>
-              <p>{feedback.whatNext}</p>
-            </div>
-          )}
-          {feedback.message && !feedback.whyWrong && <p>{feedback.message}</p>}
-        </div>
-      )}
-
-      <div className="coach-actions">
-        {tone === 'correct' && onContinue && (
-          <button type="button" className="btn-secondary touch-target" onClick={onContinue}>
-            {continueLabel}
-          </button>
+      <div id={bodyId} hidden={!expanded}>
+        {tone === 'correct' && (
+          <div className="coach-body">
+            {feedback.message && <p className="coach-confirm">{feedback.message}</p>}
+            {feedback.teaching ? (
+              <TeachingExplanationSection
+                explanation={feedback.teaching}
+                className="teaching-explanation-compact"
+              />
+            ) : (
+              feedback.conceptSummary && (
+                <p className="coach-concept">{feedback.conceptSummary}</p>
+              )
+            )}
+          </div>
         )}
-        {tone !== 'correct' && showHint && (
-          <button type="button" className="btn-text coach-hint-link" onClick={onRequestHint}>
-            Need a hint? ({hintsRemaining} left)
-          </button>
+
+        {tone === 'info' && (
+          <div className="coach-body">
+            <p>{feedback.message}</p>
+          </div>
         )}
+
+        {tone === 'incorrect' && (
+          <div className="coach-body coach-structured">
+            {feedback.whatHappened && (
+              <div className="coach-section">
+                <span className="coach-section-label">What happened</span>
+                <p>{feedback.whatHappened}</p>
+              </div>
+            )}
+            {feedback.whyWrong && (
+              <div className="coach-section">
+                <span className="coach-section-label">Why it isn't right yet</span>
+                <p>{feedback.whyWrong}</p>
+              </div>
+            )}
+            {feedback.whatNext && (
+              <div className="coach-section">
+                <span className="coach-section-label">What to do next</span>
+                <p>{feedback.whatNext}</p>
+              </div>
+            )}
+            {feedback.message && !feedback.whyWrong && <p>{feedback.message}</p>}
+          </div>
+        )}
+
+        <div className="coach-actions">
+          {tone === 'correct' && onContinue && (
+            <button type="button" className="btn-secondary touch-target" onClick={onContinue}>
+              {continueLabel}
+            </button>
+          )}
+          {tone !== 'correct' && showHint && (
+            <button type="button" className="btn-text coach-hint-link touch-target" onClick={onRequestHint}>
+              Need a hint? ({hintsRemaining} left)
+            </button>
+          )}
+        </div>
       </div>
     </section>
   )

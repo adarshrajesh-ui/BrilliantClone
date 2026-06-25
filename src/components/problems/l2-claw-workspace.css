@@ -1,0 +1,278 @@
+/* Lesson 2 Problem 1 — "Claw Machine Expected Value" no-scroll workspace.
+   Layout/compaction ONLY. Component-scoped `.l2-claw-*` classes that arrange the
+   existing problem markup inside a step panel; the global `.ws-*` affordances
+   (workspace.css) and the visuals' own classes (claw-machine / ccb-*) are reused
+   as-is and never overridden here. Targets one viewport at 1280×720 and ≤390px
+   without page scroll. */
+
+/* ---- Split step: visual stage (left) + task/controls (right) ---- */
+.l2-claw-step {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 0.6rem 1.25rem;
+  align-items: stretch;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.l2-claw-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+  min-height: 0;
+}
+
+.l2-claw-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+  min-height: 0;
+}
+
+.l2-claw-side .section-note {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+/* ---- Step 1: "Run the claw" — full claw machine on the left ---- */
+.l2-claw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.l2-drop-btn,
+.l2-run-six-btn {
+  align-self: flex-start;
+  min-width: 9rem;
+  font-weight: 700;
+}
+
+.l2-grab-counter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.l2-grab-counter-num {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--text-heading, #1f2937);
+}
+
+.l2-grabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.l2-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px dashed #cbd5e1;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.l2-dot-gold {
+  border-style: solid;
+  border-color: #f59e0b;
+  background: radial-gradient(circle at 35% 30%, #fde68a, #f59e0b 70%);
+}
+
+.l2-dot-gray {
+  border-style: solid;
+  border-color: #9ca3af;
+  background: #6b7280;
+}
+
+.l2-grab-done {
+  border-left: 3px solid #f59e0b;
+  padding-left: 0.6rem;
+  color: var(--text, #374151);
+}
+
+/* ---- Step 2: "Compress & build" — compact claw + contribution blocks ---- */
+.l2-claw-step-2 .l2-claw-stage {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+}
+
+/* Reserve the SCALED footprint so the compact claw + blocks sit side by side
+   without clipping. The inner wrapper is scaled from its top-left; the outer box
+   is sized to the post-scale dimensions. We only scale our own wrapper div — the
+   claw-machine's own classes are untouched. */
+.l2-claw-compact {
+  flex: 0 0 auto;
+  width: 250px;
+  height: 280px;
+  overflow: hidden;
+}
+
+.l2-claw-fit {
+  width: 420px;
+  transform: scale(0.595);
+  transform-origin: top left;
+}
+
+.l2-contrib {
+  flex: 1 1 240px;
+  min-width: 220px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.l2-compress-btn {
+  align-self: flex-start;
+  min-width: 10rem;
+  font-weight: 700;
+}
+
+.l2-claw-side .formula-builder {
+  margin: 0;
+}
+
+.l2-claw-side .field-label {
+  margin: 0;
+}
+
+.l2-answer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+/* ---- Tablet / mobile: single column, claw above controls ---- */
+@media (max-width: 768px) {
+  .l2-claw-step {
+    grid-template-columns: 1fr;
+    flex: 0 0 auto;
+    gap: 0.6rem;
+  }
+  .l2-claw-step-2 .l2-claw-stage {
+    flex-direction: column;
+  }
+  .l2-contrib {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .l2-claw-step {
+    align-items: start;
+  }
+
+  .l2-claw-step:not(.l2-claw-step-2) .l2-claw-side {
+    order: -1;
+  }
+
+  .l2-claw-step:not(.l2-claw-step-2) .l2-claw-actions {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: -0.15rem -0.15rem 0;
+    padding: 0.15rem;
+    background: var(--bg, #f8fafc);
+  }
+
+  .l2-drop-btn,
+  .l2-run-six-btn,
+  .l2-compress-btn,
+  .l2-submit-btn {
+    width: 100%;
+  }
+
+  .l2-claw-step:not(.l2-claw-step-2) .ws-visual {
+    max-height: min(48vh, 390px);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .l2-claw-step-2 .l2-claw-stage {
+    gap: 0.55rem;
+  }
+
+  .l2-claw-step-2 .l2-claw-compact {
+    display: none;
+  }
+
+  .l2-contrib {
+    min-width: 0;
+  }
+
+  .l2-contrib .ccb-root {
+    max-width: none;
+  }
+
+  .l2-claw-side .formula-builder {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .l2-claw-side .formula-display {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0;
+    font-size: 0.98rem;
+    line-height: 1.35;
+  }
+
+  .l2-claw-side .formula-slot {
+    margin: 0;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .l2-claw-side .card-bank {
+    margin-top: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .l2-claw-side .card-bank .choice-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .l2-answer-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin-top: 0.1rem;
+    padding: 0.55rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: var(--surface, #fff);
+    box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.08);
+  }
+}
+
+@media (max-width: 390px) {
+  .l2-claw-side {
+    gap: 0.55rem;
+  }
+  .l2-claw-side .section-note {
+    font-size: 0.88rem;
+  }
+
+  .l2-grabs {
+    gap: 0.22rem;
+  }
+
+  .l2-dot {
+    width: 15px;
+    height: 15px;
+  }
+}

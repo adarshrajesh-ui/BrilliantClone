@@ -40,6 +40,23 @@ describe('humanizeMistakeType', () => {
 })
 
 describe('checkResultToCoachFeedback', () => {
+  it('builds a correct model with teaching explanation', () => {
+    const fb = checkResultToCoachFeedback(
+      result({ isCorrect: true, canComplete: true, feedback: 'Correct — $5.' }),
+      {
+        teaching: {
+          title: 'Why this makes sense',
+          body: ['EV balances $0 and $10.'],
+          takeaway: 'Long-run average, not one spin.',
+        },
+      },
+    )
+    expect(fb.tone).toBe('correct')
+    expect(fb.message).toBe('Correct — $5.')
+    expect(fb.teaching?.title).toBe('Why this makes sense')
+    expect(fb.teaching?.body).toHaveLength(1)
+  })
+
   it('builds a correct model with concept summary', () => {
     const fb = checkResultToCoachFeedback(
       result({ isCorrect: true, canComplete: true, feedback: 'Correct — $5.' }),

@@ -1,4 +1,4 @@
-import type { CheckResult } from '../../types/problem'
+import type { CheckResult, TeachingExplanation } from '../../types/problem'
 import type { CoachFeedback, CoachTone } from './types'
 
 /**
@@ -63,6 +63,8 @@ export interface CoachFeedbackOptions {
   nextActionText?: string
   /** Concept reinforcement shown on a correct answer. */
   conceptSummary?: string
+  /** Rich teaching copy shown on a correct answer. */
+  teaching?: TeachingExplanation
 }
 
 /**
@@ -83,6 +85,7 @@ export function checkResultToCoachFeedback(
       title: 'Correct',
       message: result.feedback,
       conceptSummary: options.conceptSummary,
+      teaching: options.teaching,
     }
   }
 
@@ -98,7 +101,7 @@ export function checkResultToCoachFeedback(
   const structured = options.structured ?? {}
   return {
     tone,
-    title: "Let's fix this",
+    title: 'Not quite',
     mistakeLabel: humanizeMistakeType(result.mistakeType),
     whatHappened: structured.whatHappened,
     whyWrong: structured.whyWrong ?? result.feedback,

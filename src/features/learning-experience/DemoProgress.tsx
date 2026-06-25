@@ -9,7 +9,7 @@ interface DemoProgressProps {
 export function DemoProgress({ index, total, onGoto }: DemoProgressProps) {
   return (
     <div className="demo-progress">
-      <ol className="demo-progress-dots" aria-hidden="true">
+      <ol className="demo-progress-dots" aria-label="Demo steps">
         {Array.from({ length: total }).map((_, i) => {
           const state = i === index ? 'current' : i < index ? 'done' : 'todo'
           const className = `demo-dot demo-dot-${state}`
@@ -18,9 +18,10 @@ export function DemoProgress({ index, total, onGoto }: DemoProgressProps) {
               <li key={i}>
                 <button
                   type="button"
-                  className={className}
+                  className={`${className} touch-target`}
                   onClick={() => onGoto(i)}
-                  tabIndex={-1}
+                  aria-label={`Go to demo step ${i + 1}`}
+                  aria-current={i === index ? 'step' : undefined}
                 />
               </li>
             )
