@@ -14,7 +14,7 @@ export type MasteryStatus = 'Not Started' | 'Learning' | 'Developing' | 'Mastere
 
 /**
  * Number of "strong" completions (<= 2 graded attempts) required for mastery.
- * PRD: at least 11 of the 15 problems completed in <= 2 graded attempts.
+ * PRD: at least 11 of the 14 problems completed in <= 2 graded attempts.
  */
 export const STRONG_ATTEMPT_THRESHOLD = 11
 

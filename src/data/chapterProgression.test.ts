@@ -14,7 +14,7 @@ function progress(completedProblemIds: string[]) {
   return { currentProblemIndex: 0, completedProblemIds }
 }
 
-describe('chapter progression (legacy facade, 15-problem)', () => {
+describe('chapter progression (legacy facade, 14-problem)', () => {
   it('starts at problem-1 when nothing is complete', () => {
     expect(getFarthestCompletedOrder([])).toBe(0)
     expect(getContinueProblemId(progress([]))).toBe('problem-1')
@@ -53,6 +53,6 @@ describe('chapter progression (legacy facade, 15-problem)', () => {
   it('returns problem-1 for review when the whole chapter is complete', () => {
     expect(getNextIncompleteProblem(ALL_STORAGE_IDS)).toBeUndefined()
     expect(getContinueProblemId(progress(ALL_STORAGE_IDS))).toBe('problem-1')
-    expect(getNextIncompleteProblemIndex(ALL_STORAGE_IDS)).toBe(14)
+    expect(getNextIncompleteProblemIndex(ALL_STORAGE_IDS)).toBe(ALL_STORAGE_IDS.length - 1)
   })
 })

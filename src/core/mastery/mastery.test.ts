@@ -7,6 +7,7 @@ import {
 } from './mastery'
 
 const ALL_IDS = CANONICAL_PROBLEMS.map((p) => p.storageId)
+const TOTAL = ALL_IDS.length
 
 // Keyed by STORAGE ID (the form persisted in completedProblemIds / attempts).
 const REQUIRED = {
@@ -44,19 +45,18 @@ describe('deriveMasteryStatus', () => {
   it('maps completion count + mastered flag to a coarse status', () => {
     expect(deriveMasteryStatus({ completedCount: 0, mastered: false })).toBe('Not Started')
     expect(deriveMasteryStatus({ completedCount: 1, mastered: false })).toBe('Learning')
-    expect(deriveMasteryStatus({ completedCount: 7, mastered: false })).toBe('Learning')
-    // ceil(15/2) = 8 is the Developing threshold.
-    expect(deriveMasteryStatus({ completedCount: 8, mastered: false })).toBe('Developing')
-    expect(deriveMasteryStatus({ completedCount: 15, mastered: false })).toBe('Developing')
-    expect(deriveMasteryStatus({ completedCount: 15, mastered: true })).toBe('Mastered')
+    expect(deriveMasteryStatus({ completedCount: Math.ceil(TOTAL / 2) - 1, mastered: false })).toBe('Learning')
+    expect(deriveMasteryStatus({ completedCount: Math.ceil(TOTAL / 2), mastered: false })).toBe('Developing')
+    expect(deriveMasteryStatus({ completedCount: TOTAL, mastered: false })).toBe('Developing')
+    expect(deriveMasteryStatus({ completedCount: TOTAL, mastered: true })).toBe('Mastered')
   })
 })
 
 describe('evaluateChapterMastery', () => {
-  it('is not mastered when fewer than 15 are complete', () => {
+  it('is not mastered when fewer than all problems are complete', () => {
     const result = evaluateChapterMastery({
       ...masteredInput(),
-      completedProblemIds: ALL_IDS.slice(0, 14),
+      completedProblemIds: ALL_IDS.slice(0, TOTAL - 1),
     })
     expect(result.allComplete).toBe(false)
     expect(result.mastered).toBe(false)
@@ -90,8 +90,8 @@ describe('evaluateChapterMastery', () => {
     )
   })
 
-  it('enforces the 11-of-15 strong-attempt threshold', () => {
-    // 5 problems took 3 graded attempts -> only 10 strong completions.
+  it('enforces the strong-attempt threshold', () => {
+    // 5 problems took 3 graded attempts -> only 9 strong completions in the current chapter.
     const attempts = attemptsFor(1)
     for (const id of ALL_IDS.slice(0, 5)) {
       attempts[id] = 3
@@ -100,13 +100,13 @@ describe('evaluateChapterMastery', () => {
       ...masteredInput(),
       gradedFinalAttemptsByProblem: attempts,
     })
-    expect(failing.strongCompletions).toBe(10)
+    expect(failing.strongCompletions).toBe(TOTAL - 5)
     expect(failing.strongThresholdMet).toBe(false)
     expect(failing.mastered).toBe(false)
 
-    // Exactly 4 weak completions -> 11 strong -> threshold met.
+    // Exactly 3 weak completions -> 11 strong -> threshold met.
     const attempts2 = attemptsFor(1)
-    for (const id of ALL_IDS.slice(0, 4)) {
+    for (const id of ALL_IDS.slice(0, TOTAL - STRONG_ATTEMPT_THRESHOLD)) {
       attempts2[id] = 3
     }
     const passing = evaluateChapterMastery({
@@ -118,6 +118,6 @@ describe('evaluateChapterMastery', () => {
   })
 
   it('practice restarts (excluded by caller) do not reduce strong completions', () => {
-    expect(evaluateChapterMastery(masteredInput()).strongCompletions).toBe(15)
+    expect(evaluateChapterMastery(masteredInput()).strongCompletions).toBe(TOTAL)
   })
 })
