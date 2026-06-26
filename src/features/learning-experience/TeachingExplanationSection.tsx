@@ -3,6 +3,7 @@ import type { TeachingExplanation } from '../../types/problem'
 export interface TeachingExplanationSectionProps {
   explanation: TeachingExplanation
   className?: string
+  id?: string
 }
 
 /**
@@ -12,9 +13,11 @@ export interface TeachingExplanationSectionProps {
 export function TeachingExplanationSection({
   explanation,
   className = '',
+  id,
 }: TeachingExplanationSectionProps) {
   return (
     <section
+      id={id}
       className={`teaching-explanation${className ? ` ${className}` : ''}`}
       aria-label={explanation.title}
     >

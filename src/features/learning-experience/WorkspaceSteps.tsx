@@ -18,6 +18,8 @@ export interface WorkspaceStepDef {
   prompt?: ReactNode
   /** The step's visual + interaction content (the work for this step). */
   content: ReactNode
+  /** Primary action rendered in the sticky bottom bar (for example Check/Finish). */
+  action?: ReactNode
   /**
    * Gate for the Next button. When false, Next is disabled and `advanceHint`
    * (if any) explains why. Default true.
@@ -38,10 +40,6 @@ export interface WorkspaceStepsProps {
   problemTitle: string
   /** Secondary setup/context for the problem, shown below the title. */
   scenarioText?: string
-  /** 1-based problem index ("Problem N of M"). */
-  problemNumber: number
-  /** Total problems in the chapter ("Problem N of M"). */
-  totalProblems: number
   /** Ordered step panels. Exactly one is visible at a time; the rest stay mounted but hidden. */
   steps: WorkspaceStepDef[]
   /** Optional banner row (e.g. restart-practice notice). */
@@ -56,6 +54,12 @@ export interface WorkspaceStepsProps {
   nextProblemEnabled?: boolean
   /** Optional hint panel, surfaced in a bounded drawer above the action bar. */
   hintPanel?: ReactNode
+  /** Reveal the next hint from the compact footer hint button. */
+  onTakeHint?: () => void
+  /** Number of unrevealed hints available. */
+  hintsRemaining?: number
+  /** Optional explanation content opened from the Brilliant-style "Why?" action. */
+  explanationPanel?: ReactNode
   /** Href for the "back to chapter" link in the header. */
   backHref: string
   /**
@@ -81,8 +85,6 @@ export interface WorkspaceStepsProps {
 export function WorkspaceSteps({
   problemTitle,
   scenarioText,
-  problemNumber,
-  totalProblems,
   steps,
   banner,
   coachPanel,
@@ -90,14 +92,19 @@ export function WorkspaceSteps({
   nextProblemHref,
   nextProblemEnabled = false,
   hintPanel,
+  onTakeHint,
+  hintsRemaining = 0,
+  explanationPanel,
   backHref,
   onStepChange,
 }: WorkspaceStepsProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [hintsOpen, setHintsOpen] = useState(false)
+  const [explanationOpen, setExplanationOpen] = useState(false)
   const workspaceRef = useRef<HTMLDivElement>(null)
   const advanceHintId = useId()
   const nextProblemLockedHintId = useId()
+  const hintDrawerId = useId()
   const stepCount = steps.length
 
   useEffect(() => {
@@ -151,6 +158,13 @@ export function WorkspaceSteps({
   const atFirst = safeIndex === 0
   const atLast = safeIndex >= stepCount - 1
   const canAdvance = activeStep?.canAdvance !== false
+  const resultState = activeStep?.status === 'correct'
+    ? 'correct'
+    : activeStep?.status === 'incorrect'
+      ? 'incorrect'
+      : activeStep?.action
+        ? 'selected'
+        : 'idle'
   const nextDisabled = atLast ? !nextProblemHref || !nextProblemEnabled : !canAdvance
   const previousDisabled = atFirst ? !previousProblemHref : false
   const showAdvanceHint = !canAdvance && !atLast && !!activeStep?.advanceHint
@@ -170,17 +184,23 @@ export function WorkspaceSteps({
     typeof activeStep?.prompt === 'string'
       ? <QuestionPrompt>{activeStep.prompt}</QuestionPrompt>
       : activeStep?.prompt
+  const takeHint = () => {
+    if (onTakeHint && hintsRemaining > 0) {
+      onTakeHint()
+      setHintsOpen(true)
+      return
+    }
+
+    setHintsOpen((open) => !open)
+  }
 
   return (
-    <div className="problem-workspace" ref={workspaceRef}>
+    <div className="problem-workspace" data-result={resultState} ref={workspaceRef}>
       <header className="ws-header">
         <div className="ws-header-top">
           <Link to={backHref} className="ws-back">
-            ← Course map
+            Course map
           </Link>
-          <span className="ws-problem-counter">
-            Problem {problemNumber} of {totalProblems}
-          </span>
           {isMultiStep && (
             <span className="ws-step-indicator" aria-label={`Step ${safeIndex + 1} of ${stepCount}`}>
               Step {safeIndex + 1} of {stepCount}
@@ -206,31 +226,53 @@ export function WorkspaceSteps({
       {banner && <div className="ws-banner">{banner}</div>}
 
       <div className="ws-body" role="group" aria-label="Current step">
-        {steps.map((step, i) => (
-          <section key={step.id} className="ws-step" hidden={i !== safeIndex}>
-            {step.content}
-          </section>
-        ))}
+        <div className="ws-card">
+          {steps.map((step, i) => (
+            <section key={step.id} className="ws-step" hidden={i !== safeIndex}>
+              {step.content}
+            </section>
+          ))}
+        </div>
       </div>
 
       <div className="ws-actionbar">
-        {hintPanel && hintsOpen && <div className="ws-hint-drawer">{hintPanel}</div>}
+        {hintPanel && hintsOpen && (
+          <div id={hintDrawerId} className="ws-hint-drawer">
+            {hintPanel}
+          </div>
+        )}
         {coachPanel && <div className="ws-coach-slot">{coachPanel}</div>}
         <div className="ws-controls">
-          {hintPanel && (
-            <button
-              type="button"
-              className="btn-text ws-hint-toggle touch-target"
-              aria-expanded={hintsOpen}
-              onClick={() => setHintsOpen((v) => !v)}
-            >
-              {hintsOpen ? 'Hide hints' : '💡 Hints'}
-            </button>
+          {(hintPanel || explanationPanel) && (
+            <div className="ws-side-actions">
+              {hintPanel && (
+                <button
+                  type="button"
+                  className="btn-text ws-hint-toggle touch-target"
+                  aria-expanded={hintsOpen}
+                  aria-controls={hintsOpen ? hintDrawerId : undefined}
+                  onClick={takeHint}
+                >
+                  {hintsRemaining > 0 ? 'Take hint' : hintsOpen ? 'Hide hints' : 'Hints'}
+                </button>
+              )}
+              {explanationPanel && (
+                <button
+                  type="button"
+                  className="btn-text ws-hint-toggle touch-target"
+                  aria-haspopup="dialog"
+                  onClick={() => setExplanationOpen(true)}
+                >
+                  Why?
+                </button>
+              )}
+            </div>
           )}
+          {activeStep?.action && <div className="ws-primary-action">{activeStep.action}</div>}
           <div className="ws-nav">
             {atFirst && previousProblemHref ? (
               <Link to={previousProblemHref} className="btn-secondary touch-target ws-prev">
-                ← Previous
+                Previous
               </Link>
             ) : (
               <button
@@ -239,23 +281,13 @@ export function WorkspaceSteps({
                 disabled={previousDisabled}
                 onClick={() => goToStep(safeIndex - 1)}
               >
-                ← Previous
+                Previous
               </button>
             )}
             <div className="ws-next-wrap">
-              {showAdvanceHint && (
-                <span id={advanceHintId} className="ws-advance-hint">
-                  {activeStep?.advanceHint}
-                </span>
-              )}
-              {atLast && nextProblemHref && !nextProblemEnabled && (
-                <span id={nextProblemLockedHintId} className="ws-advance-hint">
-                  Answer this problem correctly to unlock Next.
-                </span>
-              )}
               {atLast && nextProblemHref && nextProblemEnabled ? (
                 <Link to={nextProblemHref} className="btn-secondary touch-target ws-next">
-                  Next →
+                  {activeStep?.status === 'correct' ? 'Continue' : 'Next'}
                 </Link>
               ) : (
                 <button
@@ -266,13 +298,41 @@ export function WorkspaceSteps({
                   title={nextDisabled ? nextDisabledTitle : undefined}
                   onClick={() => goToStep(safeIndex + 1)}
                 >
-                  Next →
+                  {atLast ? 'Continue' : 'Next'}
                 </button>
               )}
             </div>
           </div>
+          {showAdvanceHint && (
+            <span id={advanceHintId} className="ws-advance-hint">
+              {activeStep?.advanceHint}
+            </span>
+          )}
+          {atLast && nextProblemHref && !nextProblemEnabled && (
+            <span id={nextProblemLockedHintId} className="ws-advance-hint">
+              Answer this problem correctly to unlock Next.
+            </span>
+          )}
         </div>
       </div>
+      {explanationOpen && explanationPanel && (
+        <div className="ws-modal-backdrop" role="presentation">
+          <section className="ws-explanation-modal" role="dialog" aria-modal="true" aria-label="Explanation">
+            <div className="ws-modal-head">
+              <h2>Explanation</h2>
+              <button
+                type="button"
+                className="btn-text touch-target ws-modal-close"
+                aria-label="Close explanation"
+                onClick={() => setExplanationOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="ws-modal-body">{explanationPanel}</div>
+          </section>
+        </div>
+      )}
     </div>
   )
 }

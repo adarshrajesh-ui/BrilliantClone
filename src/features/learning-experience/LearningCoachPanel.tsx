@@ -45,13 +45,16 @@ export function LearningCoachPanel({
   idleMessage: _idleMessage = 'Work through the steps, then submit to get feedback.',
   scrollIntoViewOnFeedback = true,
 }: LearningCoachPanelProps) {
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(false)
+  const [teachingExpanded, setTeachingExpanded] = useState(false)
   const bodyId = useId()
+  const teachingId = useId()
   const panelRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (feedback) {
-      setExpanded(true)
+      setExpanded(feedback.tone !== 'info')
+      setTeachingExpanded(false)
     }
   }, [feedback])
 
@@ -114,15 +117,15 @@ export function LearningCoachPanel({
         {tone === 'correct' && (
           <div className="coach-body">
             {feedback.message && <p className="coach-confirm">{feedback.message}</p>}
-            {feedback.teaching ? (
+            {feedback.conceptSummary && (
+              <p className="coach-concept">{feedback.conceptSummary}</p>
+            )}
+            {feedback.teaching && teachingExpanded && (
               <TeachingExplanationSection
+                id={teachingId}
                 explanation={feedback.teaching}
                 className="teaching-explanation-compact"
               />
-            ) : (
-              feedback.conceptSummary && (
-                <p className="coach-concept">{feedback.conceptSummary}</p>
-              )
             )}
           </div>
         )}
@@ -161,6 +164,17 @@ export function LearningCoachPanel({
           {tone === 'correct' && onContinue && (
             <button type="button" className="btn-secondary touch-target" onClick={onContinue}>
               {continueLabel}
+            </button>
+          )}
+          {tone === 'correct' && feedback.teaching && (
+            <button
+              type="button"
+              className="btn-text coach-explanation-link touch-target"
+              aria-expanded={teachingExpanded}
+              aria-controls={teachingExpanded ? teachingId : undefined}
+              onClick={() => setTeachingExpanded((open) => !open)}
+            >
+              {teachingExpanded ? 'Hide explanation' : 'Show explanation'}
             </button>
           )}
           {tone !== 'correct' && showHint && (

@@ -2,10 +2,8 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { CheckResult, ProblemDefinition, ProblemHint } from '../../types/problem'
 import {
-  CHAPTER_PROBLEMS,
   getAdjacentNextProblemId,
   getAdjacentPreviousProblemId,
-  getProblemMeta,
 } from '../../data/chapter'
 import {
   getNextImplementedProblemId,
@@ -17,7 +15,6 @@ import {
   WorkspaceSteps,
   LearningCoachPanel,
   ProblemIntroDemo,
-  ReviewModeBanner,
   ShowDemoAgainAction,
   TeachingExplanationSection,
   useDemoVisibility,
@@ -103,84 +100,22 @@ interface ProblemLayoutProps {
   onStepChange?: () => void
 }
 
-/**
- * Completed-problem review: confirmation, teaching explanation, and attempt stats.
- * Never surfaces a bare "your final answer" recap — the teaching block carries the
- * intuition instead.
- */
-function ReviewDetail({
-  problem,
-  completionMessage,
-  previousProblemId,
-  nextProblemId,
-  attemptCount,
-  reviewHintUsed,
-}: {
-  problem: ProblemDefinition
-  completionMessage?: string
-  previousProblemId?: string
-  nextProblemId?: string
-  attemptCount?: number
-  reviewHintUsed?: boolean
-}) {
-  const correctFeedback =
-    problem.feedback.correct ??
-    completionMessage ??
-    'You met all completion requirements for this problem.'
-
-  return (
-    <section className="card review-detail" aria-label="Completed problem review">
-      <p className="review-state-label">Completed — Review Mode</p>
-
-      <div className="review-row">
-        <span className="review-row-label">Correct result</span>
-        <p className="review-row-value">{correctFeedback}</p>
-      </div>
-
-      {problem.teachingExplanation && (
-        <TeachingExplanationSection explanation={problem.teachingExplanation} />
-      )}
-
-      {completionMessage && (
-        <div className="review-row">
-          <span className="review-row-label">What you did</span>
-          <p className="review-row-value">{completionMessage}</p>
-        </div>
-      )}
-
-      <ul className="review-summary-stats">
-        <li>
-          <span>Status</span>
-          <strong className="review-stat-complete">Complete ✓</strong>
-        </li>
-        {typeof attemptCount === 'number' && attemptCount > 0 && (
-          <li>
-            <span>Attempts</span>
-            <strong>{attemptCount}</strong>
-          </li>
-        )}
-        <li>
-          <span>Hints used</span>
-          <strong>{reviewHintUsed ? 'Yes' : 'No'}</strong>
-        </li>
-      </ul>
-
-      <div className="placeholder-actions">
-        <ProblemNavigationControls
-          previousProblemId={previousProblemId}
-          nextProblemId={nextProblemId}
-          nextEnabled
-        />
-        <Link to={CHAPTER_PATH} className="btn-text-link">
-          Back to course map
-        </Link>
-      </div>
-    </section>
-  )
-}
-
 function problemHref(problemId: string): string {
   return `${CHAPTER_PATH}/problem/${problemId}`
+}
+
+function CompletedRetryAction({ onRestart }: { onRestart?: () => void }) {
+  if (!onRestart) {
+    return null
+  }
+
+  return (
+    <section className="completed-retry" aria-label="Completed problem actions">
+      <button type="button" className="btn-secondary touch-target completed-retry-button" onClick={onRestart}>
+        Retry
+      </button>
+    </section>
+  )
 }
 
 function ProblemNavigationControls({
@@ -224,22 +159,17 @@ function ProblemNavigationControls({
 
 export function ProblemLayout({
   problem,
-  problemNumber,
-  totalProblems = CHAPTER_PROBLEMS.length,
   children,
   feedback,
   completed,
   revealedHintIds,
   onRevealHint,
   nextProblemId,
-  completionMessage,
   hideHints,
   taskGuide,
   restarted = false,
   onRestart,
   onReview,
-  attemptCount,
-  reviewHintUsed,
   demoSteps,
   demoFinalCta,
   conceptSummary,
@@ -251,12 +181,9 @@ export function ProblemLayout({
   const showInteractive = !showReview
   const useWorkspace = !!workspaceSteps && workspaceSteps.length > 0
 
-  // Single source of truth for ordering: derive the displayed problem number and
-  // the "next problem" target from the canonical chapter model (keyed by storage
-  // ID), so in-problem navigation and the chapter map always agree. The passed
-  // props are kept as fallbacks for any non-canonical/standalone usage.
-  const canonicalMeta = getProblemMeta(problem.problemId)
-  const resolvedProblemNumber = canonicalMeta ? canonicalMeta.globalProblemIndex + 1 : problemNumber
+  // Single source of truth for ordering: derive the "next problem" target from
+  // the canonical chapter model (keyed by storage ID), so in-problem navigation
+  // and the chapter map always agree.
   // Advance to the next problem that actually has an interactive implementation,
   // skipping unimplemented placeholders. Falls back to the strictly-adjacent
   // problem (then the passed prop) only when no implemented problem remains.
@@ -287,9 +214,6 @@ export function ProblemLayout({
         <Link to={CHAPTER_PATH}>← Back to course map</Link>
       </nav>
       <header className="problem-header">
-        <p className="chapter-eyebrow">
-          Problem {resolvedProblemNumber} of {totalProblems}
-        </p>
         <h1>{problem.title}</h1>
         <p className="problem-concept">{problem.concept}</p>
         <p>{problem.scenarioText}</p>
@@ -349,6 +273,23 @@ export function ProblemLayout({
       hintsRemaining={hideHints ? 0 : hintsRemaining}
     />
   ) : null
+  const completionCelebrationNode = freshlyCompleted ? (
+    <section className="lesson-completion-strip" aria-label="Problem complete">
+      <div className="lesson-completion-icon" aria-hidden="true">▣</div>
+      <div className="lesson-completion-copy">
+        <p className="lesson-completion-kicker">That was tricky!</p>
+        <p>Keep practicing the concepts you just used.</p>
+      </div>
+      <div className="lesson-completion-xp" aria-label="Two experience points earned">
+        <span>Total XP</span>
+        <strong>2+</strong>
+      </div>
+      <div className="lesson-streak-born">
+        <strong>1</strong>
+        <span>A streak is born!</span>
+      </div>
+    </section>
+  ) : null
   const problemNavigationNode = (
     <ProblemNavigationControls
       previousProblemId={resolvedPreviousProblemId}
@@ -356,9 +297,10 @@ export function ProblemLayout({
       nextEnabled={canNavigateNextProblem}
     />
   )
-  const coachPanelNode = learningCoachNode || !useWorkspace ? (
+  const coachPanelNode = learningCoachNode || completionCelebrationNode || !useWorkspace ? (
     <div className="problem-coach-stack">
       {learningCoachNode}
+      {completionCelebrationNode}
       {!useWorkspace && problemNavigationNode}
     </div>
   ) : null
@@ -371,6 +313,9 @@ export function ProblemLayout({
       visualCue={visualCueFor(problem.visualType)}
     />
   ) : undefined
+  const explanationPanelNode = problem.teachingExplanation ? (
+    <TeachingExplanationSection explanation={problem.teachingExplanation} />
+  ) : undefined
 
   // No-scroll Brilliant-like workspace. Applies only to the interactive solving
   // state; review/demo keep their existing rendering. The workspace renders its
@@ -381,8 +326,6 @@ export function ProblemLayout({
         <WorkspaceSteps
           problemTitle={problem.title}
           scenarioText={problem.scenarioText}
-          problemNumber={resolvedProblemNumber}
-          totalProblems={totalProblems}
           steps={workspaceSteps!}
           banner={restartBanner}
           coachPanel={coachPanelNode}
@@ -392,6 +335,9 @@ export function ProblemLayout({
           nextProblemHref={resolvedNextProblemId ? problemHref(resolvedNextProblemId) : undefined}
           nextProblemEnabled={canNavigateNextProblem}
           hintPanel={hintPanelNode}
+          onTakeHint={hideHints ? undefined : revealNextHint}
+          hintsRemaining={hideHints ? 0 : hintsRemaining}
+          explanationPanel={explanationPanelNode}
           backHref={CHAPTER_PATH}
           onStepChange={() => onStepChange?.()}
         />
@@ -403,22 +349,7 @@ export function ProblemLayout({
     <div className="page problem-page">
       {header}
 
-      {showReview && (
-        <>
-          <ReviewModeBanner
-            onRestart={onRestart}
-            onShowDemo={hasDemo ? demo.showAgain : undefined}
-          />
-          <ReviewDetail
-            problem={problem}
-            completionMessage={completionMessage}
-            previousProblemId={resolvedPreviousProblemId}
-            nextProblemId={resolvedNextProblemId}
-            attemptCount={attemptCount}
-            reviewHintUsed={reviewHintUsed}
-          />
-        </>
-      )}
+      {showReview && <CompletedRetryAction onRestart={onRestart} />}
 
       {showInteractive && (
         <ResponsiveProblemShell
