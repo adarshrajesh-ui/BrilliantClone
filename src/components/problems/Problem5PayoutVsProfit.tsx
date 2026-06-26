@@ -3,6 +3,7 @@ import './Problem5PayoutVsProfit.css'
 import './l4-workspace.css'
 import { PayoutTray } from '../visuals/PayoutTray'
 import { ProfitMeter } from '../visuals/ProfitMeter'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import type { WorkspaceStepDef } from '../../features/learning-experience'
 import { QuestionPrompt } from '../../features/learning-experience'
@@ -65,7 +66,7 @@ export function Problem5PayoutVsProfit() {
     setState((p) => ({ ...p, costPlaced: true, costSelected: false }))
   }, [setState])
 
-  if (!loaded || !session.sessionLoaded) return <div className="loading-screen"><div className="spinner" /><p>Loading…</p></div>
+  if (!loaded || !session.sessionLoaded) return <PokerChipLoader label="Loading…" />
 
   const profitValue = state.costPlaced ? EXPECTED_PAYOUT - COST : EXPECTED_PAYOUT
   const profitLocked = Boolean(session.feedback?.canComplete)
@@ -138,13 +139,15 @@ export function Problem5PayoutVsProfit() {
     id: 'profit',
     title: 'Expected profit',
     prompt: <QuestionPrompt>Now enter the expected profit: expected payout − cost.</QuestionPrompt>,
+    action: (
+      <button type="button" className="btn-secondary touch-target" disabled={!state.costPlaced || session.submitting}
+        onClick={() => void session.handleCheck(checkEvL4P1({ costPlaced: state.costPlaced, profitAnswer: state.profitAnswer }), 'final', state.profitAnswer, state.profitAnswer)}>Submit answer</button>
+    ),
     content: (
       <>
         <label className="field-label">Expected profit — your answer here
           <input className="touch-input" value={state.profitAnswer} inputMode="decimal" onChange={(e) => setState((p) => ({ ...p, profitAnswer: e.target.value }))} disabled={!state.costPlaced} placeholder={state.costPlaced ? 'Type the expected profit' : 'Place the cost first'} />
         </label>
-        <button type="button" className="btn-secondary touch-target" disabled={!state.costPlaced || session.submitting}
-          onClick={() => void session.handleCheck(checkEvL4P1({ costPlaced: state.costPlaced, profitAnswer: state.profitAnswer }), 'final', state.profitAnswer, state.profitAnswer)}>Submit answer</button>
       </>
     ),
   }

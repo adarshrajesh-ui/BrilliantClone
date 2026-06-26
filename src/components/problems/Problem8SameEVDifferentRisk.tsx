@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { RiskComparisonGraph } from '../visuals/RiskComparisonGraph'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
@@ -71,7 +72,7 @@ export function Problem8SameEVDifferentRisk() {
   }, [setState])
 
   if (!loaded || !session.sessionLoaded) {
-    return <div className="loading-screen"><div className="spinner" /><p>Loading…</p></div>
+    return <PokerChipLoader label="Loading…" />
   }
 
   const bothSimulated = state.gameASimulated && state.gameBSimulated
@@ -141,6 +142,28 @@ export function Problem8SameEVDifferentRisk() {
       id: 'risk',
       title: 'Which game is riskier?',
       prompt: <QuestionPrompt>Select the riskier game and the reason why, then submit.</QuestionPrompt>,
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target"
+          disabled={session.submitting}
+          onClick={() => void session.handleCheck(
+            checkWiderSpread({
+              gameASimulated: state.gameASimulated,
+              gameBSimulated: state.gameBSimulated,
+              evA: state.evA,
+              evB: state.evB,
+              higherRisk: state.higherRisk,
+              reason: state.reason,
+            }),
+            'final',
+            JSON.stringify({ evA: state.evA, evB: state.evB, higherRisk: state.higherRisk, reason: state.reason }),
+            state.reason,
+          )}
+        >
+          Submit answer
+        </button>
+      ),
       content: (
         <>
           <div className="field-grid">
@@ -165,26 +188,6 @@ export function Problem8SameEVDifferentRisk() {
             </div>
           </fieldset>
 
-          <button
-            type="button"
-            className="btn-secondary touch-target"
-            disabled={session.submitting}
-            onClick={() => void session.handleCheck(
-              checkWiderSpread({
-                gameASimulated: state.gameASimulated,
-                gameBSimulated: state.gameBSimulated,
-                evA: state.evA,
-                evB: state.evB,
-                higherRisk: state.higherRisk,
-                reason: state.reason,
-              }),
-              'final',
-              JSON.stringify({ evA: state.evA, evB: state.evB, higherRisk: state.higherRisk, reason: state.reason }),
-              state.reason,
-            )}
-          >
-            Submit answer
-          </button>
         </>
       ),
     },

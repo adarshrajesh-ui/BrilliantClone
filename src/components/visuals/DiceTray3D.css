@@ -1,7 +1,7 @@
 .dt3-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.55rem;
   align-items: center;
   width: 100%;
 }
@@ -9,11 +9,11 @@
 /* --- Felt tray / board area --- */
 .dt3-tray {
   width: 100%;
-  max-width: 360px;
-  min-height: 120px;
-  max-height: 24vh;
-  border-radius: 20px;
-  padding: 10px;
+  max-width: 500px;
+  min-height: clamp(180px, 28vh, 245px);
+  max-height: 32vh;
+  border-radius: 24px;
+  padding: 14px;
   position: relative;
   cursor: pointer;
   /* Raised outer wood-ish rail */
@@ -27,15 +27,15 @@
 .dt3-tray-inner {
   width: 100%;
   height: 100%;
-  min-height: 100px;
-  border-radius: 14px;
+  min-height: 150px;
+  border-radius: 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
   position: relative;
-  perspective: 600px;
+  perspective: 760px;
   /* Felt surface with raised inner walls (inset shadow) */
   background:
     radial-gradient(circle at 50% 38%, #2f7d4f 0%, #1f5e3a 75%);
@@ -69,9 +69,9 @@
 
 .dt3-sum-badge {
   position: absolute;
-  top: 8px;
-  right: 10px;
-  font-size: 0.95rem;
+  top: 10px;
+  right: 12px;
+  font-size: 1.05rem;
   font-weight: 800;
   color: #1f2937;
   background: #fbbf24;
@@ -83,13 +83,13 @@
 /* --- Dice layout --- */
 .dt3-rest-pair {
   display: flex;
-  gap: 1rem;
+  gap: clamp(1.1rem, 3vw, 1.8rem);
   align-items: center;
   justify-content: center;
 }
 
 .dt3-die {
-  --dt3-size: 52px;
+  --dt3-size: clamp(72px, 8vw, 92px);
   width: var(--dt3-size);
   height: var(--dt3-size);
   position: relative;
@@ -131,13 +131,13 @@
   fill: #111827;
 }
 
-/* Cube face positioning (half of --dt3-size = 26px) */
-.dt3-face-front { transform: translateZ(26px); }
-.dt3-face-back { transform: rotateY(180deg) translateZ(26px); }
-.dt3-face-right { transform: rotateY(90deg) translateZ(26px); }
-.dt3-face-left { transform: rotateY(-90deg) translateZ(26px); }
-.dt3-face-top { transform: rotateX(90deg) translateZ(26px); }
-.dt3-face-bottom { transform: rotateX(-90deg) translateZ(26px); }
+/* Cube face positioning: half of the inherited die size. */
+.dt3-face-front { transform: translateZ(calc(var(--dt3-size) / 2)); }
+.dt3-face-back { transform: rotateY(180deg) translateZ(calc(var(--dt3-size) / 2)); }
+.dt3-face-right { transform: rotateY(90deg) translateZ(calc(var(--dt3-size) / 2)); }
+.dt3-face-left { transform: rotateY(-90deg) translateZ(calc(var(--dt3-size) / 2)); }
+.dt3-face-top { transform: rotateX(90deg) translateZ(calc(var(--dt3-size) / 2)); }
+.dt3-face-bottom { transform: rotateX(-90deg) translateZ(calc(var(--dt3-size) / 2)); }
 
 /* Subtle face shading so side faces read as 3D during tumble */
 .dt3-face-right .dt3-pip-body,
@@ -151,21 +151,34 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .dt3-hand {
   display: inline-flex;
-  gap: 0.7rem;
+  gap: 0.85rem;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
   cursor: grab;
-  padding: 6px;
+  padding: 8px 12px;
   touch-action: none;
   perspective: 600px;
-  min-height: 48px;
+  min-height: 64px;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.12);
+  transition:
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.dt3-hand:hover:not(:disabled),
+.dt3-hand:focus-visible:not(:disabled) {
+  box-shadow:
+    0 16px 32px rgba(15, 23, 42, 0.16),
+    0 0 0 3px rgba(37, 99, 235, 0.14);
+  transform: translateY(-2px);
 }
 
 .dt3-hand:disabled {
@@ -176,33 +189,30 @@
 .dt3-hand-dragging {
   cursor: grabbing;
   z-index: 5;
+  box-shadow:
+    0 24px 40px rgba(15, 23, 42, 0.24),
+    0 0 0 4px rgba(251, 191, 36, 0.24);
 }
 
 .dt3-hand-die {
-  --dt3-size: 46px;
+  --dt3-size: clamp(56px, 6vw, 68px);
   width: var(--dt3-size);
   height: var(--dt3-size);
   position: relative;
   transform-style: preserve-3d;
-  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.28));
 }
-
-.dt3-hand-die .dt3-face-front { transform: translateZ(23px); }
-.dt3-hand-die .dt3-face-back { transform: rotateY(180deg) translateZ(23px); }
-.dt3-hand-die .dt3-face-right { transform: rotateY(90deg) translateZ(23px); }
-.dt3-hand-die .dt3-face-left { transform: rotateY(-90deg) translateZ(23px); }
-.dt3-hand-die .dt3-face-top { transform: rotateX(90deg) translateZ(23px); }
-.dt3-hand-die .dt3-face-bottom { transform: rotateX(-90deg) translateZ(23px); }
 
 .dt3-hand-armed .dt3-hand-die {
   filter: drop-shadow(0 0 7px rgba(251, 191, 36, 0.9));
 }
 
 .dt3-rest-label {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: #6b7280;
   margin: 0;
   text-align: center;
+  font-weight: 600;
 }
 
 .dt3-converge-note {
@@ -232,13 +242,13 @@
 
 @keyframes dt3-arc {
   /* lift */
-  0% { transform: translate(-46px, -64px) scale(0.82); }
+  0% { transform: translate(-72px, -92px) scale(0.78); }
   /* arc apex */
-  22% { transform: translate(-20px, -78px) scale(0.95); }
+  22% { transform: translate(-28px, -110px) scale(0.94); }
   /* drop into tray */
   46% { transform: translate(0, 0) scale(1.05); }
   /* first bounce */
-  60% { transform: translate(4px, -16px) scale(1); }
+  60% { transform: translate(6px, -24px) scale(1); }
   /* roll across felt */
   78% { transform: translate(-3px, 0) scale(1); }
   /* small settle */
@@ -274,14 +284,14 @@
   }
 
   .dt3-tray {
-    min-height: 136px;
+    min-height: 168px;
     max-height: none;
-    padding-top: 20px;
+    padding: 12px;
     touch-action: manipulation;
   }
 
   .dt3-tray-inner {
-    min-height: 104px;
+    min-height: 136px;
   }
 
   .dt3-hand {
@@ -300,10 +310,10 @@
 }
 
 @keyframes dt3-arc-phone {
-  0% { transform: translate(-30px, -46px) scale(0.86); }
-  22% { transform: translate(-14px, -54px) scale(0.94); }
+  0% { transform: translate(-44px, -58px) scale(0.84); }
+  22% { transform: translate(-18px, -70px) scale(0.94); }
   46% { transform: translate(0, 0) scale(1.04); }
-  60% { transform: translate(3px, -12px) scale(1); }
+  60% { transform: translate(3px, -16px) scale(1); }
   78% { transform: translate(-2px, 0) scale(1); }
   90% { transform: translate(1px, -2px) scale(1); }
   100% { transform: translate(0, 0) scale(1); }

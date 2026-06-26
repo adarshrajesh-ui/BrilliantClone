@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { DiceTray3D } from '../visuals/DiceTray3D'
 import { RunningAverageGraph } from '../visuals/RunningAverageGraph'
 import { SumHistogram } from '../visuals/SumHistogram'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
@@ -37,6 +38,7 @@ const DICE_DEMO: DemoStepConfig[] = [
   },
 ]
 const DICE_DEMO_CTA = 'Throw the dice, speed up with batches, then identify the long-run average sum.'
+const REACHED_100_ROLLS_MESSAGE = 'Nice — you reached 100+ rolls. Watch how the average settles near 7.'
 
 interface P1State {
   seed: number
@@ -130,22 +132,19 @@ export function Problem1LongRunAverage() {
 
   const counts = useMemo(() => normalizeCounts(state.counts), [state.counts])
   const average = state.totalThrows ? (state.sumTotal ?? 0) / state.totalThrows : 0
+  const rollProgress = Math.min(state.totalThrows, 100)
+  const currentAverageDisplay = state.totalThrows ? `${average.toFixed(2)} → 7` : '— → 7'
   const stats = useMemo(
     () => [
       { label: 'Rolls', value: String(state.totalThrows) },
-      { label: 'Last sum', value: state.lastSum === null ? '—' : String(state.lastSum) },
-      { label: 'Average sum', value: state.totalThrows ? average.toFixed(2) : '0.00' },
+      { label: 'Last Roll', value: state.lastSum === null ? '—' : String(state.lastSum) },
+      { label: 'Current Average', value: currentAverageDisplay, emphasized: true },
     ],
-    [state.totalThrows, state.lastSum, average],
+    [state.totalThrows, state.lastSum, currentAverageDisplay],
   )
 
   if (!loaded || !session.sessionLoaded) {
-    return (
-      <div className="loading-screen">
-        <div className="spinner" />
-        <p>Loading problem…</p>
-      </div>
-    )
+    return <PokerChipLoader label="Loading problem…" />
   }
 
   const steps: WorkspaceStepDef[] = [
@@ -154,14 +153,16 @@ export function Problem1LongRunAverage() {
       title: 'Throw the dice',
       prompt: (
         <QuestionPrompt>
-          Throw the dice or use batch rolls to reach 100 total rolls ({state.totalThrows}/100).
+          {state.totalThrows >= 100
+            ? REACHED_100_ROLLS_MESSAGE
+            : `Hold the dice with your cursor, throw them into the tray, or use a batch to reach 100 total rolls (${rollProgress}/100).`}
         </QuestionPrompt>
       ),
       canAdvance: state.totalThrows >= 100,
       advanceHint: 'Reach 100 total rolls to continue.',
       content: (
         <>
-          <div className="l1-play">
+          <div className="l1-play l1-dice-play">
             <div className="ws-visual">
               <DiceTray3D
                 dice={state.lastDice}
@@ -172,17 +173,7 @@ export function Problem1LongRunAverage() {
                 disabled={false}
                 reducedMotion={reducedMotion}
               />
-            </div>
-            <div className="l1-side">
-              <ul className="stat-list">
-                {stats.map((s) => (
-                  <li key={s.label}>
-                    <span>{s.label}</span>
-                    <strong>{s.value}</strong>
-                  </li>
-                ))}
-              </ul>
-              <div className="spin-buttons">
+              <div className="spin-buttons l1-roll-pills" aria-label="Roll batches">
                 <button
                   type="button"
                   className="btn-secondary touch-target"
@@ -205,13 +196,29 @@ export function Problem1LongRunAverage() {
                   Roll 100
                 </button>
               </div>
+            </div>
+            <div className="l1-side">
+              <ul className="stat-list l1-stat-cards" aria-label="Roll statistics">
+                {stats.map((s) => (
+                  <li key={s.label} className={s.emphasized ? 'l1-stat-card-emphasis' : undefined}>
+                    <span>{s.label}</span>
+                    <strong>{s.value}</strong>
+                  </li>
+                ))}
+              </ul>
               {state.totalThrows < 100 && (
                 <p className="l1-mobile-gate-hint">Reach 100 total rolls to unlock Next.</p>
               )}
+              {state.totalThrows >= 100 && (
+                <p className="l1-reached-message">{REACHED_100_ROLLS_MESSAGE}</p>
+              )}
             </div>
             <div className="l1-graphs">
-              <RunningAverageGraph averages={state.runningAverages} target={7} maxY={12} label="Running average sum per roll" />
-              <SumHistogram counts={counts} label="Distribution of sums" />
+              <RunningAverageGraph averages={state.runningAverages} target={7} maxY={12} label="Does the average settle near 7?" />
+              <SumHistogram counts={counts} label="Which sums show up most often?" />
+              <p className="l1-chart-note">
+                The running average may wobble early, but many rolls pull it toward 7 while sums near 7 appear most often.
+              </p>
             </div>
           </div>
           <p className="sr-only" aria-live="polite">
@@ -225,6 +232,26 @@ export function Problem1LongRunAverage() {
       id: 'identify',
       title: 'Identify the long-run average sum',
       prompt: <QuestionPrompt>What is the long-run average sum per roll?</QuestionPrompt>,
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target"
+          disabled={state.totalThrows < 100 || session.submitting}
+          onClick={() =>
+            void session.handleCheck(
+              checkProblem1Dice({
+                totalThrows: state.totalThrows,
+                finalAnswer: state.finalAnswer,
+              }),
+              'final',
+              state.finalAnswer,
+              state.finalAnswer,
+            )
+          }
+        >
+          {session.submitting ? 'Saving…' : 'Submit answer'}
+        </button>
+      ),
       content: (
         <>
           <label className="ws-field field-label">
@@ -239,24 +266,6 @@ export function Problem1LongRunAverage() {
               disabled={state.totalThrows < 100}
             />
           </label>
-          <button
-            type="button"
-            className="btn-secondary touch-target"
-            disabled={state.totalThrows < 100 || session.submitting}
-            onClick={() =>
-              void session.handleCheck(
-                checkProblem1Dice({
-                  totalThrows: state.totalThrows,
-                  finalAnswer: state.finalAnswer,
-                }),
-                'final',
-                state.finalAnswer,
-                state.finalAnswer,
-              )
-            }
-          >
-            {session.submitting ? 'Saving…' : 'Submit answer'}
-          </button>
         </>
       ),
     },

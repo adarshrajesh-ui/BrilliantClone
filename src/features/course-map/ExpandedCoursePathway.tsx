@@ -17,11 +17,28 @@ interface ExpandedCoursePathwayProps {
   problemHref: (problemId: string) => string
 }
 
-/**
- * Minimalist Brilliant-style course view: a sticky info card on the left and a
- * winding lesson path on the right. Navigation only — the path arranges the
- * pure view model into level groups and circular lesson nodes.
- */
+function CourseSummaryArt() {
+  return (
+    <span className="coursemap-card-art" aria-hidden="true">
+      <span className="coursemap-card-dice coursemap-card-dice-one">
+        <i />
+        <i />
+        <i />
+      </span>
+      <span className="coursemap-card-dice coursemap-card-dice-two">
+        <i />
+        <i />
+        <i />
+        <i />
+      </span>
+      <span className="coursemap-card-coin">
+        <i />
+      </span>
+    </span>
+  )
+}
+
+/** Brilliant-style course overview: static card + vertical lesson map. */
 export function ExpandedCoursePathway({
   view,
   title,
@@ -33,63 +50,68 @@ export function ExpandedCoursePathway({
   problemHref,
 }: ExpandedCoursePathwayProps) {
   const hasProgress = completionPercentage > 0
+  const progressValue = Math.min(100, Math.max(0, completionPercentage))
+  const progressLabel = `${Math.round(progressValue)}%`
   const continueLabel = view.allComplete ? 'Review' : hasProgress ? 'Continue' : 'Start'
-  let runningIndex = 0
+  const currentZone = view.zones.find((zone) => zone.isCurrent) ?? view.zones[0]
+  const levelTitle = currentZone?.title ?? title
+  const firstProblemId = view.zones[0]?.holes[0]?.problemId
+  const leftCardHref = hasProgress || view.allComplete || !firstProblemId ? continueHref : problemHref(firstProblemId)
 
   return (
-    <section className="coursemap" aria-label="Midpoint course map">
+    <section className="coursemap" aria-label={`${title} course map`}>
       <aside className="coursemap-info">
-        <div className="coursemap-info-card">
-          <span className="coursemap-info-icon" aria-hidden="true">
-            ∑
-          </span>
+        <Link to={leftCardHref} className="coursemap-info-card">
+          <CourseSummaryArt />
           <h1 className="coursemap-info-title">{title}</h1>
           <p className="coursemap-info-desc">{subtitle}</p>
 
           <div className="coursemap-info-meta">
             <span>
+              <i aria-hidden="true" />
               <strong>{totalLessons}</strong> Lessons
             </span>
             <span>
-              <strong>{totalProblems}</strong> Problems
+              <i aria-hidden="true" />
+              <strong>{totalProblems}</strong> Exercises
             </span>
           </div>
 
-          <div
-            className="coursemap-info-bar"
-            role="progressbar"
-            aria-valuenow={completionPercentage}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          >
-            <div
-              className="coursemap-info-bar-fill"
-              style={{ width: `${completionPercentage}%` }}
-            />
+          <div className="coursemap-info-progress" aria-hidden="true">
+            <span className="coursemap-info-progress-label">
+              <strong>{progressLabel}</strong> complete
+            </span>
+            <span className="coursemap-info-progress-track">
+              <span
+                className="coursemap-info-progress-fill"
+                style={{ width: progressLabel }}
+              />
+            </span>
           </div>
-          <p className="coursemap-info-progress">{completionPercentage}% complete</p>
 
-          <Link to={continueHref} className="coursemap-info-cta touch-target">
-            {continueLabel}
-          </Link>
-        </div>
+          <span className="sr-only">
+            {progressLabel} complete. {continueLabel} course.
+          </span>
+        </Link>
       </aside>
 
-      <ol className="coursemap-path">
-        {view.zones.map((zone) => {
-          const startIndex = runningIndex
-          runningIndex += zone.holes.length
-          return (
+      <div className="coursemap-stage">
+        <div className="coursemap-level-pill" aria-label={`Level ${currentZone?.order ?? 1}: ${levelTitle}`}>
+          <span>Level {currentZone?.order ?? 1}</span>
+          <strong>{levelTitle}</strong>
+        </div>
+
+        <ol className="coursemap-path">
+          {view.zones.map((zone) => (
             <LessonZone
               key={zone.lessonId}
               zone={zone}
               continueLabel={continueLabel}
               problemHref={problemHref}
-              startIndex={startIndex}
             />
-          )
-        })}
-      </ol>
+          ))}
+        </ol>
+      </div>
     </section>
   )
 }

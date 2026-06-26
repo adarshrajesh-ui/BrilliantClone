@@ -13,12 +13,34 @@
   min-height: 0;
 }
 
+.l5p1-sim-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.l5p1-start {
+  background: var(--primary, #2563eb);
+  color: #fff;
+  border-color: var(--primary, #2563eb);
+}
+
+.l5p1-start:hover:not(:disabled) {
+  background: var(--primary-hover, #1d4ed8);
+}
+
+.l5p1-start:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Two machines side by side; each column stacks machine + controls + strip + graph. */
 .l5p1-machines {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem 1rem;
-  align-items: start;
+  align-items: stretch;
   width: 100%;
   min-height: 0;
 }
@@ -49,11 +71,6 @@
   align-items: flex-start;
   width: 100%;
   overflow: hidden;
-}
-.l5p1-stage-mp {
-  height: clamp(120px, 21vh, 172px);
-}
-.l5p1-stage-js {
   height: clamp(150px, 26vh, 210px);
 }
 
@@ -233,7 +250,7 @@
     gap: 0.6rem;
   }
   .l5p1-stage-mp {
-    height: clamp(120px, 18vh, 165px);
+    height: clamp(140px, 22vh, 195px);
   }
   .l5p1-stage-js {
     height: clamp(140px, 22vh, 195px);
@@ -274,7 +291,7 @@
   }
 
   .l5p1-stage-mp {
-    height: 108px;
+    height: 128px;
   }
 
   .l5p1-stage-js {

@@ -3,6 +3,7 @@ import type { JSX } from 'react'
 import { MoneyPrinter3D } from '../visuals/MoneyPrinter3D'
 import { JackpotSlot3D } from '../visuals/JackpotSlot3D'
 import { RunningAverageGraph } from '../visuals/RunningAverageGraph'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
@@ -22,6 +23,7 @@ const SLOT_GAME: DiscreteOutcome[] = [
 ]
 
 const MIN_TRIALS = 10
+const START_SIMULATION_RUNS = 20
 const BATCH_SIZES = [1, 10, 100] as const
 const STRIP_LIMIT = 24
 
@@ -39,6 +41,8 @@ interface MachineState {
 interface P7State {
   printer: MachineState
   slot: MachineState
+  /** True once the guided 20-run simulation has run both machines together. */
+  ranStartSimulation: boolean
   /** True once any Run 100 batch was pressed on either machine. */
   ranHundredBatch: boolean
   sameEV: string
@@ -56,6 +60,7 @@ const EMPTY_MACHINE: MachineState = {
 const DEFAULT: P7State = {
   printer: { ...EMPTY_MACHINE },
   slot: { ...EMPTY_MACHINE },
+  ranStartSimulation: false,
   ranHundredBatch: false,
   sameEV: '',
   riskier: '',
@@ -162,6 +167,57 @@ export function Problem7WholeEVModel() {
     [reducedMotion, setState],
   )
 
+  const runStartSimulation = useCallback(() => {
+    if (!reducedMotion) {
+      setPrinterRunning(true)
+      setSlotRunning(true)
+    }
+    setState((p) => {
+      const printerToken = p.printer.runToken + 1
+      const slotToken = p.slot.runToken + 1
+      const printerSim = runDeterministicBatch(
+        PRINTER_GAME,
+        START_SIMULATION_RUNS,
+        `problem-7-printer-${printerToken}`,
+      )
+      const slotSim = runDeterministicBatch(
+        SLOT_GAME,
+        START_SIMULATION_RUNS,
+        `problem-7-slot-${slotToken}`,
+      )
+
+      return {
+        ...p,
+        ranStartSimulation: true,
+        printer: {
+          trials: p.printer.trials + START_SIMULATION_RUNS,
+          results: [...p.printer.results, ...printerSim.results],
+          lastOutcome: printerSim.results[printerSim.results.length - 1] ?? p.printer.lastOutcome,
+          runToken: printerToken,
+        },
+        slot: {
+          trials: p.slot.trials + START_SIMULATION_RUNS,
+          results: [...p.slot.results, ...slotSim.results],
+          lastOutcome: slotSim.results[slotSim.results.length - 1] ?? p.slot.lastOutcome,
+          runToken: slotToken,
+        },
+      }
+    })
+  }, [reducedMotion, setState])
+
+  const resetSimulation = useCallback(() => {
+    setPrinterRunning(false)
+    setSlotRunning(false)
+    setState((p) => ({
+      ...p,
+      printer: { ...EMPTY_MACHINE },
+      slot: { ...EMPTY_MACHINE },
+      ranStartSimulation: false,
+      ranHundredBatch: false,
+    }))
+    setChecks(NO_CHECKS)
+  }, [setState])
+
   const handlePrinterDone = useCallback(() => setPrinterRunning(false), [])
   const handleSlotDone = useCallback(() => setSlotRunning(false), [])
 
@@ -172,25 +228,23 @@ export function Problem7WholeEVModel() {
   const slotAverages = useMemo(() => runningAverages(state.slot.results), [state.slot.results])
 
   if (!loaded || !session.sessionLoaded) {
-    return (
-      <div className="loading-screen">
-        <div className="spinner" />
-        <p>Loading…</p>
-      </div>
-    )
+    return <PokerChipLoader label="Loading…" />
   }
 
   const printerAvg = printerAverages.length ? printerAverages[printerAverages.length - 1] : 0
   const slotAvg = slotAverages.length ? slotAverages[slotAverages.length - 1] : 0
 
+  const completedGuidedSimulation = Boolean(state.ranStartSimulation)
   const ranEnough = state.printer.trials >= MIN_TRIALS && state.slot.trials >= MIN_TRIALS
-  const gateMet = ranEnough && state.ranHundredBatch
+  const completedExplorationBatch = completedGuidedSimulation || state.ranHundredBatch
+  const gateMet = ranEnough && completedExplorationBatch
   const allAnswered = state.sameEV !== '' && state.riskier !== '' && state.why !== ''
+  const simulationBusy = printerRunning || slotRunning || session.submitting
 
   const playAdvanceHint = !ranEnough
-    ? 'Run each machine at least 10 times to continue.'
-    : !state.ranHundredBatch
-      ? 'Run at least one 100-run batch to continue.'
+    ? 'Start the 20-run simulation, or run each machine at least 10 times manually.'
+    : !completedExplorationBatch
+      ? 'Start the 20-run simulation, or run at least one 100-run batch manually.'
       : undefined
 
   const clearQuestionsBadge = () => setChecks((p) => ({ ...p, questions: undefined }))
@@ -233,13 +287,33 @@ export function Problem7WholeEVModel() {
       prompt: (
         <>
           Watch how differently the two machines behave across many runs.
-          <QuestionPrompt>Run each machine at least 10 times, including one 100-run batch.</QuestionPrompt>
+          <QuestionPrompt>Start the simulation to run both machines together 20 times, then reset or keep testing manually.</QuestionPrompt>
         </>
       ),
       canAdvance: gateMet,
       advanceHint: playAdvanceHint,
       content: (
         <div className="l5p1-play">
+          <div className="l5p1-sim-controls">
+            <button
+              type="button"
+              className="btn-secondary touch-target l5p1-start"
+              disabled={simulationBusy || completedGuidedSimulation}
+              onClick={runStartSimulation}
+            >
+              Start simulation
+            </button>
+            {(state.printer.trials > 0 || state.slot.trials > 0) && (
+              <button
+                type="button"
+                className="btn-secondary touch-target l5p1-reset"
+                disabled={simulationBusy}
+                onClick={resetSimulation}
+              >
+                Reset simulation
+              </button>
+            )}
+          </div>
           <p className="l5p1-phone-tip">Swipe between machines; each card keeps its run buttons with the visual.</p>
           <div className="l5p1-machines">
             <div className="l5p1-machine">
@@ -304,6 +378,33 @@ export function Problem7WholeEVModel() {
       title: 'Same average, different ride?',
       prompt: <QuestionPrompt>Answer all three questions, then submit.</QuestionPrompt>,
       status: checks.questions,
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target"
+          disabled={session.submitting || !gateMet || !allAnswered}
+          onClick={() => {
+            const result = checkSameAverageDifferentRide({
+              printerTrials: state.printer.trials,
+              slotTrials: state.slot.trials,
+              ranHundredBatch: state.ranHundredBatch,
+              ranStartSimulation: completedGuidedSimulation,
+              sameEV: state.sameEV,
+              riskier: state.riskier,
+              why: state.why,
+            })
+            setChecks((p) => ({ ...p, questions: statusFromResult(result) }))
+            void session.handleCheck(
+              result,
+              'final',
+              JSON.stringify({ sameEV: state.sameEV, riskier: state.riskier, why: state.why }),
+              state.why,
+            )
+          }}
+        >
+          Submit answers
+        </button>
+      ),
       content: (
         <div className="l5p1-questions">
           <fieldset className="l5p1-question" disabled={!gateMet}>
@@ -384,30 +485,6 @@ export function Problem7WholeEVModel() {
           </fieldset>
 
           <div className="l5p1-submit-row">
-            <button
-              type="button"
-              className="btn-secondary touch-target"
-              disabled={session.submitting || !gateMet || !allAnswered}
-              onClick={() => {
-                const result = checkSameAverageDifferentRide({
-                  printerTrials: state.printer.trials,
-                  slotTrials: state.slot.trials,
-                  ranHundredBatch: state.ranHundredBatch,
-                  sameEV: state.sameEV,
-                  riskier: state.riskier,
-                  why: state.why,
-                })
-                setChecks((p) => ({ ...p, questions: statusFromResult(result) }))
-                void session.handleCheck(
-                  result,
-                  'final',
-                  JSON.stringify({ sameEV: state.sameEV, riskier: state.riskier, why: state.why }),
-                  state.why,
-                )
-              }}
-            >
-              Submit answers
-            </button>
             {!gateMet && (
               <span className="l5p1-submit-hint">{playAdvanceHint}</span>
             )}

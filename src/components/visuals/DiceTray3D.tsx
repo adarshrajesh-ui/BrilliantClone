@@ -125,7 +125,7 @@ export function DiceTray3D({
     ? 'Dice are locked'
     : armed
       ? 'Dice ready — tap the tray to roll'
-      : 'Tap to roll, or drag the dice into the tray'
+      : 'Hold the dice, drag them over the tray, then release to throw'
 
   return (
     <div className="dt3-wrap">
@@ -166,7 +166,7 @@ export function DiceTray3D({
                 ? 'Dice are locked'
                 : armed
                   ? 'Tap here to roll the dice'
-                  : 'Drop the dice here to roll'}
+                  : 'Release here to throw'}
             </p>
           )}
 

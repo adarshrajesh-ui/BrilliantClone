@@ -1,5 +1,6 @@
 import './l4-workspace.css'
 import { FairnessNumberLine } from '../visuals/FairnessNumberLine'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { QuestionPrompt } from '../../features/learning-experience'
 import type { WorkspaceStepDef } from '../../features/learning-experience'
@@ -21,7 +22,7 @@ export function Problem6FairnessSort() {
   const { state, setState, loaded, reset } = usePersistedProblemState<P6State>('problem-6', DEFAULT)
   const session = useProblemSession(PROBLEM_6, state)
 
-  if (!loaded || !session.sessionLoaded) return <div className="loading-screen"><div className="spinner" /><p>Loading…</p></div>
+  if (!loaded || !session.sessionLoaded) return <PokerChipLoader label="Loading…" />
 
   const placedCount = GAMES.filter((g) => state.assignments[g.id]).length
   const allPlaced = placedCount === GAMES.length
@@ -48,6 +49,10 @@ export function Problem6FairnessSort() {
           <QuestionPrompt>Sort each game as Fair, Favorable, or Unfavorable.</QuestionPrompt>
           {currentTask}
         </>
+      ),
+      action: (
+        <button type="button" className="btn-secondary touch-target" disabled={session.submitting}
+          onClick={() => void session.handleCheck(checkProblem6({ assignments: state.assignments }), 'final', JSON.stringify(state.assignments), JSON.stringify(state.assignments))}>Submit answer</button>
       ),
       content: (
         <div className="l4-sort-step ws-compact">
@@ -90,8 +95,6 @@ export function Problem6FairnessSort() {
               : `${placedCount} of 3 games placed.`}
           </p>
           <div className="placeholder-actions">
-            <button type="button" className="btn-secondary touch-target" disabled={session.submitting}
-              onClick={() => void session.handleCheck(checkProblem6({ assignments: state.assignments }), 'final', JSON.stringify(state.assignments), JSON.stringify(state.assignments))}>Submit answer</button>
             {placedCount > 0 && (
               <button type="button" className="btn-text touch-target" onClick={clearPlacements}>Clear placements</button>
             )}

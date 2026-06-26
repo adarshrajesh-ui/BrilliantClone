@@ -1,4 +1,5 @@
 import './agent3.css'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
@@ -32,12 +33,7 @@ export function EvL2P2MatchOutcomes() {
   const session = useProblemSession(PROBLEM_EV_L2_P2, state)
 
   if (!loaded || !session.sessionLoaded) {
-    return (
-      <div className="loading-screen">
-        <div className="spinner" />
-        <p>Loading problem…</p>
-      </div>
-    )
+    return <PokerChipLoader label="Loading problem…" />
   }
 
   const usedProbs = new Set(Object.values(state.assignments).filter(Boolean))
@@ -71,6 +67,23 @@ export function EvL2P2MatchOutcomes() {
           <QuestionPrompt>Match each payout to its probability.</QuestionPrompt>
           <p className="section-note">{currentTask}</p>
         </>
+      ),
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target"
+          disabled={session.submitting}
+          onClick={() =>
+            void session.handleCheck(
+              checkEvL2P2({ assignments: state.assignments }),
+              'final',
+              `12=${state.assignments['12']};3=${state.assignments['3']};0=${state.assignments['0']}`,
+              matchedCount === 3 ? 'matched' : 'incomplete',
+            )
+          }
+        >
+          {session.submitting ? 'Saving…' : 'Check answer'}
+        </button>
       ),
       content: (
         <>
@@ -122,21 +135,6 @@ export function EvL2P2MatchOutcomes() {
             ))}
           </div>
 
-          <button
-            type="button"
-            className="btn-secondary touch-target"
-            disabled={session.submitting}
-            onClick={() =>
-              void session.handleCheck(
-                checkEvL2P2({ assignments: state.assignments }),
-                'final',
-                `12=${state.assignments['12']};3=${state.assignments['3']};0=${state.assignments['0']}`,
-                matchedCount === 3 ? 'matched' : 'incomplete',
-              )
-            }
-          >
-            {session.submitting ? 'Saving…' : 'Check answer'}
-          </button>
         </>
       ),
     },

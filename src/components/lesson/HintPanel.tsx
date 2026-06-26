@@ -45,8 +45,13 @@ export function HintPanel({ hints, revealedHintIds, onRevealHint, visualCue }: H
       </ul>
 
       {nextHint && (
-        <button type="button" className="btn-hint" onClick={() => onRevealHint(nextHint.id)}>
-          {revealedHintIds.length === 0 ? 'Need a hint?' : 'Show another hint'} (Hint {nextLevel}: {nextHint.label})
+        <button
+          type="button"
+          className="btn-hint"
+          onClick={() => onRevealHint(nextHint.id)}
+          aria-label={`Reveal hint ${nextLevel}: ${nextHint.label}`}
+        >
+          {revealedHintIds.length === 0 ? 'Take hint' : 'Take another hint'}
         </button>
       )}
     </section>

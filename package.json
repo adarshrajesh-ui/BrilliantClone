@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run",
+    "typecheck:api": "tsc -p tsconfig.api.json",
     "test:watch": "vitest",
     "validate:answers": "vitest run",
     "preview": "vite preview",
@@ -17,6 +18,7 @@
   },
   "dependencies": {
     "firebase": "^12.15.0",
+    "firebase-admin": "^14.1.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.0"

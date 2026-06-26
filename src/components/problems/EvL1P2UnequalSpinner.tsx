@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { ConfigurableSpinner, SPINNER_P2 } from '../visuals/ConfigurableSpinner'
 import { RunningAverageGraph } from '../visuals/RunningAverageGraph'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
@@ -97,12 +98,7 @@ export function EvL1P2UnequalSpinner() {
   )
 
   if (!loaded || !session.sessionLoaded) {
-    return (
-      <div className="loading-screen">
-        <div className="spinner" />
-        <p>Loading problem…</p>
-      </div>
-    )
+    return <PokerChipLoader label="Loading problem…" />
   }
 
   const steps: WorkspaceStepDef[] = [
@@ -213,6 +209,23 @@ export function EvL1P2UnequalSpinner() {
           <p>Enter your answer, then submit it.</p>
         </>
       ),
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target"
+          disabled={state.totalSpins < 100 || session.submitting}
+          onClick={() =>
+            void session.handleCheck(
+              checkEvL1P2({ predictionSubmitted: state.predictionSubmitted, totalSpins: state.totalSpins, finalAnswer: state.finalAnswer }),
+              'final',
+              state.finalAnswer,
+              state.finalAnswer,
+            )
+          }
+        >
+          {session.submitting ? 'Saving…' : 'Submit answer'}
+        </button>
+      ),
       content: (
         <>
           <label className="ws-field field-label">
@@ -227,21 +240,6 @@ export function EvL1P2UnequalSpinner() {
               disabled={state.totalSpins < 100}
             />
           </label>
-          <button
-            type="button"
-            className="btn-secondary touch-target"
-            disabled={state.totalSpins < 100 || session.submitting}
-            onClick={() =>
-              void session.handleCheck(
-                checkEvL1P2({ predictionSubmitted: state.predictionSubmitted, totalSpins: state.totalSpins, finalAnswer: state.finalAnswer }),
-                'final',
-                state.finalAnswer,
-                state.finalAnswer,
-              )
-            }
-          >
-            {session.submitting ? 'Saving…' : 'Submit answer'}
-          </button>
         </>
       ),
     },

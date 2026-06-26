@@ -1,4 +1,5 @@
 import { CardDealScene, EvBadge } from '../visuals/cards'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
@@ -37,7 +38,7 @@ export function Problem4DealtHandContributions() {
   const session = useProblemSession(PROBLEM_4, state)
 
   if (!loaded || !session.sessionLoaded) {
-    return <div className="loading-screen"><div className="spinner" /><p>Loading problem…</p></div>
+    return <PokerChipLoader label="Loading problem…" />
   }
 
   const showStatus = Boolean(session.feedback && !session.feedback.isCorrect && session.feedback.mistakeType)
@@ -46,6 +47,10 @@ export function Problem4DealtHandContributions() {
     : undefined
 
   const allContribsFilled = state.contributions.every((c) => c.trim() !== '')
+  const canShowSolutionExplanation = session.completed || session.feedback?.canComplete === true
+  const layoutProblem = canShowSolutionExplanation
+    ? PROBLEM_4
+    : { ...PROBLEM_4, teachingExplanation: undefined }
 
   const update = (i: number, val: string) =>
     setState((p) => ({
@@ -63,7 +68,8 @@ export function Problem4DealtHandContributions() {
         groups={DEALT_HAND_L3P2_GROUPS}
         highlightValue={state.activeRow !== null ? ROW_VALUES[state.activeRow] : null}
         showCounts
-        showContributions
+        showContributions={session.completed}
+        visualCap={4}
         caption="An 8-card hand, grouped by value"
       />
       {session.completed && <EvBadge value={DEALT_HAND_L3P2_EV} />}
@@ -112,33 +118,35 @@ export function Problem4DealtHandContributions() {
     {
       id: 'ev',
       title: 'Add the contributions',
-      prompt: 'Add the three contributions to find the expected value of the hand.',
+      prompt: 'Add the three contributions to find the expected value of one random card drawn from the hand.',
+      action: (
+        <button type="button" className="btn-secondary touch-target" disabled={session.submitting}
+          onClick={() => void session.handleCheck(
+            checkDealtHand({ contributions: state.contributions, evAnswer: state.evAnswer }),
+            'final', formatAnswer(state), formatAnswer(state),
+          )}>Submit answer</button>
+      ),
       content: (
         <>
           {visual}
           {allContribsFilled && (
-            <p className="section-note" aria-hidden="true">Add the three contributions, then type the expected value.</p>
+            <p className="section-note" aria-hidden="true">Add the three contributions, then type the expected value per card.</p>
           )}
-          <label className="field-label">Expected value
+          <label className="field-label">Expected value per card
             <input className="touch-input" value={state.evAnswer} inputMode="decimal"
-              aria-label="Expected value of the hand"
+              aria-label="Expected value of one random card drawn from the hand"
               onChange={(e) => setState((p) => ({ ...p, evAnswer: e.target.value }))} />
           </label>
           <p className="sr-only" role="status" aria-live="polite">
-            {allContribsFilled ? 'Add the three contributions, then type the expected value.' : 'Fill each contribution: value times probability.'}
+            {allContribsFilled ? 'Add the three contributions, then type the expected value per card.' : 'Fill each contribution: value times probability.'}
           </p>
-          <button type="button" className="btn-secondary touch-target" disabled={session.submitting}
-            onClick={() => void session.handleCheck(
-              checkDealtHand({ contributions: state.contributions, evAnswer: state.evAnswer }),
-              'final', formatAnswer(state), formatAnswer(state),
-            )}>Submit answer</button>
         </>
       ),
     },
   ]
 
   return (
-    <ProblemLayout problem={PROBLEM_4} problemNumber={8} feedback={session.feedback} completed={session.completed}
+    <ProblemLayout problem={layoutProblem} problemNumber={8} feedback={session.feedback} completed={session.completed}
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="ev-l3-p3"
       restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
       attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}

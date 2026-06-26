@@ -2,6 +2,7 @@ import './EvL4P3BetterGame.css'
 import './l4-workspace.css'
 import { useState } from 'react'
 import { ProfitMeter } from '../visuals/ProfitMeter'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { QuestionPrompt, type WorkspaceStepDef } from '../../features/learning-experience'
 import { useProblemSession } from '../../hooks/useProblemSession'
@@ -47,7 +48,7 @@ export function EvL4P3BetterGame() {
   // profit or picking a new game clears that step's flag (direct-correction).
   const [checks, setChecks] = useState<Checks>(NO_CHECKS)
 
-  if (!loaded || !session.sessionLoaded) return <div className="loading-screen"><div className="spinner" /><p>Loading…</p></div>
+  if (!loaded || !session.sessionLoaded) return <PokerChipLoader label="Loading…" />
 
   const profitValues = [state.profitA, state.profitB]
   const profitsFilled = profitValues.every((p) => p.trim() !== '')
@@ -94,6 +95,16 @@ export function EvL4P3BetterGame() {
     status: checks.profits,
     canAdvance: checks.profits === 'correct',
     advanceHint: ADVANCE_HINT,
+    action: (
+      <button
+        type="button"
+        className="btn-secondary touch-target ws-step-check"
+        disabled={session.submitting || !profitsFilled}
+        onClick={checkProfits}
+      >
+        Check
+      </button>
+    ),
     content: (
       <div className="l4-better-step ws-compact">
         <p className="section-note tap-hint">The bigger payout is not always the better game. Subtract each cost first.</p>
@@ -118,14 +129,6 @@ export function EvL4P3BetterGame() {
             )
           })}
         </div>
-        <button
-          type="button"
-          className="btn-secondary touch-target ws-step-check"
-          disabled={session.submitting || !profitsFilled}
-          onClick={checkProfits}
-        >
-          Check
-        </button>
         <p className="sr-only" role="status" aria-live="polite">
           {profitsFilled
             ? `Game A profit entered ${state.profitA || 'blank'}, Game B profit entered ${state.profitB || 'blank'}.${state.choice ? ` Selected Game ${state.choice}.` : ''}`
@@ -144,6 +147,13 @@ export function EvL4P3BetterGame() {
         <QuestionPrompt label="Question">Which is the better game for the player?</QuestionPrompt>
         <p className="section-note">Then submit your choice.</p>
       </>
+    ),
+    action: (
+      <button type="button" className="btn-secondary touch-target ws-step-check"
+        disabled={session.submitting || state.choice === ''}
+        onClick={checkFinal}>
+        {session.submitting ? 'Saving…' : 'Submit answer'}
+      </button>
     ),
     content: (
       <div className="l4-better-step ws-compact">
@@ -164,11 +174,6 @@ export function EvL4P3BetterGame() {
           </div>
         </fieldset>
 
-        <button type="button" className="btn-secondary touch-target ws-step-check"
-          disabled={session.submitting || state.choice === ''}
-          onClick={checkFinal}>
-          {session.submitting ? 'Saving…' : 'Submit answer'}
-        </button>
       </div>
     ),
   }

@@ -1,139 +1,179 @@
-import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { resolveToImplementedProblemId } from '../data/implementedProblems'
-import { useAuth } from '../hooks/useAuth'
 import { useChapterData } from '../hooks/useChapterData'
 import { ChapterSyncBanner } from '../components/SyncWarningBanner'
-import { SuggestedReview } from '../components/SuggestedReview'
-import { CurrentChapterCard, buildCourseMapView } from '../features/course-map'
-import {
-  CHAPTER_LESSONS,
-  CHAPTER_PROBLEMS,
-  CHAPTER_TITLE,
-  getContinueProblemId,
-  getCurrentLessonId,
-  getLessonProgressViews,
-  getProblemById,
-  MILESTONE_DEFINITIONS,
-} from '../data/chapter'
+import { getContinueProblemId } from '../data/chapter'
 
 const CHAPTER_PATH = '/chapter/expected-value-intro'
 const problemHref = (problemId: string) => `${CHAPTER_PATH}/problem/${problemId}`
 
+const streakDays = ['Th', 'F', 'S', 'Su', 'M']
+
+const lessonThumbnails = [
+  { label: 'Warm Up', theme: 'coins' },
+  { label: 'Decks', theme: 'hands' },
+  { label: 'Chance', theme: 'tower' },
+  { label: 'Lightbulb', theme: 'bulb' },
+  { label: 'Notebook', theme: 'book' },
+]
+
+function CourseHeroArt() {
+  return (
+    <div className="br-course-art" aria-hidden="true">
+      <div className="br-coin br-coin-back" />
+      <div className="br-coin br-coin-front">
+        <span>★</span>
+      </div>
+      <div className="br-dice br-dice-one">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="br-dice br-dice-two">
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="br-ribbon" />
+    </div>
+  )
+}
+
+function ThumbnailArt({ theme }: { theme: string }) {
+  return (
+    <span className={`br-thumb-art br-thumb-${theme}`} aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </span>
+  )
+}
+
 export function HomePage() {
-  const { profile } = useAuth()
-  const { progress, milestones, loading, syncWarning } = useChapterData()
-  const displayName = profile?.displayName || 'Learner'
-  // Resolve to an implemented problem so the "Continue" affordance never targets
-  // an unimplemented placeholder.
+  const { progress, loading, syncWarning } = useChapterData()
   const continueProblemId = resolveToImplementedProblemId(
     progress ? getContinueProblemId(progress) : 'problem-1',
   )
-
-  let card: ReactNode = null
-  if (progress) {
-    const allComplete = progress.completedProblemIds.length === CHAPTER_PROBLEMS.length
-    const lessons = getLessonProgressViews(
-      progress.completedProblemIds,
-      continueProblemId,
-      allComplete,
-    )
-    const view = buildCourseMapView({
-      lessons,
-      problems: CHAPTER_PROBLEMS,
-      completedProblemIds: progress.completedProblemIds,
-      continueProblemId,
-      allComplete,
-    })
-    const currentLessonId = getCurrentLessonId(continueProblemId)
-    const currentLessonTitle = CHAPTER_LESSONS.find((l) => l.lessonId === currentLessonId)?.title
-    const currentProblemTitle = getProblemById(continueProblemId)?.title
-
-    card = (
-      <CurrentChapterCard
-        title="Midpoint"
-        subtitle="Interactive expected value course."
-        completionPercentage={progress.completionPercentage}
-        streakCount={progress.streakCount}
-        masteryStatus={progress.masteryStatus}
-        currentLessonTitle={currentLessonTitle}
-        currentProblemTitle={currentProblemTitle}
-        view={view}
-        unlockedMilestones={milestones?.unlockedMilestones.length ?? 0}
-        totalMilestones={MILESTONE_DEFINITIONS.length}
-        continueHref={problemHref(continueProblemId)}
-        reviewHref={CHAPTER_PATH}
-        problemHref={problemHref}
-      />
-    )
-  }
+  const completedCount = progress?.completedProblemIds.length ?? 0
+  const isStarted = completedCount > 0
+  const startLabel = loading ? 'Loading…' : isStarted ? 'Continue' : 'Start'
 
   return (
-    <div className="page home-page">
+    <div className="br-home-page">
       <ChapterSyncBanner message={syncWarning} />
 
-      <div className="home-layout">
-        <div className="home-main">
-          <section className="card hero-card">
-            <h1>Welcome, {displayName}</h1>
-            <p>
-              Build expected value intuition with simulations, weighted models, payout,
-              profit, fairness, and risk.
-            </p>
-          </section>
+      <section className="br-premium-strip" aria-label="Premium promotion">
+        <span className="br-premium-mascot" aria-hidden="true">
+          ✨
+        </span>
+        <span>Subscribe to Premium and save 20%. </span>
+        <Link to="/profile">Go Premium</Link>
+      </section>
 
-          <section className="card chapter-card">
-            <p className="chapter-eyebrow">Your chapter</p>
-            <h2>{CHAPTER_TITLE}</h2>
-            <p>
-              {CHAPTER_LESSONS.length} lessons · {CHAPTER_PROBLEMS.length} problems · observe →
-              predict → construct → decide
-            </p>
+      <div className="br-home-shell">
+        <aside className="br-side-rail" aria-label="Learning status">
+          <form className="br-search" role="search">
+            <span aria-hidden="true">⌕</span>
+            <label className="sr-only" htmlFor="home-search">
+              Search what to learn
+            </label>
+            <input id="home-search" type="search" placeholder="What do you want to learn?" />
+            <button type="submit">Ask</button>
+          </form>
 
-            {loading ? (
-              <p className="home-progress-text">Loading your progress…</p>
-            ) : progress ? (
-              <div className="home-progress">
-                <div
-                  className="progress-bar"
-                  role="progressbar"
-                  aria-valuenow={progress.completionPercentage}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                >
-                  <div
-                    className="progress-bar-fill"
-                    style={{ width: `${progress.completionPercentage}%` }}
-                  />
-                </div>
-                <p className="home-progress-text">
-                  {progress.completionPercentage}% complete · {progress.masteryStatus} ·{' '}
-                  {progress.streakCount}-day streak
-                </p>
+          <section className="br-streak-card" aria-label="Daily streak">
+            <div className="br-streak-top">
+              <div>
+                <strong>0</strong>
+                <span aria-hidden="true">⚡</span>
               </div>
-            ) : null}
-
-            <Link to="/chapter/expected-value-intro" className="btn-secondary touch-target">
-              {progress && progress.completionPercentage > 0 ? 'Continue chapter' : 'Start chapter'}
-            </Link>
+              <span className="br-streak-controls" aria-hidden="true">
+                <i />
+                <i />
+              </span>
+            </div>
+            <p>Solve 3 problems to start a streak</p>
+            <div className="br-week-row">
+              {streakDays.map((day) => (
+                <span key={day} className="br-day">
+                  <i aria-hidden="true">⚡</i>
+                  <b>{day}</b>
+                </span>
+              ))}
+            </div>
           </section>
 
-          <SuggestedReview />
-
-          <section className="card">
-            <h2>How it works</h2>
-            <ol className="how-it-works">
-              <li>Sign in with Google — your progress saves automatically.</li>
-              <li>
-                Work through {CHAPTER_LESSONS.length} lessons ({CHAPTER_PROBLEMS.length} visual
-                problems) on expected value.
-              </li>
-              <li>Get instant feedback as you test and revise each answer.</li>
-            </ol>
+          <section className="br-premium-card" aria-label="Premium upsell">
+            <p>
+              <span aria-hidden="true">💫</span>
+              <strong>Unlock all learning with Premium</strong>
+              <small>to get smarter, faster</small>
+            </p>
+            <Link to="/profile">Explore Premium</Link>
           </section>
-        </div>
 
-        {card && <div className="home-aside">{card}</div>}
+          <section className="br-league-card" aria-label="League progress">
+            <span className="br-league-badge" aria-hidden="true">
+              ♙
+            </span>
+            <p>
+              <strong>Unlock Leagues</strong>
+              <small>170 of 175 XP</small>
+            </p>
+          </section>
+        </aside>
+
+        <main className="br-course-stage" aria-label="Current course">
+          <section className="br-course-card">
+            <div className="br-card-stack br-card-stack-one" aria-hidden="true" />
+            <div className="br-card-stack br-card-stack-two" aria-hidden="true" />
+
+            <div className="br-course-content">
+              <p className="br-course-title">Probability and Chance</p>
+              <p className="br-level">Level 1</p>
+              <CourseHeroArt />
+
+              <div className="br-lesson-list">
+                <div className="br-lesson-row br-lesson-active">
+                  <span className="br-lesson-icon" aria-hidden="true">
+                    🐭
+                  </span>
+                  <span>Warm Up</span>
+                  <i aria-hidden="true" />
+                </div>
+                <div className="br-lesson-row br-lesson-locked">
+                  <span className="br-lesson-icon" aria-hidden="true" />
+                  <span>Multiple Decks</span>
+                  <i aria-hidden="true" />
+                </div>
+              </div>
+
+              <Link to={problemHref(continueProblemId)} className="br-start-button">
+                {startLabel}
+              </Link>
+            </div>
+          </section>
+
+          <div className="br-thumbnail-row" aria-label="Course sections">
+            {lessonThumbnails.map((item, index) => (
+              <Link
+                key={item.label}
+                to={index === 0 ? problemHref(continueProblemId) : CHAPTER_PATH}
+                className={index === 0 ? 'br-thumb br-thumb-active' : 'br-thumb'}
+                aria-label={item.label}
+              >
+                <ThumbnailArt theme={item.theme} />
+              </Link>
+            ))}
+          </div>
+
+          {isStarted && (
+            <p className="br-progress-note">
+              {completedCount} problems complete. Continue where you left off.
+            </p>
+          )}
+        </main>
       </div>
     </div>
   )

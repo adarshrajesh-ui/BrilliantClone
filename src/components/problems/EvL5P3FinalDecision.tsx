@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CarnivalWheel, buildWheelSections } from '../visuals/CarnivalWheel'
 import { FairnessNumberLine } from '../visuals/FairnessNumberLine'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
@@ -112,7 +113,7 @@ export function EvL5P3FinalDecision() {
   const [checks, setChecks] = useState<Checks>(NO_CHECKS)
 
   if (!loaded || !session.sessionLoaded) {
-    return <div className="loading-screen"><div className="spinner" /><p>Loading…</p></div>
+    return <PokerChipLoader label="Loading…" />
   }
 
   const grouped = PAYOUT_GROUPS.every((v) => state.viewedPayouts.includes(v))
@@ -229,6 +230,16 @@ export function EvL5P3FinalDecision() {
       status: checks.table,
       canAdvance: checks.table === 'correct',
       advanceHint: ADVANCE_HINT,
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target ws-step-check"
+          disabled={!probsFilled || !contribsFilled}
+          onClick={checkTable}
+        >
+          Check
+        </button>
+      ),
       content: (
         <>
           <table className="l5-section-table">
@@ -278,14 +289,6 @@ export function EvL5P3FinalDecision() {
               ))}
             </tbody>
           </table>
-          <button
-            type="button"
-            className="btn-secondary touch-target ws-step-check"
-            disabled={!probsFilled || !contribsFilled}
-            onClick={checkTable}
-          >
-            Check
-          </button>
         </>
       ),
     },
@@ -296,6 +299,16 @@ export function EvL5P3FinalDecision() {
       status: checks.payout,
       canAdvance: checks.payout === 'correct',
       advanceHint: ADVANCE_HINT,
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target ws-step-check"
+          disabled={!payoutFilled}
+          onClick={checkPayout}
+        >
+          Check
+        </button>
+      ),
       content: (
         <div className={stepClass(2, checks.payout === 'correct')}>
           <div className="l5-step-head">
@@ -314,14 +327,6 @@ export function EvL5P3FinalDecision() {
               setChecks((p) => ({ ...p, payout: undefined }))
             }}
           />
-          <button
-            type="button"
-            className="btn-secondary touch-target ws-step-check"
-            disabled={!payoutFilled}
-            onClick={checkPayout}
-          >
-            Check
-          </button>
         </div>
       ),
     },
@@ -332,6 +337,16 @@ export function EvL5P3FinalDecision() {
       status: checks.profit,
       canAdvance: checks.profit === 'correct',
       advanceHint: ADVANCE_HINT,
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target ws-step-check"
+          disabled={!profitFilled}
+          onClick={checkProfit}
+        >
+          Check
+        </button>
+      ),
       content: (
         <div className={stepClass(3, checks.profit === 'correct')}>
           <div className="l5-step-head">
@@ -350,14 +365,6 @@ export function EvL5P3FinalDecision() {
               setChecks((p) => ({ ...p, profit: undefined }))
             }}
           />
-          <button
-            type="button"
-            className="btn-secondary touch-target ws-step-check"
-            disabled={!profitFilled}
-            onClick={checkProfit}
-          >
-            Check
-          </button>
         </div>
       ),
     },
@@ -368,6 +375,16 @@ export function EvL5P3FinalDecision() {
       status: checks.decision,
       canAdvance: checks.decision === 'correct',
       advanceHint: ADVANCE_HINT,
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target ws-step-check"
+          disabled={!decisionFilled}
+          onClick={checkDecision}
+        >
+          Check
+        </button>
+      ),
       content: (
         <div className={stepClass(4, checks.decision === 'correct')}>
           <div className="l5-step-head">
@@ -389,14 +406,6 @@ export function EvL5P3FinalDecision() {
             <option value="unfavorable">Unfavorable</option>
           </select>
           <FairnessNumberLine value={profitValue} highlightZero={profitValue === 0} />
-          <button
-            type="button"
-            className="btn-secondary touch-target ws-step-check"
-            disabled={!decisionFilled}
-            onClick={checkDecision}
-          >
-            Check
-          </button>
         </div>
       ),
     },
@@ -410,6 +419,16 @@ export function EvL5P3FinalDecision() {
         </>
       ),
       status: checks.risk,
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target"
+          disabled={session.submitting || !riskFilled}
+          onClick={checkFinal}
+        >
+          {session.submitting ? 'Saving…' : 'Submit full model'}
+        </button>
+      ),
       content: (
         <>
           <fieldset className={stepClass(5, checks.risk === 'correct')}>
@@ -435,14 +454,6 @@ export function EvL5P3FinalDecision() {
             </div>
           </fieldset>
 
-          <button
-            type="button"
-            className="btn-secondary touch-target"
-            disabled={session.submitting || !riskFilled}
-            onClick={checkFinal}
-          >
-            {session.submitting ? 'Saving…' : 'Submit full model'}
-          </button>
         </>
       ),
     },
@@ -451,7 +462,7 @@ export function EvL5P3FinalDecision() {
   return (
     <ProblemLayout
       problem={EV_L5_P3}
-      problemNumber={15}
+      problemNumber={14}
       feedback={session.feedback}
       completed={session.completed}
       revealedHintIds={session.revealedHintIds}

@@ -49,7 +49,7 @@ const guard = (feedback: string): CheckResult => ({
 export function checkDealtHand(input: DealtHandCheckInput): CheckResult {
   const anyContribEmpty = input.contributions.some((c) => c.trim() === '')
   if (anyContribEmpty || input.evAnswer.trim() === '') {
-    return guard('Fill every contribution (value × probability) and the final expected value.')
+    return guard('Fill every contribution (value × probability) and the final expected value per card.')
   }
 
   const contribs = input.contributions.map((c) => normalizeMoneyAnswer(c))
@@ -77,7 +77,7 @@ export function checkDealtHand(input: DealtHandCheckInput): CheckResult {
   if (evNum !== null && areNumbersClose(evNum, UNWEIGHTED_TOTAL)) {
     return fail(
       'unweighted-sum',
-      `You added the raw card values (2 + 4 + 10 = ${UNWEIGHTED_TOTAL}). Expected value adds the weighted contributions: 0.5 + 1.0 + 5.0 = 6.5.`,
+      `You added the raw card values (2 + 4 + 10 = ${UNWEIGHTED_TOTAL}). Expected value per card adds the weighted contributions: 0.5 + 1.0 + 5.0 = 6.5.`,
     )
   }
 
@@ -85,5 +85,5 @@ export function checkDealtHand(input: DealtHandCheckInput): CheckResult {
     return fail('arithmetic-error', 'Add the three contributions: 0.5 + 1.0 + 5.0 = 6.5.')
   }
 
-  return ok('Correct! 2×1/4 = 0.5, 4×1/4 = 1.0, 10×1/2 = 5.0, so EV = 6.5.')
+  return ok('Correct! 2×1/4 = 0.5, 4×1/4 = 1.0, 10×1/2 = 5.0, so EV per card = 6.5.')
 }

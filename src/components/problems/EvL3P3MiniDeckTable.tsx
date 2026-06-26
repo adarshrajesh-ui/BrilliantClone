@@ -1,4 +1,5 @@
 import { CardDealScene, EvBadge } from '../visuals/cards'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { MINI_DECK_L3P3, MINI_DECK_L3P3_GROUPS } from '../../data/cards'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
@@ -71,7 +72,7 @@ export function EvL3P3MiniDeckTable() {
   const session = useProblemSession(EV_L3_P3, state)
 
   if (!loaded || !session.sessionLoaded) {
-    return <div className="loading-screen"><div className="spinner" /><p>Loading problem…</p></div>
+    return <PokerChipLoader label="Loading problem…" />
   }
 
   const showStatus = Boolean(session.feedback && !session.feedback.isCorrect && session.feedback.mistakeType)
@@ -121,6 +122,13 @@ export function EvL3P3MiniDeckTable() {
       id: 'table',
       title: 'Build the table and find the EV',
       prompt: 'For each value fill count, probability (count ÷ 10) and contribution (value × probability), then add the contributions for the expected value.',
+      action: (
+        <button type="button" className="btn-secondary touch-target" disabled={session.submitting}
+          onClick={() => void session.handleCheck(
+            checkMiniDeck({ rows: state.rows, evAnswer: state.evAnswer }),
+            'final', formatRows(state.rows), formatRows(state.rows),
+          )}>Submit answer</button>
+      ),
       content: (
         <div className="mini-deck-workspace">
           <p className="section-note tap-hint">Probability = count ÷ 10 total cards. Contribution = value × probability. EV = sum of the contributions.</p>
@@ -184,11 +192,6 @@ export function EvL3P3MiniDeckTable() {
           <p className="sr-only" role="status" aria-live="polite">
             {allRowsDone ? 'Add the contributions you entered, then type the expected value.' : 'Fill the count, probability, and contribution for each row, then the expected value.'}
           </p>
-          <button type="button" className="btn-secondary touch-target" disabled={session.submitting}
-            onClick={() => void session.handleCheck(
-              checkMiniDeck({ rows: state.rows, evAnswer: state.evAnswer }),
-              'final', formatRows(state.rows), formatRows(state.rows),
-            )}>Submit answer</button>
         </div>
       ),
     },

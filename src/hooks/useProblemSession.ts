@@ -15,6 +15,7 @@ import {
   loadProblemSession,
   saveProblemSession,
 } from '../lib/problemSessionService'
+import { beginPracticeRestart } from '../core/persistence/problemProgressService'
 import type { CheckResult, ProblemDefinition } from '../types/problem'
 
 export function useProblemSession(
@@ -144,6 +145,7 @@ export function useProblemSession(
         normalizedAnswer,
         isCorrect: result.isCorrect,
         attemptNumber,
+        attemptMode: restarted ? 'practice_restart' : 'graded',
         hintUsed,
         mistakeType: result.mistakeType,
         masteryTagsTested: problem.masteryTags,
@@ -161,7 +163,7 @@ export function useProblemSession(
         }
       }
     },
-    [user, problem, attemptNumber, hintUsed],
+    [user, problem, attemptNumber, hintUsed, restarted],
   )
 
   const finishIfComplete = useCallback(
@@ -191,10 +193,13 @@ export function useProblemSession(
   // Explicit restart: make a completed problem interactive again for a fresh
   // practice attempt. Completion + chapter progress are preserved.
   const restart = useCallback(() => {
+    if (user) {
+      void beginPracticeRestart(user.uid, problem.problemId)
+    }
     setRestarted(true)
     setFeedback(null)
     lastSubmittedSignature.current = null
-  }, [])
+  }, [user, problem.problemId])
 
   // Return from a restart attempt back to the completed review view.
   const backToReview = useCallback(() => {

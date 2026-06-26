@@ -32,11 +32,23 @@ describe('ev-l5-p1 checkSameAverageDifferentRide', () => {
     expect(s.mistakeType).toBeNull()
   })
 
-  it('gates until a 100-run batch has been pressed', () => {
+  it('gates until the guided simulation or a 100-run batch has run', () => {
     const r = checkSameAverageDifferentRide({ ...rideBase, ranHundredBatch: false })
     expect(r.canComplete).toBe(false)
     expect(r.mistakeType).toBeNull()
-    expect(r.feedback).toMatch(/100-run batch/i)
+    expect(r.feedback).toMatch(/Start the 20-run simulation/i)
+  })
+
+  it('accepts the guided 20-run simulation as the exploration batch', () => {
+    const r = checkSameAverageDifferentRide({
+      ...rideBase,
+      printerTrials: 20,
+      slotTrials: 20,
+      ranHundredBatch: false,
+      ranStartSimulation: true,
+    })
+    expect(r.canComplete).toBe(true)
+    expect(r.isCorrect).toBe(true)
   })
 
   it('gates on answering each of the three questions', () => {

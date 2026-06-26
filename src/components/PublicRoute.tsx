@@ -1,16 +1,12 @@
 import { Navigate } from 'react-router-dom'
+import { PokerChipLoader } from './PokerChipLoader'
 import { useAuth } from '../hooks/useAuth'
 
 export function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
 
   if (loading) {
-    return (
-      <div className="loading-screen">
-        <div className="spinner" aria-hidden="true" />
-        <p>Loading…</p>
-      </div>
-    )
+    return <PokerChipLoader label="Loading…" />
   }
 
   if (user) {

@@ -1,25 +1,50 @@
 /* Choose the Better Game After Cost (ev-l4-p3). */
+.l4-better-step {
+  width: min(100%, 42rem);
+}
+
 .better-game-cards {
+  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
   align-items: stretch;
+  gap: clamp(0.75rem, 2vw, 1rem);
+  margin: 0 auto 0.25rem;
 }
 
 .better-game-card {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
+  min-width: 0;
   text-align: left;
+  cursor: default;
 }
 
 .better-game-profit-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: flex-end;
-  gap: 0.85rem;
-  margin-top: 0.4rem;
+  gap: clamp(0.6rem, 1.6vw, 0.85rem);
+  margin-top: auto;
 }
 
 .better-game-profit-field {
-  flex: 1;
+  min-width: 0;
   margin: 0;
+}
+
+.better-game-profit-field input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.better-game-profit-row .profit-meter-viz {
+  flex: 0 0 auto;
+}
+
+.better-game-profit-row .profit-meter-track {
+  width: 38px;
+  height: clamp(96px, 16vh, 120px);
 }
 
 .better-game-selector {
@@ -73,8 +98,8 @@
   }
 
   .better-game-profit-row {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
+    align-items: center;
   }
 
   .better-game-profit-row .profit-meter-viz {

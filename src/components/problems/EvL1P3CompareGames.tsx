@@ -1,6 +1,7 @@
 import './agent3.css'
 import './l1-workspace.css'
 import { useState } from 'react'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
@@ -65,12 +66,7 @@ export function EvL1P3CompareGames() {
   const [answerStatus, setAnswerStatus] = useState<StepStatus>(undefined)
 
   if (!loaded || !session.sessionLoaded) {
-    return (
-      <div className="loading-screen">
-        <div className="spinner" />
-        <p>Loading problem…</p>
-      </div>
-    )
+    return <PokerChipLoader label="Loading problem…" />
   }
 
   const selectedGames = Array.isArray(state.selectedGames) ? state.selectedGames : []
@@ -97,6 +93,26 @@ export function EvL1P3CompareGames() {
         </>
       ),
       status: answerStatus,
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target ws-step-check"
+          disabled={session.submitting}
+          onClick={() => {
+            const result = checkEvL1P3({ selectedGames, reason: state.reason })
+            setAnswerStatus(statusFromResult(result))
+            setState((p) => ({ ...p, reveal: true }))
+            void session.handleCheck(
+              result,
+              'final',
+              `selectedGames=${selectedGames.join(',')};reason=${state.reason ?? ''}`,
+              selectedGames.join(','),
+            )
+          }}
+        >
+          {session.submitting ? 'Saving…' : 'Check answer'}
+        </button>
+      ),
       content: (
         <div className="l1-fluency-check">
           <div className="l1-compare-callout">
@@ -162,24 +178,6 @@ export function EvL1P3CompareGames() {
             </div>
           </div>
 
-          <button
-            type="button"
-            className="btn-secondary touch-target ws-step-check"
-            disabled={session.submitting}
-            onClick={() => {
-              const result = checkEvL1P3({ selectedGames, reason: state.reason })
-              setAnswerStatus(statusFromResult(result))
-              setState((p) => ({ ...p, reveal: true }))
-              void session.handleCheck(
-                result,
-                'final',
-                `selectedGames=${selectedGames.join(',')};reason=${state.reason ?? ''}`,
-                selectedGames.join(','),
-              )
-            }}
-          >
-            {session.submitting ? 'Saving…' : 'Check answer'}
-          </button>
         </div>
       ),
     },

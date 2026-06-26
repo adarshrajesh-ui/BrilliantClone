@@ -4,15 +4,16 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { PublicRoute } from './components/PublicRoute'
 import { ChapterPage } from './pages/ChapterPage'
 import { HomePage } from './pages/HomePage'
+import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
+import { PracticePage } from './pages/PracticePage'
 import { ProblemPage } from './pages/ProblemPage'
 import { ProfilePage } from './pages/ProfilePage'
-import { RootRedirect } from './pages/RootRedirect'
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<RootRedirect />} />
+      <Route path="/" element={<LandingPage />} />
 
       <Route
         path="/login"
@@ -32,6 +33,7 @@ function App() {
       >
         <Route path="/home" element={<HomePage />} />
         <Route path="/chapter/expected-value-intro" element={<ChapterPage />} />
+        <Route path="/practice" element={<PracticePage />} />
         <Route
           path="/chapter/expected-value-intro/problem/:problemId"
           element={<ProblemPage />}

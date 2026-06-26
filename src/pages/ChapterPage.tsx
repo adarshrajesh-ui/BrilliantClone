@@ -5,32 +5,26 @@ import {
   CHAPTER_TITLE,
   getContinueProblemId,
   getLessonProgressViews,
-  MILESTONE_DEFINITIONS,
   TOTAL_LESSONS,
   TOTAL_PROBLEMS,
 } from '../data/chapter'
 import { resolveToImplementedProblemId } from '../data/implementedProblems'
 import { useChapterData } from '../hooks/useChapterData'
+import { PokerChipLoader } from '../components/PokerChipLoader'
 import { ChapterSyncBanner } from '../components/SyncWarningBanner'
-import { SuggestedReview } from '../components/SuggestedReview'
 import { ExpandedCoursePathway, buildCourseMapView } from '../features/course-map'
 
 const CHAPTER_PATH = '/chapter/expected-value-intro'
 const problemHref = (problemId: string) => `${CHAPTER_PATH}/problem/${problemId}`
 
 export function ChapterPage() {
-  const { progress, milestones, loading, error, syncWarning } = useChapterData()
+  const { progress, loading, error, syncWarning } = useChapterData()
 
   if (loading) {
-    return (
-      <div className="loading-screen chapter-loading">
-        <div className="spinner" aria-hidden="true" />
-        <p>Loading chapter…</p>
-      </div>
-    )
+    return <PokerChipLoader label="Loading chapter…" className="chapter-loading" />
   }
 
-  if (error || !progress || !milestones) {
+  if (error || !progress) {
     return (
       <div className="page">
         <section className="card">
@@ -76,34 +70,6 @@ export function ChapterPage() {
         continueHref={`${CHAPTER_PATH}/problem/${continueProblemId}`}
         problemHref={problemHref}
       />
-
-      <SuggestedReview />
-
-      <section className="card">
-        <h2>Milestones</h2>
-        <p className="section-note">
-          Milestones unlock as you progress through the chapter.
-        </p>
-        <ul className="milestone-list">
-          {MILESTONE_DEFINITIONS.map((milestone) => {
-            const unlocked = milestones.unlockedMilestones.includes(milestone.id)
-            return (
-              <li
-                key={milestone.id}
-                className={`milestone-item${unlocked ? ' milestone-unlocked' : ' milestone-locked'}`}
-              >
-                <span className="milestone-icon" aria-hidden="true">
-                  {unlocked ? '✓' : '○'}
-                </span>
-                <div>
-                  <span className="milestone-label">{milestone.label}</span>
-                  <p className="milestone-description">{milestone.description}</p>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-      </section>
     </div>
   )
 }

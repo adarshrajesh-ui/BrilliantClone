@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
-import { CHAPTER_PROBLEMS, getProblemById } from '../data/chapter'
+import { getProblemById } from '../data/chapter'
 
 const CHAPTER_PATH = '/chapter/expected-value-intro'
 
@@ -24,9 +24,6 @@ export function ProblemPlaceholderPage() {
   return (
     <div className="page">
       <section className="card">
-        <p className="chapter-eyebrow">
-          Problem {problem.order} of {CHAPTER_PROBLEMS.length}
-        </p>
         <h1>{problem.title}</h1>
         <p>{problem.concept}</p>
         <p className="placeholder-note">

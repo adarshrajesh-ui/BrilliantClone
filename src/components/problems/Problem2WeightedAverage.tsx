@@ -3,6 +3,7 @@ import './l2-claw-workspace.css'
 import { FormulaBuilder } from '../visuals/FormulaBuilder'
 import { ClawMachine, type ClawGrab, type ClawZone } from '../visuals/ClawMachine'
 import { ClawContributionBlocks, type ClawContributionRow } from '../visuals/ClawContributionBlocks'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
@@ -28,6 +29,8 @@ const CONTRIB_ROWS: ClawContributionRow[] = [
   { payout: '$20', probability: '25%', product: '$5', weight: 0.25 },
   { payout: '$0', probability: '75%', product: '$0', weight: 0.75 },
 ]
+const PRIZE_VALUE = 20
+const EXPECTED_VALUE = 5
 
 const DEMO: DemoStepConfig[] = [
   { id: 'p2-run', title: 'Run the claw', body: 'Tap “Drop claw” to plunge the claw into the pit. The small $20 zone is one quarter of the floor, so roughly 1 grab in 4 snags it — the rest land on an empty $0 zone.' },
@@ -60,9 +63,30 @@ function createClawGrab(grabIndex: number): ClawGrab {
   return {
     id: `grab-${grabIndex}-${Date.now()}`,
     zoneIndex,
-    value: isPrize ? 20 : 0,
+    value: isPrize ? PRIZE_VALUE : 0,
     isPrize,
   }
+}
+
+function formatMoney(value: number): string {
+  return Number.isInteger(value) ? `$${value}` : `$${value.toFixed(2)}`
+}
+
+function getGrabDoneMessage(grabs: ClawGrab[]): string {
+  const prizeWins = grabs.filter((grab) => grab.isPrize).length
+  const trayTotal = grabs.reduce((sum, grab) => sum + grab.value, 0)
+  const observedAverage = trayTotal / REQUIRED_GRABS
+  const winLabel = prizeWins === 1 ? '$20 win' : '$20 wins'
+  const resultSummary = `${REQUIRED_GRABS} grabs done: ${prizeWins} ${winLabel}, tray total ${formatMoney(
+    trayTotal,
+  )} (average ${formatMoney(observedAverage)} per grab).`
+
+  if (observedAverage === EXPECTED_VALUE) {
+    return `${resultSummary} This short run landed exactly on the long-run $5 average, but EV still comes from the pit weights. Tap Next to compress the pit and find the true expected value.`
+  }
+
+  const direction = observedAverage > EXPECTED_VALUE ? 'higher' : 'lower'
+  return `${resultSummary} That is ${direction} than the long-run $5 average — short runs are noisy. Tap Next to compress the pit and find the true expected value.`
 }
 
 export function Problem2WeightedAverage() {
@@ -86,12 +110,7 @@ export function Problem2WeightedAverage() {
   }, [loaded, queuedBulkGrabs, session.sessionLoaded, setState, state.activeGrab, state.grabs.length])
 
   if (!loaded || !session.sessionLoaded) {
-    return (
-      <div className="loading-screen">
-        <div className="spinner" />
-        <p>Loading problem…</p>
-      </div>
-    )
+    return <PokerChipLoader label="Loading problem…" />
   }
 
   const grabsDone = state.grabs.length >= REQUIRED_GRABS
@@ -100,6 +119,7 @@ export function Problem2WeightedAverage() {
   const grabsComplete = grabsDone && state.viewedCompression
   const revealContributionValues = session.completed && !session.restarted
   const remainingGrabs = Math.max(0, REQUIRED_GRABS - state.grabs.length)
+  const grabDoneMessage = grabsDone ? getGrabDoneMessage(state.grabs) : ''
   const showBulkRun =
     state.grabs.length === BULK_GRAB_UNLOCK_COUNT &&
     remainingGrabs >= BULK_GRAB_COUNT &&
@@ -200,8 +220,7 @@ export function Problem2WeightedAverage() {
           </div>
           {grabsDone && (
             <p className="section-note l2-grab-done">
-              {REQUIRED_GRABS} grabs done. Your tray total is probably different from the long-run
-              average — short runs are noisy. Tap Next to compress the pit and find the true expected value.
+              {grabDoneMessage}
             </p>
           )}
           <p className="sr-only" aria-live="polite">
@@ -226,6 +245,23 @@ export function Problem2WeightedAverage() {
     ) : (
       <QuestionPrompt>Compress the pit to see how each outcome contributes payout × probability.</QuestionPrompt>
     ),
+    action: state.viewedCompression ? (
+      <button
+        type="button"
+        className="btn-secondary touch-target l2-submit-btn"
+        disabled={session.submitting}
+        onClick={() =>
+          void session.handleCheck(
+            checkProblem2PrizeBoard({ grabsComplete, slots: state.slots, evAnswer: state.evAnswer }),
+            'final',
+            state.evAnswer,
+            state.evAnswer,
+          )
+        }
+      >
+        {session.submitting ? 'Saving…' : 'Submit answer'}
+      </button>
+    ) : undefined,
     content: (
       <div className="l2-claw-step l2-claw-step-2">
         <div className="l2-claw-stage">
@@ -304,21 +340,6 @@ export function Problem2WeightedAverage() {
                     placeholder="Type the expected value"
                   />
                 </label>
-                <button
-                  type="button"
-                  className="btn-secondary touch-target l2-submit-btn"
-                  disabled={session.submitting}
-                  onClick={() =>
-                    void session.handleCheck(
-                      checkProblem2PrizeBoard({ grabsComplete, slots: state.slots, evAnswer: state.evAnswer }),
-                      'final',
-                      state.evAnswer,
-                      state.evAnswer,
-                    )
-                  }
-                >
-                  {session.submitting ? 'Saving…' : 'Submit answer'}
-                </button>
               </div>
             </>
           )}

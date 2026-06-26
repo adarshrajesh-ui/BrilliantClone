@@ -24,6 +24,8 @@ export interface SameAverageRideCheckInput {
   slotTrials: number
   /** true once a 100-run batch has been pressed on either machine */
   ranHundredBatch: boolean
+  /** true once the guided 20-run simulation has run both machines together */
+  ranStartSimulation?: boolean
   /** Q1: 'yes' | 'no' */
   sameEV: string
   /** Q2: 'slot' | 'printer' | 'neither' */
@@ -60,15 +62,15 @@ const fail = (mistakeType: string, feedback: string): CheckResult => ({
  *
  * Gate order:
  *  1. each machine run >= 10 times
- *  2. at least one 100-run batch pressed on either machine
+ *  2. guided 20-run simulation completed, or at least one 100-run batch pressed
  *  3-5. each of the three questions answered
  */
 export function checkSameAverageDifferentRide(input: SameAverageRideCheckInput): CheckResult {
   if (input.printerTrials < 10 || input.slotTrials < 10) {
     return guard('Run each machine at least 10 times.')
   }
-  if (!input.ranHundredBatch) {
-    return guard('Run at least one 100-run batch on either machine.')
+  if (!input.ranStartSimulation && !input.ranHundredBatch) {
+    return guard('Start the 20-run simulation, or run at least one 100-run batch on either machine.')
   }
   if (input.sameEV.trim() === '') {
     return guard('Answer the first question: do the two machines have the same average payout?')
@@ -127,18 +129,16 @@ export const PROBLEM_7: CanonicalProblemDefinition = {
   concept: 'Same expected value, different risk.',
   difficulty: 7,
   scenarioText:
-    'Two machines sit side by side. Game A — the 3D Money Printer pays exactly $10 every time you run it. Game B — the 3D Jackpot Slot pays $0 about 60% of the time and $25 about 40% of the time. Run each machine at least 10 times, and run at least one 100-run batch so the averages settle, then answer the questions.',
+    'Two machines sit side by side. Game A — the 3D Money Printer pays exactly $10 every time you run it. Game B — the 3D Jackpot Slot pays $0 about 60% of the time and $25 about 40% of the time. Start the simulation to run both machines together 20 times, then reset or keep testing manually before answering the questions.',
   visualType: 'same-average-ride',
   interactionType: 'qualitative-compare',
   givenData: {
     printer: { value: 10 },
     slot: { outcomes: [25, 0], probabilities: [0.4, 0.6] },
-    controls: [1, 10, 100],
+    controls: ['start-20', 1, 10, 100],
   },
   requiredActions: [
-    'run-printer-10',
-    'run-slot-10',
-    'run-hundred-batch',
+    'start-20-run-simulation',
     'answer-same-ev',
     'answer-riskier',
     'answer-why',
@@ -198,7 +198,7 @@ export const PROBLEM_7: CanonicalProblemDefinition = {
     {
       id: 'p7-h2',
       label: 'Watch the 100-run batch',
-      content: 'Run a 100-run batch on the Slot: its jagged average line settles near $10, while the Printer’s line is flat at $10 from the start.',
+      content: 'Start the simulation, or run a larger batch on the Slot: its jagged average line settles near $10, while the Printer’s line is flat at $10 from the start.',
     },
     {
       id: 'p7-h3',
@@ -207,6 +207,6 @@ export const PROBLEM_7: CanonicalProblemDefinition = {
     },
   ],
   completionRule:
-    'Run each machine at least 10 times AND run at least one 100-run batch, then answer that the machines have the same average (Yes), the Jackpot Slot is riskier, and the reason is the same average but the Slot varies $0–$25 while the Printer is always $10.',
+    'Start the 20-run simulation, or run each machine at least 10 times and run at least one 100-run batch, then answer that the machines have the same average (Yes), the Jackpot Slot is riskier, and the reason is the same average but the Slot varies $0–$25 while the Printer is always $10.',
   masteryTags: ['same-ev-different-risk'],
 }

@@ -1,5 +1,6 @@
 import './agent3.css'
 import { useState } from 'react'
+import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
@@ -62,12 +63,7 @@ export function EvL2P3DiagnoseSetups() {
   const [checks, setChecks] = useState<Checks>(NO_CHECKS)
 
   if (!loaded || !session.sessionLoaded) {
-    return (
-      <div className="loading-screen">
-        <div className="spinner" />
-        <p>Loading problem…</p>
-      </div>
-    )
+    return <PokerChipLoader label="Loading problem…" />
   }
 
   // Check the 'valid' step in isolation; badge + Next gate read from `checks`.
@@ -106,6 +102,16 @@ export function EvL2P3DiagnoseSetups() {
       status: checks.valid,
       canAdvance: checks.valid === 'correct',
       advanceHint: ADVANCE_HINT,
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target ws-step-check"
+          disabled={state.valid === null}
+          onClick={checkValid}
+        >
+          Check
+        </button>
+      ),
       content: (
         <>
           <div className="diagnose-cards">
@@ -130,14 +136,6 @@ export function EvL2P3DiagnoseSetups() {
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            className="btn-secondary touch-target ws-step-check"
-            disabled={state.valid === null}
-            onClick={checkValid}
-          >
-            Check
-          </button>
         </>
       ),
     },
@@ -148,6 +146,16 @@ export function EvL2P3DiagnoseSetups() {
       status: checks.defectA,
       canAdvance: checks.defectA === 'correct',
       advanceHint: ADVANCE_HINT,
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target ws-step-check"
+          disabled={state.defectA === null}
+          onClick={checkDefectA}
+        >
+          Check
+        </button>
+      ),
       content: (
         <div className="diagnose-defect">
           <p className="diagnose-defect-label">Formula A — 20 + 4 + 0</p>
@@ -166,14 +174,6 @@ export function EvL2P3DiagnoseSetups() {
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            className="btn-secondary touch-target ws-step-check"
-            disabled={state.defectA === null}
-            onClick={checkDefectA}
-          >
-            Check
-          </button>
         </div>
       ),
     },
@@ -187,6 +187,16 @@ export function EvL2P3DiagnoseSetups() {
         </>
       ),
       status: checks.defectB,
+      action: (
+        <button
+          type="button"
+          className="btn-secondary touch-target ws-step-check"
+          disabled={session.submitting || state.defectB === null}
+          onClick={checkFinal}
+        >
+          {session.submitting ? 'Saving…' : 'Check answer'}
+        </button>
+      ),
       content: (
         <>
           <div className="diagnose-defect">
@@ -208,14 +218,6 @@ export function EvL2P3DiagnoseSetups() {
             </div>
           </div>
 
-          <button
-            type="button"
-            className="btn-secondary touch-target ws-step-check"
-            disabled={session.submitting || state.defectB === null}
-            onClick={checkFinal}
-          >
-            {session.submitting ? 'Saving…' : 'Check answer'}
-          </button>
         </>
       ),
     },
