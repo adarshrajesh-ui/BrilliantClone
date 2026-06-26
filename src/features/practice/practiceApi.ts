@@ -1,4 +1,5 @@
-import { auth } from '../../lib/firebase'
+import { httpsCallable } from 'firebase/functions'
+import { functions } from '../../lib/firebase'
 import type { CheckResult } from '../../types/problem'
 import type { SkillId } from '../../core/adaptive/types'
 import {
@@ -43,28 +44,6 @@ function localInstance(skillId: SkillId, difficulty: number): GeneratedPracticeI
   })
 }
 
-async function authHeaders(): Promise<HeadersInit> {
-  const token = await auth?.currentUser?.getIdToken()
-  return token ? { Authorization: `Bearer ${token}` } : {}
-}
-
-async function postJson<TResponse>(url: string, body: unknown): Promise<TResponse> {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(await authHeaders()),
-    },
-    body: JSON.stringify(body),
-  })
-
-  if (!response.ok) {
-    throw new Error(`Practice API request failed: ${response.status}`)
-  }
-
-  return (await response.json()) as TResponse
-}
-
 export async function generatePracticeQuestion(args: {
   skillId: SkillId
   difficulty: number
@@ -72,25 +51,32 @@ export async function generatePracticeQuestion(args: {
 }): Promise<GeneratedPracticeInstance> {
   const templateKind: GeneratedTemplateKind = templateForSkill(args.skillId)
 
+  if (!functions) {
+    return localInstance(args.skillId, args.difficulty)
+  }
+
   try {
-    const requestBody = {
+    const callable = httpsCallable<
+      {
+        skillId: SkillId
+        difficulty: number
+        templateKind: GeneratedTemplateKind
+      },
+      GeneratePracticeResponse
+    >(functions, 'generatePracticeQuestion')
+    const response = await callable({
       skillId: args.skillId,
       difficulty: args.difficulty,
       templateKind,
-      clientUserId: args.userId,
-    }
-    const apiResponse = await postJson<GeneratePracticeResponse>(
-      '/api/generatePracticeQuestion',
-      requestBody,
-    )
-    if (!isGeneratedPracticeProblem(apiResponse.problem)) {
+    })
+    if (!isGeneratedPracticeProblem(response.data.problem)) {
       return localInstance(args.skillId, args.difficulty)
     }
     const instance = {
-      problem: apiResponse.problem,
-      answerKey: apiResponse.answerKey ?? {},
+      problem: response.data.problem,
+      answerKey: response.data.answerKey ?? {},
     }
-    const validationErrors = apiResponse.answerKey
+    const validationErrors = response.data.answerKey
       ? validateGeneratedPracticeInstance(instance)
       : []
     if (validationErrors.length > 0) {
@@ -109,14 +95,20 @@ export async function checkPracticeQuestionAnswer(args: {
   submission: GeneratedAnswerSubmission
 }): Promise<CheckResult> {
   const hasLocalAnswerKey = Object.keys(args.answerKey).length > 0
-  if (args.problem.source === 'ai' || !hasLocalAnswerKey) {
+  if ((args.problem.source === 'ai' || !hasLocalAnswerKey) && functions) {
     try {
-      const response = await postJson<CheckPracticeResponse>('/api/checkGeneratedAnswer', {
-        clientUserId: args.userId,
+      const callable = httpsCallable<
+        {
+          problemId: string
+          submission: GeneratedAnswerSubmission
+        },
+        CheckPracticeResponse
+      >(functions, 'checkGeneratedAnswer')
+      const response = await callable({
         problemId: args.problem.id,
         submission: args.submission,
       })
-      return response.result
+      return response.data.result
     } catch {
       // Fall through only when a deterministic local fallback has an answer key.
     }

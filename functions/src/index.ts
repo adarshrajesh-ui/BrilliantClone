@@ -1,3 +1,7 @@
+import { initializeApp } from 'firebase-admin/app'
+import { getFirestore } from 'firebase-admin/firestore'
+import { defineSecret } from 'firebase-functions/params'
+import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import {
   checkGeneratedAnswer as checkAnswer,
   computeGeneratedAnswerKey,
@@ -7,10 +11,13 @@ import {
   type GeneratedPracticeInstance,
   type GeneratedPracticeProblem,
   type GeneratedTemplateKind,
-} from '../src/features/practice/generatedPractice'
-import type { SkillId } from '../src/core/adaptive/types'
-import { getAdminDb, getVerifiedUid } from './firebaseAdmin'
+} from './generatedPractice.js'
+import type { SkillId } from './types.js'
 
+initializeApp()
+
+const db = getFirestore()
+const OPENAI_API_KEY = defineSecret('OPENAI_API_KEY')
 const DAILY_GENERATION_LIMIT = 50
 
 const SKILL_IDS: readonly SkillId[] = [
@@ -38,64 +45,6 @@ const TEMPLATE_KINDS: readonly GeneratedTemplateKind[] = [
   'same-ev-risk',
 ]
 
-class ApiRouteError extends Error {
-  readonly status: number
-
-  constructor(status: number, message: string) {
-    super(message)
-    this.status = status
-  }
-}
-
-function jsonResponse(body: unknown, init?: ResponseInit): Response {
-  return Response.json(body, init)
-}
-
-function errorResponse(error: unknown): Response {
-  if (error instanceof ApiRouteError) {
-    return jsonResponse({ error: error.message }, { status: error.status })
-  }
-
-  console.error('Generated practice API error:', error)
-  return jsonResponse({ error: 'Generated practice is temporarily unavailable.' }, { status: 500 })
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-}
-
-async function readJsonBody(request: Request): Promise<Record<string, unknown>> {
-  try {
-    const body = await request.json()
-    if (!isRecord(body)) {
-      throw new ApiRouteError(400, 'Request body must be a JSON object.')
-    }
-    return body
-  } catch (error) {
-    if (error instanceof ApiRouteError) {
-      throw error
-    }
-    throw new ApiRouteError(400, 'Request body must be valid JSON.')
-  }
-}
-
-async function ownerId(request: Request, clientUserId: unknown): Promise<string> {
-  try {
-    const verifiedUid = await getVerifiedUid(request)
-    if (verifiedUid) {
-      return verifiedUid
-    }
-  } catch {
-    throw new ApiRouteError(401, 'Firebase auth token is invalid.')
-  }
-
-  if (typeof clientUserId === 'string' && clientUserId === 'guest') {
-    return clientUserId
-  }
-
-  throw new ApiRouteError(401, 'Firebase auth token is required.')
-}
-
 function asSkillId(value: unknown): SkillId {
   if (typeof value === 'string' && SKILL_IDS.includes(value as SkillId)) {
     return value as SkillId
@@ -116,7 +65,6 @@ function asDifficulty(value: unknown): 1 | 2 | 3 | 4 | 5 {
 }
 
 async function enforceGenerationQuota(userId: string): Promise<void> {
-  const db = getAdminDb()
   const day = new Date().toISOString().slice(0, 10)
   const ref = db.collection('practiceUsage').doc(`${userId}_${day}`)
 
@@ -124,7 +72,7 @@ async function enforceGenerationQuota(userId: string): Promise<void> {
     const snap = await transaction.get(ref)
     const count = snap.exists ? Number(snap.data()?.generationCount ?? 0) : 0
     if (count >= DAILY_GENERATION_LIMIT) {
-      throw new ApiRouteError(429, 'Daily practice generation limit reached.')
+      throw new HttpsError('resource-exhausted', 'Daily practice generation limit reached.')
     }
 
     transaction.set(
@@ -361,7 +309,7 @@ async function callOpenAi(args: {
 }
 
 async function saveGeneratedInstance(userId: string, instance: GeneratedPracticeInstance): Promise<void> {
-  await getAdminDb().collection('generatedPractice').doc(instance.problem.id).set({
+  await db.collection('generatedPractice').doc(instance.problem.id).set({
     userId,
     problem: instance.problem,
     answerKey: instance.answerKey,
@@ -369,22 +317,27 @@ async function saveGeneratedInstance(userId: string, instance: GeneratedPractice
   })
 }
 
-export async function handleGeneratePracticeQuestion(request: Request): Promise<Response> {
-  try {
-    const body = await readJsonBody(request)
-    const userId = await ownerId(request, body.clientUserId)
-    const skillId = asSkillId(body.skillId)
-    const templateKind = asTemplateKind(body.templateKind)
-    const difficulty = asDifficulty(body.difficulty)
+function requireUserId(uid: string | undefined): string {
+  if (!uid) {
+    throw new HttpsError('unauthenticated', 'Sign in to use AI practice generation.')
+  }
+  return uid
+}
+
+export const generatePracticeQuestion = onCall(
+  { secrets: [OPENAI_API_KEY], cors: true },
+  async (request) => {
+    const userId = requireUserId(request.auth?.uid)
+    const data = (request.data ?? {}) as Record<string, unknown>
+    const skillId = asSkillId(data.skillId)
+    const templateKind = asTemplateKind(data.templateKind)
+    const difficulty = asDifficulty(data.difficulty)
 
     await enforceGenerationQuota(userId)
 
     let instance: GeneratedPracticeInstance
     try {
-      const apiKey = process.env.OPENAI_API_KEY
-      if (!apiKey) {
-        throw new Error('OPENAI_API_KEY is not configured.')
-      }
+      const apiKey = OPENAI_API_KEY.value()
       instance = await callOpenAi({ apiKey, skillId, templateKind, difficulty })
     } catch (error) {
       console.warn('Falling back to deterministic practice generation:', error)
@@ -392,52 +345,47 @@ export async function handleGeneratePracticeQuestion(request: Request): Promise<
     }
 
     await saveGeneratedInstance(userId, instance)
-    return jsonResponse({ problem: instance.problem })
-  } catch (error) {
-    return errorResponse(error)
-  }
-}
+    return { problem: instance.problem }
+  },
+)
 
-export async function handleCheckGeneratedAnswer(request: Request): Promise<Response> {
-  try {
-    const body = await readJsonBody(request)
-    const userId = await ownerId(request, body.clientUserId)
-    const problemId = typeof body.problemId === 'string' ? body.problemId : ''
-    const submission = isRecord(body.submission)
-      ? (body.submission as GeneratedAnswerSubmission)
+export const checkGeneratedAnswer = onCall({ cors: true }, async (request) => {
+  const userId = requireUserId(request.auth?.uid)
+  const data = (request.data ?? {}) as Record<string, unknown>
+  const problemId = typeof data.problemId === 'string' ? data.problemId : ''
+  const submission =
+    data.submission && typeof data.submission === 'object' && !Array.isArray(data.submission)
+      ? (data.submission as GeneratedAnswerSubmission)
       : {}
 
-    if (!problemId) {
-      throw new ApiRouteError(400, 'problemId is required.')
-    }
-
-    const snap = await getAdminDb().collection('generatedPractice').doc(problemId).get()
-    if (!snap.exists) {
-      throw new ApiRouteError(404, 'Generated practice problem was not found.')
-    }
-
-    const data = snap.data() as {
-      userId: string
-      problem: GeneratedPracticeProblem
-      answerKey: ReturnType<typeof computeGeneratedAnswerKey>
-    }
-    if (data.userId !== userId) {
-      throw new ApiRouteError(403, 'You cannot check this practice problem.')
-    }
-
-    const result = checkAnswer(data.problem, data.answerKey, submission)
-    await getAdminDb().collection('generatedProblemAttempts').add({
-      userId,
-      problemId,
-      submission,
-      result,
-      masteryTagsTested: data.problem.skillIds,
-      attemptMode: 'practice_restart',
-      createdAt: new Date().toISOString(),
-    })
-
-    return jsonResponse({ result })
-  } catch (error) {
-    return errorResponse(error)
+  if (!problemId) {
+    throw new HttpsError('invalid-argument', 'problemId is required.')
   }
-}
+
+  const snap = await db.collection('generatedPractice').doc(problemId).get()
+  if (!snap.exists) {
+    throw new HttpsError('not-found', 'Generated practice problem was not found.')
+  }
+
+  const stored = snap.data() as {
+    userId: string
+    problem: GeneratedPracticeProblem
+    answerKey: ReturnType<typeof computeGeneratedAnswerKey>
+  }
+  if (stored.userId !== userId) {
+    throw new HttpsError('permission-denied', 'You cannot check this practice problem.')
+  }
+
+  const result = checkAnswer(stored.problem, stored.answerKey, submission)
+  await db.collection('generatedProblemAttempts').add({
+    userId,
+    problemId,
+    submission,
+    result,
+    masteryTagsTested: stored.problem.skillIds,
+    attemptMode: 'practice_restart',
+    createdAt: new Date().toISOString(),
+  })
+
+  return { result }
+})
