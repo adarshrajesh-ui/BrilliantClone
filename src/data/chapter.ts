@@ -79,6 +79,46 @@ export function getProblemMeta(problemId: string): ProblemMeta | undefined {
   }
 }
 
+export interface LessonHeaderProgress {
+  /** Progress through the CURRENT lesson (0–100), driving the connected bar. */
+  fillPercent: number
+  lessonNumber: number
+  problemNumberInLesson: number
+  problemsInLesson: number
+  /** Lessons that come after the current one, shown as trailing dots. */
+  upcomingLessons: number
+  ariaValueText: string
+}
+
+export function getLessonHeaderProgress(problemId: string): LessonHeaderProgress | undefined {
+  const meta = getProblemMeta(problemId)
+  if (!meta) {
+    return undefined
+  }
+
+  const lesson = CHAPTER_LESSONS[meta.lessonIndex]
+  if (!lesson || lesson.problemIds.length === 0) {
+    return undefined
+  }
+
+  const lessonNumber = meta.lessonIndex + 1
+  const problemNumberInLesson = meta.problemIndexWithinLesson + 1
+  const problemsInLesson = lesson.problemIds.length
+  // The bar measures progress within the current lesson only — each problem in
+  // the lesson advances the fill by an equal share.
+  const fillPercent = (problemNumberInLesson / problemsInLesson) * 100
+  const upcomingLessons = Math.max(TOTAL_LESSONS - lessonNumber, 0)
+
+  return {
+    fillPercent,
+    lessonNumber,
+    problemNumberInLesson,
+    problemsInLesson,
+    upcomingLessons,
+    ariaValueText: `Lesson ${lessonNumber}, problem ${problemNumberInLesson} of ${problemsInLesson}`,
+  }
+}
+
 export function isLessonComplete(lessonId: string, completedProblemIds: string[]): boolean {
   return isLessonCompleted(lessonId, completedProblemIds)
 }

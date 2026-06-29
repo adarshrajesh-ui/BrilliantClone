@@ -263,7 +263,10 @@
 @media (max-width: 480px) {
   .l5p1-play {
     gap: 0.4rem;
-    overflow: hidden;
+    /* The machine carousel below uses a full-bleed (negative-margin) scroller
+       and the graphs sit full-width inside it; clipping here would cut those
+       off. The enclosing .ws-card already clips the page, so keep this visible. */
+    overflow: visible;
   }
 
   .l5p1-phone-tip {
@@ -334,6 +337,7 @@
   }
 
   .l5p1-option {
+    min-height: 44px;
     font-size: 0.82rem;
     padding: 0.4rem 0.55rem;
   }

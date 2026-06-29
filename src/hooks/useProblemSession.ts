@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from './useAuth'
 import { useChapterData } from './useChapterData'
+import { useStreak } from './useStreak'
 import { isGradedAttempt } from '../lib/answerChecker'
 import { markProblemComplete } from '../lib/chapterProgressService'
 import { syncMilestonesForCompletion } from '../lib/milestonesService'
@@ -16,14 +17,17 @@ import {
   saveProblemSession,
 } from '../lib/problemSessionService'
 import { beginPracticeRestart } from '../core/persistence/problemProgressService'
+import { computeProblemSessionReady } from './problemSessionReady'
 import type { CheckResult, ProblemDefinition } from '../types/problem'
+import type { RecordActivityResult } from '../types/streak'
 
 export function useProblemSession(
   problem: ProblemDefinition,
   problemState?: Record<string, unknown> | object,
 ) {
   const { user } = useAuth()
-  const { reload, progress } = useChapterData()
+  const { reload, progress, loading: progressLoading } = useChapterData()
+  const { recordActivity: recordStreakActivity } = useStreak()
   const [revealedHintIds, setRevealedHintIds] = useState<string[]>([])
   const [feedback, setFeedback] = useState<CheckResult | null>(null)
   const [attemptNumber, setAttemptNumber] = useState(1)
@@ -31,19 +35,34 @@ export function useProblemSession(
   const [sessionLoaded, setSessionLoaded] = useState(false)
 
   // Whether this problem is recorded complete in chapter progress. Chapter
-  // progress loads asynchronously, so we sync into local state below — otherwise
-  // returning to a completed problem would render it as a fresh (restarted) run.
+  // progress loads asynchronously, so until it resolves we hold readiness (below)
+  // — otherwise returning to a completed problem would briefly render it as a
+  // fresh (restarted) run before flipping to review/retry.
   const alreadyComplete = progress?.completedProblemIds.includes(problem.problemId) ?? false
   const [justCompleted, setJustCompleted] = useState(false)
   // Explicit, learner-initiated fresh practice attempt on a completed problem.
   const [restarted, setRestarted] = useState(false)
   const completed = alreadyComplete || justCompleted
 
+  // The problem page is only ready to render its interactive workspace once we
+  // know whether this problem is already complete. This gates the loader that
+  // every problem component shows on `!session.sessionLoaded`, so a completed
+  // problem never flashes the active workspace before the review/retry view.
+  const ready = computeProblemSessionReady({
+    sessionLoaded,
+    progressLoading,
+    alreadyComplete,
+    justCompleted,
+  })
+
   // Review-mode summary data (sourced from recorded attempts so it survives the
   // session being cleared on completion).
   const [finalAttemptCount, setFinalAttemptCount] = useState(0)
   const [lastSubmittedAnswer, setLastSubmittedAnswer] = useState<string | null>(null)
   const [reviewHintUsed, setReviewHintUsed] = useState(false)
+
+  // Streak delta from the completion that just happened (for celebration UIs).
+  const [streakResult, setStreakResult] = useState<RecordActivityResult | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -101,11 +120,16 @@ export function useProblemSession(
     if (lastSubmittedSignature.current === null) {
       return
     }
+    // Completion feedback must survive benign state syncs (e.g. reveal flags set
+    // in the same click handler as handleCheck) until the learner navigates away.
+    if (feedback?.canComplete === true) {
+      return
+    }
     if (stateSignature !== lastSubmittedSignature.current) {
       setFeedback(null)
       lastSubmittedSignature.current = null
     }
-  }, [stateSignature, sessionLoaded])
+  }, [stateSignature, sessionLoaded, feedback?.canComplete])
 
   const clearFeedback = useCallback(() => {
     setFeedback(null)
@@ -175,6 +199,11 @@ export function useProblemSession(
       setSubmitting(true)
       try {
         const prog = await markProblemComplete(user.uid, problem.problemId)
+        // A genuine learning event: completing a problem correctly is what drives
+        // the daily streak (never app-open). Capture the delta so the completion
+        // UI can celebrate an increment / milestone.
+        const streak = await recordStreakActivity()
+        setStreakResult(streak)
         await syncMilestonesForCompletion(user.uid, prog.completedProblemIds.length)
         await evaluateMastery(user.uid)
         await clearProblemSession(user.uid, problem.problemId)
@@ -187,7 +216,7 @@ export function useProblemSession(
         setSubmitting(false)
       }
     },
-    [user, problem.problemId, reload],
+    [user, problem.problemId, reload, recordStreakActivity],
   )
 
   // Explicit restart: make a completed problem interactive again for a fresh
@@ -222,7 +251,7 @@ export function useProblemSession(
       // finished entering an answer yet — e.g. "fill all fields" / "run 100 spins".
       // Those are not graded attempts, so we don't record them or inflate the
       // attempt count that mastery depends on.
-      if (isGradedAttempt(result)) {
+      if (stepId === 'final' && isGradedAttempt(result)) {
         await recordAttempt(result, stepId, submittedAnswer, normalizedAnswer)
       }
 
@@ -241,6 +270,7 @@ export function useProblemSession(
     setFeedback,
     clearFeedback,
     completed,
+    justCompleted,
     restarted,
     restart,
     backToReview,
@@ -252,6 +282,11 @@ export function useProblemSession(
     handleCheck,
     finishIfComplete,
     recordAttempt,
-    sessionLoaded,
+    // Gated readiness: the per-problem session has loaded AND completion status
+    // is known (or already known complete / freshly completed). Problem
+    // components key their loader off this to avoid the completed-problem flash.
+    sessionLoaded: ready,
+    // Streak delta from the latest completion (null until one happens this mount).
+    streakResult,
   }
 }

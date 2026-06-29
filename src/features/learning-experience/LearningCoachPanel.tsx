@@ -120,6 +120,20 @@ export function LearningCoachPanel({
             {feedback.conceptSummary && (
               <p className="coach-concept">{feedback.conceptSummary}</p>
             )}
+            {feedback.workedSolution && feedback.workedSolution.length > 0 && (
+              <table className="coach-worked">
+                <caption className="coach-worked-caption">Worked solution</caption>
+                <tbody>
+                  {feedback.workedSolution.map((row, index) => (
+                    <tr key={`${row.label}-${index}`}>
+                      <th scope="row">{row.label}</th>
+                      <td>{row.expression}</td>
+                      <td>{row.value !== undefined ? `= ${row.value}` : ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
             {feedback.teaching && teachingExpanded && (
               <TeachingExplanationSection
                 id={teachingId}

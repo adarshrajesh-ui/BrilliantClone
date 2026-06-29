@@ -595,6 +595,56 @@
   }
 }
 
+/* =================== Face-down deck spread =================== */
+
+.deck-spread-scene {
+  width: 100%;
+}
+
+.deck-spread {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1.75rem 0 0.5rem;
+  min-height: 132px;
+}
+
+.deck-spread-card {
+  transform-origin: bottom center;
+  transform: rotate(var(--deck-angle, 0deg));
+  margin: 0 -16px;
+  filter: drop-shadow(0 6px 8px rgba(15, 23, 42, 0.28));
+  /* Cards lay out flat onto the felt one after another (staggered by delay). */
+  animation: deck-lay-flat 560ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation-delay: var(--deck-delay, 0ms);
+}
+
+@media (max-width: 430px) {
+  /* The 12-card fan (~444px at desktop sizing) overflows narrow phones and was
+     hard-clipped by the workspace .ws-visual. Tighten the overlap so the fan's
+     footprint shrinks to fit the viewport. Decorative, aria-hidden cards. */
+  .deck-spread {
+    max-width: 100%;
+  }
+  .deck-spread-card {
+    margin: 0 -16px;
+  }
+}
+
+@keyframes deck-lay-flat {
+  0% {
+    transform: translateY(-28px) rotate(0deg) scale(0.82);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) rotate(var(--deck-angle, 0deg)) scale(1);
+    opacity: 1;
+  }
+}
+
 /* =================== Reduced motion: final state, instantly =================== */
 
 @media (prefers-reduced-motion: reduce) {
@@ -612,5 +662,10 @@
   }
   .cds-column {
     transition: none;
+  }
+  .deck-spread-card {
+    animation: none;
+    transform: rotate(var(--deck-angle, 0deg));
+    opacity: 1;
   }
 }

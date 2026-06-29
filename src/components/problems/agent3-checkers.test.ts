@@ -112,6 +112,17 @@ describe('ev-l1-p3 — Which Game Has the Best Long-Run Average?', () => {
     expect(checkEvL1P3({ selectedGames: ['a', 'b'], reason: 'same-average' }).canComplete).toBe(true)
   })
 
+  it('accepts the A+B tie with the tied-at-$5 reason regardless of selection order', () => {
+    const result = checkEvL1P3({ selectedGames: ['a', 'b'], reason: 'same-average' })
+    expect(result.isCorrect).toBe(true)
+    expect(result.canComplete).toBe(true)
+    expect(result.mistakeType).toBeNull()
+
+    // Selecting the same two games in the opposite order is still correct, so a
+    // learner can always complete the problem once A and B are both chosen.
+    expect(checkEvL1P3({ selectedGames: ['b', 'a'], reason: 'same-average' }).canComplete).toBe(true)
+  })
+
   it('classifies targeted misconceptions', () => {
     expect(checkEvL1P3({ selectedGames: ['b'], reason: null }).mistakeType).toBe('chose-bigger-prize')
     expect(checkEvL1P3({ selectedGames: ['c'], reason: null }).mistakeType).toBe('chose-highest-win-rate')

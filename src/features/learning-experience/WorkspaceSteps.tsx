@@ -28,6 +28,14 @@ export interface WorkspaceStepDef {
   /** Helper text shown when Next is gated (canAdvance === false). */
   advanceHint?: string
   /**
+   * Optional label for the forward (Next) control when this is NOT the final
+   * step — i.e. for between-steps navigation. Defaults to `Next` so problems
+   * that do not opt in are unaffected. Use it to make the forward action
+   * explicit, e.g. `Continue to question`. Ignored on the final step, where the
+   * control navigates between problems and reads `Next`/`Continue`.
+   */
+  nextLabel?: string
+  /**
    * Optional per-step status badge in the step header. Set by the problem from
    * its own state: 'correct' after a correct per-step check, 'incorrect' after a
    * wrong one, 'unanswered' / undefined otherwise.
@@ -40,6 +48,15 @@ export interface WorkspaceStepsProps {
   problemTitle: string
   /** Secondary setup/context for the problem, shown below the title. */
   scenarioText?: string
+  /**
+   * When true, the header shows ONLY the active step's prompt as a single bold
+   * line (the top nav + step indicator row are kept). The problem title, the
+   * scenario paragraph, and the per-step title are hidden, and a string prompt
+   * renders as plain bold text instead of the blue QuestionPrompt callout. When
+   * false/omitted, the default title / scenario / step-title / prompt stack
+   * renders unchanged.
+   */
+  minimalHeader?: boolean
   /** Ordered step panels. Exactly one is visible at a time; the rest stay mounted but hidden. */
   steps: WorkspaceStepDef[]
   /** Optional banner row (e.g. restart-practice notice). */
@@ -60,14 +77,38 @@ export interface WorkspaceStepsProps {
   hintsRemaining?: number
   /** Optional explanation content opened from the Brilliant-style "Why?" action. */
   explanationPanel?: ReactNode
+  /**
+   * True once the learner has answered the WHOLE problem correctly. Drives the
+   * celebratory success treatment: the card border + lower-center green glow,
+   * the explanation auto-opening, and the centered Why?/Continue controls. This
+   * is distinct from a per-step `status: 'correct'` (intermediate) — it only
+   * fires on full-problem completion.
+   */
+  solvedCorrectly?: boolean
   /** Href for the "back to chapter" link in the header. */
   backHref: string
+  /**
+   * Brilliant-style "everything in one card" layout. When true, the problem
+   * title + question and the step's primary (Check) action move INSIDE the
+   * enlarged white card — the question sits at the top, the Check button is
+   * pinned centered at the bottom of the card. The page-level close (×) stays
+   * outside the card in the global lesson header.
+   */
+  enclosedLayout?: boolean
   /**
    * Called whenever the active step index changes (Prev/Next). The shell uses
    * this to clear stale coach feedback so each step starts clean and feedback
    * never bleeds across steps.
    */
   onStepChange?: (newIndex: number) => void
+}
+
+function getFocusableElements(container: HTMLElement): HTMLElement[] {
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((element) => !element.hasAttribute('disabled') && !element.getAttribute('aria-hidden'))
 }
 
 /**
@@ -85,6 +126,7 @@ export interface WorkspaceStepsProps {
 export function WorkspaceSteps({
   problemTitle,
   scenarioText,
+  minimalHeader,
   steps,
   banner,
   coachPanel,
@@ -95,16 +137,23 @@ export function WorkspaceSteps({
   onTakeHint,
   hintsRemaining = 0,
   explanationPanel,
+  solvedCorrectly = false,
   backHref,
+  enclosedLayout = false,
   onStepChange,
 }: WorkspaceStepsProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [hintsOpen, setHintsOpen] = useState(false)
   const [explanationOpen, setExplanationOpen] = useState(false)
   const workspaceRef = useRef<HTMLDivElement>(null)
+  const hintDrawerRef = useRef<HTMLDivElement>(null)
+  const whyButtonRef = useRef<HTMLButtonElement>(null)
+  const explanationModalRef = useRef<HTMLElement>(null)
+  const closeExplanationButtonRef = useRef<HTMLButtonElement>(null)
   const advanceHintId = useId()
   const nextProblemLockedHintId = useId()
   const hintDrawerId = useId()
+  const explanationTitleId = useId()
   const stepCount = steps.length
 
   useEffect(() => {
@@ -138,6 +187,67 @@ export function WorkspaceSteps({
     }
   }, [])
 
+  useEffect(() => {
+    if (!hintsOpen) {
+      return
+    }
+    window.setTimeout(() => {
+      hintDrawerRef.current?.focus()
+    }, 0)
+  }, [hintsOpen])
+
+  useEffect(() => {
+    if (!explanationOpen) {
+      return
+    }
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const fallbackFocus = whyButtonRef.current
+    window.setTimeout(() => {
+      closeExplanationButtonRef.current?.focus()
+    }, 0)
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setExplanationOpen(false)
+        return
+      }
+
+      if (event.key !== 'Tab' || !explanationModalRef.current) {
+        return
+      }
+
+      const focusable = getFocusableElements(explanationModalRef.current)
+      if (focusable.length === 0) {
+        event.preventDefault()
+        explanationModalRef.current.focus()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      window.setTimeout(() => {
+        if (previousFocus?.isConnected) {
+          previousFocus.focus()
+        } else {
+          fallbackFocus?.focus()
+        }
+      }, 0)
+    }
+  }, [explanationOpen])
+
   // Move to a new step index (clamped) and notify the shell so it can clear
   // stale per-step feedback. Notify only on an actual index change.
   const goToStep = (target: number) => {
@@ -158,13 +268,17 @@ export function WorkspaceSteps({
   const atFirst = safeIndex === 0
   const atLast = safeIndex >= stepCount - 1
   const canAdvance = activeStep?.canAdvance !== false
-  const resultState = activeStep?.status === 'correct'
+  const baseResultState = activeStep?.status === 'correct'
     ? 'correct'
     : activeStep?.status === 'incorrect'
       ? 'incorrect'
       : activeStep?.action
         ? 'selected'
         : 'idle'
+  // A full-problem solve always reads as correct, even for problems whose steps
+  // never set a per-step status (e.g. the spinner): the success card + glow then
+  // apply uniformly across every workspace problem.
+  const resultState = solvedCorrectly ? 'correct' : baseResultState
   const nextDisabled = atLast ? !nextProblemHref || !nextProblemEnabled : !canAdvance
   const previousDisabled = atFirst ? !previousProblemHref : false
   const showAdvanceHint = !canAdvance && !atLast && !!activeStep?.advanceHint
@@ -182,7 +296,9 @@ export function WorkspaceSteps({
     : undefined
   const prompt =
     typeof activeStep?.prompt === 'string'
-      ? <QuestionPrompt>{activeStep.prompt}</QuestionPrompt>
+      ? minimalHeader
+        ? activeStep.prompt
+        : <QuestionPrompt>{activeStep.prompt}</QuestionPrompt>
       : activeStep?.prompt
   const takeHint = () => {
     if (onTakeHint && hintsRemaining > 0) {
@@ -194,11 +310,34 @@ export function WorkspaceSteps({
     setHintsOpen((open) => !open)
   }
 
+  const headerBody = minimalHeader ? (
+    prompt && <div className="ws-prompt">{prompt}</div>
+  ) : (
+    <>
+      <h1 className="ws-title">{problemTitle}</h1>
+      {scenarioText && <p className="ws-scenario">{scenarioText}</p>}
+      {activeStep?.title && <p className="ws-step-title">{activeStep.title}</p>}
+      {prompt && <div className="ws-prompt">{prompt}</div>}
+    </>
+  )
+
+  const stepSections = steps.map((step, i) => (
+    <section key={step.id} className="ws-step" hidden={i !== safeIndex}>
+      {step.content}
+    </section>
+  ))
+
   return (
-    <div className="problem-workspace" data-result={resultState} ref={workspaceRef}>
+    <div
+      className="problem-workspace"
+      data-result={resultState}
+      data-solved={solvedCorrectly ? '' : undefined}
+      data-enclosed={enclosedLayout ? '' : undefined}
+      ref={workspaceRef}
+    >
       <header className="ws-header">
         <div className="ws-header-top">
-          <Link to={backHref} className="ws-back">
+          <Link to={backHref} className="ws-back" tabIndex={-1} aria-hidden="true">
             Course map
           </Link>
           {isMultiStep && (
@@ -217,27 +356,28 @@ export function WorkspaceSteps({
             </span>
           )}
         </div>
-        <h1 className="ws-title">{problemTitle}</h1>
-        {scenarioText && <p className="ws-scenario">{scenarioText}</p>}
-        {activeStep?.title && <p className="ws-step-title">{activeStep.title}</p>}
-        {prompt && <div className="ws-prompt">{prompt}</div>}
+        {!enclosedLayout && headerBody}
       </header>
 
       {banner && <div className="ws-banner">{banner}</div>}
 
       <div className="ws-body" role="group" aria-label="Current step">
         <div className="ws-card">
-          {steps.map((step, i) => (
-            <section key={step.id} className="ws-step" hidden={i !== safeIndex}>
-              {step.content}
-            </section>
-          ))}
+          {enclosedLayout ? (
+            <>
+              <div className="ws-card-header">{headerBody}</div>
+              <div className="ws-card-steps">{stepSections}</div>
+              {activeStep?.action && <div className="ws-card-action">{activeStep.action}</div>}
+            </>
+          ) : (
+            stepSections
+          )}
         </div>
       </div>
 
       <div className="ws-actionbar">
         {hintPanel && hintsOpen && (
-          <div id={hintDrawerId} className="ws-hint-drawer">
+          <div id={hintDrawerId} className="ws-hint-drawer" ref={hintDrawerRef} tabIndex={-1}>
             {hintPanel}
           </div>
         )}
@@ -259,8 +399,9 @@ export function WorkspaceSteps({
               {explanationPanel && (
                 <button
                   type="button"
-                  className="btn-text ws-hint-toggle touch-target"
+                  className="btn-text ws-hint-toggle ws-why-toggle touch-target"
                   aria-haspopup="dialog"
+                  ref={whyButtonRef}
                   onClick={() => setExplanationOpen(true)}
                 >
                   Why?
@@ -268,7 +409,9 @@ export function WorkspaceSteps({
               )}
             </div>
           )}
-          {activeStep?.action && <div className="ws-primary-action">{activeStep.action}</div>}
+          {!enclosedLayout && activeStep?.action && (
+            <div className="ws-primary-action">{activeStep.action}</div>
+          )}
           <div className="ws-nav">
             {atFirst && previousProblemHref ? (
               <Link to={previousProblemHref} className="btn-secondary touch-target ws-prev">
@@ -287,7 +430,7 @@ export function WorkspaceSteps({
             <div className="ws-next-wrap">
               {atLast && nextProblemHref && nextProblemEnabled ? (
                 <Link to={nextProblemHref} className="btn-secondary touch-target ws-next">
-                  {activeStep?.status === 'correct' ? 'Continue' : 'Next'}
+                  {activeStep?.status === 'correct' || solvedCorrectly ? 'Continue' : 'Next'}
                 </Link>
               ) : (
                 <button
@@ -298,7 +441,7 @@ export function WorkspaceSteps({
                   title={nextDisabled ? nextDisabledTitle : undefined}
                   onClick={() => goToStep(safeIndex + 1)}
                 >
-                  {atLast ? 'Continue' : 'Next'}
+                  {atLast ? 'Continue' : (activeStep?.nextLabel ?? 'Next')}
                 </button>
               )}
             </div>
@@ -316,14 +459,23 @@ export function WorkspaceSteps({
         </div>
       </div>
       {explanationOpen && explanationPanel && (
-        <div className="ws-modal-backdrop" role="presentation">
-          <section className="ws-explanation-modal" role="dialog" aria-modal="true" aria-label="Explanation">
+        <div className="ws-modal-backdrop" role="presentation" onMouseDown={() => setExplanationOpen(false)}>
+          <section
+            className="ws-explanation-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={explanationTitleId}
+            ref={explanationModalRef}
+            tabIndex={-1}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
             <div className="ws-modal-head">
-              <h2>Explanation</h2>
+              <h2 id={explanationTitleId}>Explanation</h2>
               <button
                 type="button"
                 className="btn-text touch-target ws-modal-close"
                 aria-label="Close explanation"
+                ref={closeExplanationButtonRef}
                 onClick={() => setExplanationOpen(false)}
               >
                 ×

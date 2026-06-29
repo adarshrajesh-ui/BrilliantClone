@@ -5,7 +5,7 @@ import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
-import { QuestionPrompt, type WorkspaceStepDef } from '../../features/learning-experience'
+import type { WorkspaceStepDef } from '../../features/learning-experience'
 import type { CheckResult } from '../../types/problem'
 import {
   EV_L5_P3,
@@ -203,7 +203,7 @@ export function EvL5P3FinalDecision() {
     {
       id: 'group',
       title: 'Carnival wheel (12 sections)',
-      prompt: <QuestionPrompt>Tap the wheel sections to group them by payout.</QuestionPrompt>,
+      prompt: 'Group the wheel’s 12 sections by payout.',
       canAdvance: grouped,
       advanceHint: 'Tap all three payout groups to continue.',
       content: (
@@ -226,7 +226,7 @@ export function EvL5P3FinalDecision() {
     {
       id: 'table',
       title: 'Build the probability table',
-      prompt: <QuestionPrompt>Enter each probability (sections ÷ 12), then each contribution (outcome × probability).</QuestionPrompt>,
+      prompt: 'Fill in the probability and contribution for each payout.',
       status: checks.table,
       canAdvance: checks.table === 'correct',
       advanceHint: ADVANCE_HINT,
@@ -242,6 +242,7 @@ export function EvL5P3FinalDecision() {
       ),
       content: (
         <>
+          <p className="section-note">(probability = sections ÷ 12; contribution = outcome × probability)</p>
           <table className="l5-section-table">
             <thead>
               <tr><th>Outcome</th><th>Sections</th><th>Probability (÷ 12)</th><th>Contribution</th></tr>
@@ -295,7 +296,7 @@ export function EvL5P3FinalDecision() {
     {
       id: 'payout',
       title: 'Expected payout',
-      prompt: <QuestionPrompt>Add the contributions for the expected payout.</QuestionPrompt>,
+      prompt: 'Add the contributions for the expected payout.',
       status: checks.payout,
       canAdvance: checks.payout === 'correct',
       advanceHint: ADVANCE_HINT,
@@ -333,7 +334,7 @@ export function EvL5P3FinalDecision() {
     {
       id: 'profit',
       title: 'Expected profit',
-      prompt: <QuestionPrompt>Subtract the $6 cost for the expected profit.</QuestionPrompt>,
+      prompt: 'Subtract the $6 cost for the expected profit.',
       status: checks.profit,
       canAdvance: checks.profit === 'correct',
       advanceHint: ADVANCE_HINT,
@@ -371,7 +372,7 @@ export function EvL5P3FinalDecision() {
     {
       id: 'decide',
       title: 'Decision',
-      prompt: <QuestionPrompt label="Question">Is the game fair, favorable, or unfavorable?</QuestionPrompt>,
+      prompt: 'Is the game fair, favorable, or unfavorable?',
       status: checks.decision,
       canAdvance: checks.decision === 'correct',
       advanceHint: ADVANCE_HINT,
@@ -412,29 +413,22 @@ export function EvL5P3FinalDecision() {
     {
       id: 'risk',
       title: 'Interpret the risk',
-      prompt: (
-        <>
-          <QuestionPrompt>Interpret the remaining risk.</QuestionPrompt>
-          Then submit your full model.
-        </>
-      ),
+      prompt: 'Interpret the remaining risk.',
       status: checks.risk,
       action: (
         <button
           type="button"
-          className="btn-secondary touch-target"
+          className="btn-secondary touch-target ws-step-check"
           disabled={session.submitting || !riskFilled}
           onClick={checkFinal}
         >
-          {session.submitting ? 'Saving…' : 'Submit full model'}
+          {session.submitting ? 'Saving…' : 'Submit answer'}
         </button>
       ),
       content: (
         <>
           <fieldset className={stepClass(5, checks.risk === 'correct')}>
-            <div className="l5-step-head">
-              <span className="l5-step-title">Interpret the risk</span>
-            </div>
+            <legend className="l5-step-title">Interpret the risk</legend>
             <div className="l5-options">
               {RISK_OPTIONS.map((opt) => (
                 <label key={opt.value} className={`l5-option${state.riskChoice === opt.value ? ' l5-option-selected' : ''}`}>
@@ -463,8 +457,11 @@ export function EvL5P3FinalDecision() {
     <ProblemLayout
       problem={EV_L5_P3}
       problemNumber={14}
+      workspaceMinimalHeader
       feedback={session.feedback}
       completed={session.completed}
+      justCompleted={session.justCompleted}
+      streakResult={session.streakResult}
       revealedHintIds={session.revealedHintIds}
       onRevealHint={session.revealHint}
       restarted={session.restarted}

@@ -4,7 +4,6 @@ import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
-import { QuestionPrompt } from '../../features/learning-experience'
 import type { WorkspaceStepDef } from '../../features/learning-experience'
 import { PROBLEM_8, checkWiderSpread } from '../../data/problems/problem-8'
 import { constantGame, runDeterministicBatch, type DiscreteOutcome } from '../../lib/simulation'
@@ -77,12 +76,13 @@ export function Problem8SameEVDifferentRisk() {
 
   const bothSimulated = state.gameASimulated && state.gameBSimulated
   const evsFilled = state.evA.trim() !== '' && state.evB.trim() !== ''
+  const riskAnswerFilled = state.higherRisk !== '' && state.reason !== ''
 
   const steps: WorkspaceStepDef[] = [
     {
       id: 'simulate',
       title: 'Simulate both games',
-      prompt: <QuestionPrompt>Run 20 simulated trials for each game.</QuestionPrompt>,
+      prompt: 'Run 20 simulated trials for each game.',
       canAdvance: bothSimulated,
       advanceHint: 'Run both simulations to continue.',
       content: (
@@ -116,7 +116,7 @@ export function Problem8SameEVDifferentRisk() {
           <p className="l5-live" role="status" aria-live="polite">
             {bothSimulated
               ? 'Game A repeats one steady payout. Game B alternates between a high payout and no payout.'
-              : ''}
+              : `${state.gameASimulated ? 'Game A complete. ' : ''}${state.gameBSimulated ? 'Game B complete. ' : ''}Run both simulations to continue.`}
           </p>
         </>
       ),
@@ -124,7 +124,7 @@ export function Problem8SameEVDifferentRisk() {
     {
       id: 'ev',
       title: 'Expected value of each game',
-      prompt: <QuestionPrompt>Enter the expected value for each game.</QuestionPrompt>,
+      prompt: 'Enter the expected value for each game.',
       canAdvance: evsFilled,
       advanceHint: 'Enter both expected values to continue.',
       content: (
@@ -141,12 +141,12 @@ export function Problem8SameEVDifferentRisk() {
     {
       id: 'risk',
       title: 'Which game is riskier?',
-      prompt: <QuestionPrompt>Select the riskier game and the reason why, then submit.</QuestionPrompt>,
+      prompt: 'Select the riskier game and the reason why.',
       action: (
         <button
           type="button"
           className="btn-secondary touch-target"
-          disabled={session.submitting}
+          disabled={session.submitting || !bothSimulated || !evsFilled || !riskAnswerFilled}
           onClick={() => void session.handleCheck(
             checkWiderSpread({
               gameASimulated: state.gameASimulated,
@@ -161,7 +161,7 @@ export function Problem8SameEVDifferentRisk() {
             state.reason,
           )}
         >
-          Submit answer
+          {session.submitting ? 'Saving…' : 'Submit answer'}
         </button>
       ),
       content: (
@@ -197,8 +197,11 @@ export function Problem8SameEVDifferentRisk() {
     <ProblemLayout
       problem={PROBLEM_8}
       problemNumber={13}
+      workspaceMinimalHeader
       feedback={session.feedback}
       completed={session.completed}
+      justCompleted={session.justCompleted}
+      streakResult={session.streakResult}
       revealedHintIds={session.revealedHintIds}
       onRevealHint={session.revealHint}
       restarted={session.restarted}
@@ -209,6 +212,7 @@ export function Problem8SameEVDifferentRisk() {
       reviewHintUsed={session.reviewHintUsed}
       completionMessage="You confirmed two games with the same $6 EV carry different risk — Game B’s wider spread."
       steps={steps}
+      onStepChange={session.clearFeedback}
     />
   )
 }

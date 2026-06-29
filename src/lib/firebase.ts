@@ -32,7 +32,7 @@ if (isFirebaseConfigured()) {
   // `ignoreUndefinedProperties` lets writes omit undefined optional fields
   // (e.g. a brand-new user's `currentProblemId`) instead of failing setDoc().
   db = initializeFirestore(app, { ignoreUndefinedProperties: true })
-  functions = getFunctions(app)
+  functions = getFunctions(app, 'us-central1')
 } else {
   console.error(
     'Firebase is not configured. Copy .env.example to .env and add your Firebase config values.',

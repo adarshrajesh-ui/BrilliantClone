@@ -50,3 +50,11 @@
   font-size: 11px;
   fill: #9ca3af;
 }
+
+.sh-observation {
+  margin: 0.3rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #1e293b;
+}

@@ -4,7 +4,6 @@ import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import type { DemoStepConfig, WorkspaceStepDef } from '../../features/learning-experience'
-import { QuestionPrompt } from '../../features/learning-experience'
 import { PROBLEM_EV_L2_P2, checkEvL2P2, type EvL2P2Outcome } from '../../data/problems/ev-l2-p2'
 
 const OUTCOMES: Array<{ id: EvL2P2Outcome; label: string }> = [
@@ -52,22 +51,10 @@ export function EvL2P2MatchOutcomes() {
     })
   }
 
-  const currentTask = state.selectedProb
-    ? `Now tap the outcome that has a ${state.selectedProb} chance.`
-    : matchedCount < 3
-      ? 'Tap a probability card, then tap the matching outcome row.'
-      : 'Check your matches.'
-
   const steps: WorkspaceStepDef[] = [
     {
       id: 'match',
-      title: 'Match outcomes',
-      prompt: (
-        <>
-          <QuestionPrompt>Match each payout to its probability.</QuestionPrompt>
-          <p className="section-note">{currentTask}</p>
-        </>
-      ),
+      prompt: PROBLEM_EV_L2_P2.scenarioText,
       action: (
         <button
           type="button"
@@ -144,8 +131,11 @@ export function EvL2P2MatchOutcomes() {
     <ProblemLayout
       problem={PROBLEM_EV_L2_P2}
       problemNumber={5}
+      workspaceMinimalHeader
       feedback={session.feedback}
       completed={session.completed}
+      justCompleted={session.justCompleted}
+      streakResult={session.streakResult}
       revealedHintIds={session.revealedHintIds}
       onRevealHint={session.revealHint}
       nextProblemId="ev-l2-p3"
@@ -162,6 +152,7 @@ export function EvL2P2MatchOutcomes() {
       demoFinalCta={DEMO_CTA}
       completionMessage="You matched $12 ↔ 1/3, $3 ↔ 1/2, and $0 ↔ 1/6 from the game data."
       steps={steps}
+      onStepChange={session.clearFeedback}
     />
   )
 }

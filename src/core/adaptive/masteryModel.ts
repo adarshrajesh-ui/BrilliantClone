@@ -39,7 +39,13 @@ function scoreDeltaForAttempt(attempt: ProblemAttempt, repeatedMistake: boolean)
   return repeatedMistake ? -0.15 : -0.1
 }
 
-function updateSkillState(state: SkillState, attempt: ProblemAttempt): SkillState {
+/**
+ * Advance a single skill's state by one graded attempt. Exported so the live
+ * Practice session can move a skill's `score` / `nextReviewAt` immediately after
+ * an answer using the EXACT logic `deriveSkillStates` replays from history, so an
+ * in-session update and a later cold derive land on the same state.
+ */
+export function updateSkillState(state: SkillState, attempt: ProblemAttempt): SkillState {
   const mistakeType = attempt.mistakeType && attempt.mistakeType.length > 0
     ? attempt.mistakeType
     : null
@@ -61,6 +67,7 @@ function updateSkillState(state: SkillState, attempt: ProblemAttempt): SkillStat
       score: nextScore,
       practicedAt: attempt.createdAt,
       wasCorrect: attempt.isCorrect,
+      repeatedMistake,
     }),
     consecutiveCorrect: attempt.isCorrect ? state.consecutiveCorrect + 1 : 0,
     recentMistakeTypes,

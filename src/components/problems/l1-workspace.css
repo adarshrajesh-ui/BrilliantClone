@@ -20,9 +20,9 @@
 }
 
 .l1-dice-play {
-  grid-template-columns: minmax(15rem, 0.9fr) minmax(8.5rem, 0.35fr) minmax(18rem, 1fr);
-  gap: 0.45rem 0.8rem;
-  max-width: 64rem;
+  grid-template-columns: minmax(15rem, 0.85fr) minmax(8rem, 0.3fr) minmax(19rem, 1.1fr);
+  gap: 0.45rem 0.85rem;
+  max-width: 66rem;
   margin: 0 auto;
 }
 
@@ -151,6 +151,56 @@
   font-size: 0.78rem;
 }
 
+/* Roll-progress meter under the dice tray (Problem 1 only): a visible count
+   toward 100 rolls plus a thin fill bar. Kept compact so it does not eat the
+   no-scroll vertical budget the enlarged charts now use. */
+.l1-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 100%;
+  max-width: 20rem;
+}
+
+.l1-progress-track {
+  width: 100%;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.l1-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  transition: width 0.25s ease;
+}
+
+.l1-progress-label {
+  margin: 0;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Pre-100 milestone guidance beside the stats (neutral). The 100-roll state
+   uses the green .l1-reached-message instead. */
+.l1-milestone-hint {
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
 .l1-graph {
   grid-column: 1 / -1;
   width: 100%;
@@ -174,11 +224,14 @@
   align-items: center;
 }
 
-.l1-graphs svg {
+/* Scoped to .l1-dice-play so only Problem 1's two charts grow (~150% taller
+   than the prior clamp(4.8rem, 14vh, 6.8rem) cap). viewBoxes stay 320×160; the
+   size comes from CSS max-height, not transform: scale(). */
+.l1-dice-play .l1-graphs svg {
   display: block;
   width: 100%;
   height: auto;
-  max-height: clamp(4.8rem, 14vh, 6.8rem);
+  max-height: clamp(7.2rem, 21vh, 10.2rem);
 }
 
 .l1-dice-play .l1-graphs .graph-wrap,
@@ -192,6 +245,12 @@
   font-size: 0.72rem;
   line-height: 1.2;
   margin-bottom: 0.18rem;
+}
+
+.l1-dice-play .l1-graphs .sh-observation {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
 }
 
 .l1-chart-note {
@@ -250,6 +309,57 @@
   font-size: 0.84rem;
   font-weight: 700;
   line-height: 1.35;
+}
+
+/* Final-answer recap (ev-l1-p1 identify step): a compact reminder of the
+   simulation so the answer step is not empty. Stays inside the enclosed Lesson 1
+   card and within one viewport on desktop (1280×720) and mobile (≤390px). */
+.l1-answer-recap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 24rem;
+  margin: 0 auto 0.75rem;
+}
+
+.l1-answer-recap-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.l1-answer-recap-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  text-align: center;
+}
+
+.l1-answer-recap-stat span {
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.l1-answer-recap-stat strong {
+  color: #0f172a;
+  font-size: clamp(1.1rem, 2.4vw, 1.45rem);
+  line-height: 1;
+}
+
+.l1-answer-recap-hint {
+  margin: 0;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
 }
 
 /* Compare step (ev-l1-p3): two spinners side by side, kept compact so both
@@ -513,6 +623,25 @@
   font-size: 0.72rem;
 }
 
+.l1-select-instruction {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.l1-select-instruction h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.l1-select-hint {
+  margin: 0;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .l1-reason-panel {
   padding: 0.6rem;
   border: 1px solid #e5e7eb;
@@ -546,6 +675,7 @@
   }
   .l1-dice-play {
     max-width: 100%;
+    grid-template-columns: 1fr;
   }
   .l1-dice-play .ws-visual {
     gap: 0.45rem;
@@ -569,7 +699,7 @@
     grid-column: 1 / -1;
     grid-template-columns: 1fr;
   }
-  .l1-graphs svg {
+  .l1-dice-play .l1-graphs svg {
     max-height: 18vh;
   }
   .l1-graph svg {
@@ -624,6 +754,50 @@
     font-weight: 600;
     text-align: center;
   }
+  /* Page scroll is re-enabled <=768px, so the dice step that the desktop rule
+     clips with overflow:hidden should let its now single-column stack flow. */
+  .problem-workspace .ws-step:has(.l1-dice-play) {
+    overflow: visible;
+  }
+  /* Restore a comfortable >=44px tap target for the roll pills on phones (the
+     desktop rule shrinks them to 28px to protect the no-scroll budget). */
+  .l1-dice-play .l1-roll-pills .btn-secondary.touch-target {
+    min-height: 44px;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.82rem;
+  }
+  /* EvL1P2's spinner stats use a plain .stat-list (Problem 1 instead uses the
+     compact .l1-stat-cards grid). Lay the plain list out as a compact 3-up grid
+     so the spin step isn't a tall vertical stack on phones. The Problem 1 list
+     is excluded via :not(.l1-stat-cards) so its layout stays untouched. */
+  .l1-side .stat-list:not(.l1-stat-cards) {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+  .l1-side .stat-list:not(.l1-stat-cards) li {
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.15rem;
+    min-height: 3.75rem;
+    padding: 0.55rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    text-align: center;
+  }
+  .l1-side .stat-list:not(.l1-stat-cards) span {
+    color: #64748b;
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .l1-side .stat-list:not(.l1-stat-cards) strong {
+    color: #0f172a;
+    font-size: clamp(1.05rem, 6vw, 1.5rem);
+    line-height: 1;
+  }
 }
 
 @media (max-width: 480px) {
@@ -654,6 +828,12 @@
   .l1-game-header h3 {
     margin: 0;
     font-size: 0.95rem;
+  }
+  .l1-select-instruction h3 {
+    font-size: 0.9rem;
+  }
+  .l1-select-hint {
+    font-size: 0.76rem;
   }
   .l1-reason-options {
     gap: 0.35rem;

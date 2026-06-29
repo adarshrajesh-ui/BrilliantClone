@@ -7,7 +7,7 @@ import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
-import { QuestionPrompt, usePrefersReducedMotion } from '../../features/learning-experience'
+import { usePrefersReducedMotion } from '../../features/learning-experience'
 import type { DemoStepConfig, WorkspaceStepDef } from '../../features/learning-experience'
 import { PROBLEM_2, checkProblem2PrizeBoard, REQUIRED_GRABS } from '../../data/problems/problem-2'
 
@@ -30,7 +30,6 @@ const CONTRIB_ROWS: ClawContributionRow[] = [
   { payout: '$0', probability: '75%', product: '$0', weight: 0.75 },
 ]
 const PRIZE_VALUE = 20
-const EXPECTED_VALUE = 5
 
 const DEMO: DemoStepConfig[] = [
   { id: 'p2-run', title: 'Run the claw', body: 'Tap “Drop claw” to plunge the claw into the pit. The small $20 zone is one quarter of the floor, so roughly 1 grab in 4 snags it — the rest land on an empty $0 zone.' },
@@ -75,18 +74,11 @@ function formatMoney(value: number): string {
 function getGrabDoneMessage(grabs: ClawGrab[]): string {
   const prizeWins = grabs.filter((grab) => grab.isPrize).length
   const trayTotal = grabs.reduce((sum, grab) => sum + grab.value, 0)
-  const observedAverage = trayTotal / REQUIRED_GRABS
   const winLabel = prizeWins === 1 ? '$20 win' : '$20 wins'
-  const resultSummary = `${REQUIRED_GRABS} grabs done: ${prizeWins} ${winLabel}, tray total ${formatMoney(
+
+  return `${REQUIRED_GRABS} grabs done: ${prizeWins} ${winLabel}, tray total ${formatMoney(
     trayTotal,
-  )} (average ${formatMoney(observedAverage)} per grab).`
-
-  if (observedAverage === EXPECTED_VALUE) {
-    return `${resultSummary} This short run landed exactly on the long-run $5 average, but EV still comes from the pit weights. Tap Next to compress the pit and find the true expected value.`
-  }
-
-  const direction = observedAverage > EXPECTED_VALUE ? 'higher' : 'lower'
-  return `${resultSummary} That is ${direction} than the long-run $5 average — short runs are noisy. Tap Next to compress the pit and find the true expected value.`
+  )}. Tap Next to compare this run with the pit.`
 }
 
 export function Problem2WeightedAverage() {
@@ -147,20 +139,13 @@ export function Problem2WeightedAverage() {
     setState((p) => (p.activeGrab ? { ...p, grabs: [...p.grabs, p.activeGrab], activeGrab: null } : p))
   }
 
-  const slotsFilled = state.slots.filter(Boolean).length
-  const allPlaced = slotsFilled === 4
-  const formulaPrompt = state.selectedCard
-    ? 'Now tap an empty formula slot to place the card.'
-    : !allPlaced
-      ? 'Select a card, then tap an empty formula slot.'
-      : 'Now compute the expected value of one grab and enter it.'
+  const formulaPrompt =
+    'Pair each payout with its probability — $20 with 25% and $0 with 75% — then compute the expected value of one grab.'
 
   const runStep: WorkspaceStepDef = {
     id: 'run',
     title: 'Run the claw',
-    prompt: (
-      <QuestionPrompt>{`Drop the claw ${REQUIRED_GRABS} times and watch the payout tray fill up.`}</QuestionPrompt>
-    ),
+    prompt: `Drop the claw ${REQUIRED_GRABS} times. How much money do you think the claw will pick up if the claw is random?`,
     canAdvance: grabsDone,
     advanceHint: `Run all ${REQUIRED_GRABS} claw drops to continue.`,
     content: (
@@ -177,10 +162,6 @@ export function Problem2WeightedAverage() {
           </div>
         </div>
         <div className="l2-claw-side">
-          <p className="section-note">
-            Each grab is random: the small $20 zone is one quarter of the pit, so it wins about
-            1 in 4 tries; the three $0 zones win the rest. Run all {REQUIRED_GRABS} grabs.
-          </p>
           <div className="l2-claw-actions">
             <button
               type="button"
@@ -240,11 +221,7 @@ export function Problem2WeightedAverage() {
   const compressStep: WorkspaceStepDef = {
     id: 'compress',
     title: 'Compress & build the formula',
-    prompt: state.viewedCompression ? (
-      <QuestionPrompt>{formulaPrompt}</QuestionPrompt>
-    ) : (
-      <QuestionPrompt>Compress the pit to see how each outcome contributes payout × probability.</QuestionPrompt>
-    ),
+    prompt: state.viewedCompression ? formulaPrompt : 'Compress the pit.',
     action: state.viewedCompression ? (
       <button
         type="button"
@@ -303,10 +280,6 @@ export function Problem2WeightedAverage() {
             </>
           ) : (
             <>
-              <p className="section-note">
-                Pair each payout with its probability — $20 with 25% and $0 with 75% — then compute the
-                expected value of one grab.
-              </p>
               <FormulaBuilder
                 slots={state.slots}
                 selectedCard={state.selectedCard}
@@ -361,8 +334,12 @@ export function Problem2WeightedAverage() {
     <ProblemLayout
       problem={PROBLEM_2}
       problemNumber={4}
+      workspaceMinimalHeader
+      enclosedWorkspaceLayout
       feedback={session.feedback}
       completed={session.completed}
+      justCompleted={session.justCompleted}
+      streakResult={session.streakResult}
       revealedHintIds={session.revealedHintIds}
       onRevealHint={session.revealHint}
       nextProblemId="ev-l2-p2"
@@ -380,6 +357,7 @@ export function Problem2WeightedAverage() {
       demoFinalCta={DEMO_CTA}
       completionMessage="You ran the claw, watched the noisy tray, compressed the pit into contribution blocks, paired each payout with its probability, and computed the expected value."
       steps={steps}
+      onStepChange={session.clearFeedback}
     />
   )
 }

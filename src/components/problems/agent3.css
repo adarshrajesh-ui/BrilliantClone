@@ -142,6 +142,26 @@
   background: #eff6ff;
 }
 
+.diagnose-setup-context {
+  margin: 0 0 0.65rem;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.diagnose-setup-context-compact {
+  font-size: 0.82rem;
+}
+
+.diagnose-criteria {
+  width: min(100%, 42rem);
+  margin: 0 auto 0.5rem;
+}
+
+.diagnose-criteria .diagnose-checklist {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
 .diagnose-card-name {
   font-weight: 700;
 }
@@ -261,7 +281,7 @@
   .match-clear {
     grid-column: 2;
     justify-self: start;
-    min-height: 36px;
+    min-height: 44px;
   }
 
   .match-bank {

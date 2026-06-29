@@ -8,6 +8,35 @@
  */
 export type AttemptMode = 'graded' | 'corrected_resubmission' | 'practice_restart'
 
+/** Why the adaptive scheduler surfaced a practice question (see practiceThemes). */
+export type PracticeSelectionReason =
+  | 'due-review'
+  | 'cousin'
+  | 'weak-skill'
+  | 'mixed'
+  | 'new-skill'
+
+/**
+ * Lightweight, optional analytics payload attached to a Practice Mode attempt.
+ * Primitive-typed on purpose so the persistence/types layer stays free of any
+ * feature-module dependency; the metrics module narrows these as needed. Absent
+ * on non-practice (chapter) attempts, so reading code must treat it as optional.
+ */
+export interface PracticeAttemptMeta {
+  templateKind: string
+  difficulty: number
+  skillFamily: string
+  selectionReason: PracticeSelectionReason
+  isReview: boolean
+  scaffoldTier: string
+  hintCount: number
+  wasSkipped: boolean
+  /** ISO timestamp the question was shown (for time-on-task and review delay). */
+  questionStartedAt: string
+  /** ISO timestamp the graded answer was submitted. */
+  answeredAt: string
+}
+
 export interface ProblemAttempt {
   attemptId: string
   userId: string
@@ -24,6 +53,8 @@ export interface ProblemAttempt {
   mistakeType: string | null
   masteryTagsTested: string[]
   createdAt: string
+  /** Present only on Practice Mode attempts; powers the practice metrics. */
+  practice?: PracticeAttemptMeta
 }
 
 export interface ProblemHint {
@@ -77,11 +108,41 @@ export interface ProblemDefinition {
   mobileWorkspaceLayout?: string
 }
 
+/** One row of a contribution-style worked solution (value × probability …). */
+export interface WorkedSolutionRow {
+  /** Row label, e.g. an outcome name or "Expected value". */
+  label: string
+  /** The arithmetic for this step, e.g. "$8 × 1/4". */
+  expression: string
+  /** Optional running/result value for the row, e.g. "$2". */
+  value?: string
+}
+
+/**
+ * Optional structured explanation attached to a graded result so the Learning
+ * Coach can show a real concept recap + worked solution (correct) or a
+ * misconception-aware repair (incorrect) instead of repeating the prompt.
+ */
+export interface CheckResultExplanation {
+  /** Concept recap shown on a correct answer; never the raw prompt. */
+  conceptSummary?: string
+  /** Contribution rows shown after a correct answer. */
+  workedSolution?: WorkedSolutionRow[]
+  /** What the learner most likely did (wrong answers). */
+  whatHappened?: string
+  /** Why that approach is not right yet (wrong answers). */
+  whyItMatters?: string
+  /** The concrete next step to fix it (wrong answers). */
+  repairStep?: string
+}
+
 export interface CheckResult {
   isCorrect: boolean
   mistakeType: string | null
   feedback: string
   canComplete: boolean
+  /** Optional richer explanation used by generated practice feedback. */
+  explanation?: CheckResultExplanation
 }
 
 // CheckInput shapes for the three checkers that still live in

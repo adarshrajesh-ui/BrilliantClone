@@ -31,6 +31,9 @@ describe('humanizeMistakeType', () => {
   it('uses known friendly labels', () => {
     expect(humanizeMistakeType('picked_largest_payout')).toBe('Picked the biggest payout')
   })
+  it('uses friendly labels for hyphenated checker slugs', () => {
+    expect(humanizeMistakeType('picked-largest-payout')).toBe('Picked the biggest payout')
+  })
   it('humanizes unknown slugs', () => {
     expect(humanizeMistakeType('some_new_mistake')).toBe('Some New Mistake')
   })

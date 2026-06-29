@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 import { CHAPTER_PROBLEMS } from '../data/chapter'
+import { useStreak } from '../hooks/useStreak'
+import { getDisplayStreak } from '../lib/streakService'
 import type { ChapterProgress, Milestones } from '../types/chapter'
 
 const CHAPTER_PATH = '/chapter/expected-value-intro'
@@ -45,6 +47,11 @@ export function ChapterProgressCard({
   milestones,
   continueProblemId,
 }: ChapterProgressCardProps) {
+  // Single source of truth for the streak: the activity-driven streak service,
+  // not the now-frozen legacy `progress.streakCount`. `getDisplayStreak` decays
+  // a lapsed streak to 0 without persisting, so this never shows stale data.
+  const { streak } = useStreak()
+  const dayStreak = getDisplayStreak(streak)
   const total = CHAPTER_PROBLEMS.length
   const completedCount = progress.completedProblemIds.length
   const allComplete = completedCount === total
@@ -78,7 +85,7 @@ export function ChapterProgressCard({
           <span className="cpc-stat-label">Complete</span>
         </div>
         <div className="cpc-stat">
-          <span className="cpc-stat-value">🔥 {progress.streakCount}</span>
+          <span className="cpc-stat-value">🔥 {dayStreak}</span>
           <span className="cpc-stat-label">Day streak</span>
         </div>
         <div className="cpc-stat">

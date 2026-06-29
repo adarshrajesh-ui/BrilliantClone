@@ -1,65 +1,92 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { SyncWarningBanner } from './SyncWarningBanner'
 import { useAuth } from '../hooks/useAuth'
-import { TOTAL_PROBLEMS, getProblemMeta } from '../data/chapter'
+import { useStreak } from '../hooks/useStreak'
+import { getDisplayStreak } from '../lib/streakService'
+import { getLessonHeaderProgress } from '../data/chapter'
 
 export function Layout() {
-  const { user, signOut } = useAuth()
+  const { user, profile, isGuest, signOut } = useAuth()
+  const { streak } = useStreak()
+  // Honest, decay-aware display value: a lapsed streak reads 0 without waiting
+  // for the next activity to persist a reset.
+  const displayStreak = getDisplayStreak(streak)
   const location = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   const problemRouteMatch = location.pathname.match(/^\/chapter\/expected-value-intro\/problem\/([^/]+)/)
   const currentProblemId = problemRouteMatch ? decodeURIComponent(problemRouteMatch[1]) : undefined
-  const currentProblemMeta = currentProblemId ? getProblemMeta(currentProblemId) : undefined
-  const currentProblemNumber = currentProblemMeta ? currentProblemMeta.globalProblemIndex + 1 : 0
+  const lessonHeaderProgress = currentProblemId ? getLessonHeaderProgress(currentProblemId) : undefined
+  const lessonFillPercent = lessonHeaderProgress?.fillPercent ?? 0
+  const upcomingLessonDots = lessonHeaderProgress?.upcomingLessons ?? 0
   const lessonMode = !!problemRouteMatch
+
+  useEffect(() => {
+    if (!menuOpen) return
+
+    function handlePointerDown(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [menuOpen])
+
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname])
 
   return (
     <div className={`layout${lessonMode ? ' lesson-mode' : ''}`}>
       <SyncWarningBanner />
       {lessonMode ? (
-        <header className="header lesson-header" aria-label="Lesson progress">
+        <header className="header lesson-header" aria-label="Lesson position">
           <Link to="/chapter/expected-value-intro" className="lesson-close" aria-label="Close lesson">
             ×
           </Link>
-          <div
-            className="lesson-progress-track"
-            role="progressbar"
-            aria-label="Lesson progress"
-            aria-valuemin={0}
-            aria-valuemax={TOTAL_PROBLEMS}
-            aria-valuenow={currentProblemNumber}
-            aria-valuetext={
-              currentProblemNumber > 0
-                ? `Problem ${currentProblemNumber} of ${TOTAL_PROBLEMS}`
-                : `0 of ${TOTAL_PROBLEMS} problems`
-            }
-          >
-            {Array.from({ length: TOTAL_PROBLEMS }, (_, index) => {
-              const segmentNumber = index + 1
-              const segmentClass = [
-                'lesson-progress-segment',
-                segmentNumber <= currentProblemNumber ? 'lesson-progress-segment-active' : '',
-                segmentNumber === currentProblemNumber ? 'lesson-progress-segment-current' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')
-
-              return <span key={segmentNumber} className={segmentClass} aria-hidden="true" />
-            })}
+          <div className="lesson-progress">
+            <div
+              className="lesson-progress-track"
+              role="progressbar"
+              aria-label="Lesson position"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(lessonFillPercent)}
+              aria-valuetext={lessonHeaderProgress?.ariaValueText ?? 'Lesson progress unavailable'}
+            >
+              <span
+                className="lesson-progress-fill"
+                style={{ width: `${lessonFillPercent}%` }}
+                aria-hidden="true"
+              />
+            </div>
+            {upcomingLessonDots > 0 && (
+              <div className="lesson-progress-dots" aria-hidden="true">
+                {Array.from({ length: upcomingLessonDots }, (_, i) => (
+                  <span key={i} className="lesson-progress-dot" />
+                ))}
+              </div>
+            )}
           </div>
-          <div className="lesson-header-actions" aria-label="Lesson rewards">
-            <span className="lesson-reward" aria-label="15 experience points">
-              <strong>15</strong>
-              <span aria-hidden="true">✦</span>
-            </span>
-            <span className="lesson-reward lesson-reward-energy" aria-label="Streak energy">
-              <span aria-hidden="true">⚡</span>
-            </span>
-          </div>
+          <div className="lesson-header-actions" aria-hidden="true" />
         </header>
       ) : (
         <header className="header">
           <Link to="/home" className="brand">
-            Brilliant
+            Midpoint
           </Link>
           {user && (
             <>
@@ -72,7 +99,11 @@ export function Layout() {
                 </NavLink>
                 <NavLink
                   to="/chapter/expected-value-intro"
-                  className={({ isActive }) => (isActive ? 'active' : undefined)}
+                  className={({ isActive }) =>
+                    isActive || location.pathname.startsWith('/chapter/expected-value-intro')
+                      ? 'active'
+                      : undefined
+                  }
                 >
                   <span className="nav-icon" aria-hidden="true">
                     ◇
@@ -88,26 +119,64 @@ export function Layout() {
               </nav>
 
               <div className="header-actions">
-                <Link to="/profile" className="premium-pill">
-                  Go Premium
-                </Link>
-                <span className="status-pill" aria-label="Two day streak">
-                  <strong>2</strong>
+                <span
+                  className={`status-pill${displayStreak === 0 ? ' status-pill-muted' : ''}`}
+                  aria-label={
+                    displayStreak === 0
+                      ? 'No active streak yet'
+                      : `${displayStreak}-day streak`
+                  }
+                >
+                  <strong>{displayStreak}</strong>
                   <span aria-hidden="true">🔥</span>
                 </span>
-                <span className="status-pill status-pill-muted" aria-label="Zero gems">
-                  <strong>0</strong>
-                  <span aria-hidden="true">✧</span>
-                </span>
-                <button
-                  type="button"
-                  className="menu-button"
-                  aria-label="Sign out"
-                  title="Sign out"
-                  onClick={() => void signOut()}
-                >
-                  ☰
-                </button>
+                <div className="menu" ref={menuRef}>
+                  <button
+                    type="button"
+                    className="menu-button"
+                    aria-label="Account menu"
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpen}
+                    onClick={() => setMenuOpen((open) => !open)}
+                  >
+                    ☰
+                  </button>
+                  {menuOpen && (
+                    <div className="menu-dropdown" role="menu">
+                      <div className="menu-user">
+                        <span className="menu-user-name">{profile?.displayName || 'Guest'}</span>
+                        {isGuest ? (
+                          <>
+                            <span className="menu-user-role">Guest mode</span>
+                            <span className="menu-user-status">
+                              Progress saved on this device
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="menu-user-role">Signed in</span>
+                            {(profile?.email || user.email) && (
+                              <span className="menu-user-status">
+                                {profile?.email || user.email}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className="menu-item"
+                        role="menuitem"
+                        onClick={() => {
+                          void signOut()
+                          setMenuOpen(false)
+                        }}
+                      >
+                        Sign out
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}

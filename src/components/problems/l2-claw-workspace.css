@@ -107,6 +107,16 @@
   gap: 0.75rem 1rem;
 }
 
+/* In the enclosed (Brilliant-style) card the EV question lives in the card
+   header at the top. Size this step to its natural height so the centered flex
+   column (.ws-step) drops the compact claw, contribution blocks, formula, and
+   answer input toward the vertical middle of the rounded card instead of
+   stretching them to the top edge. */
+.problem-workspace[data-enclosed] .l2-claw-step-2 {
+  flex: 0 1 auto;
+  align-items: center;
+}
+
 /* Reserve the SCALED footprint so the compact claw + blocks sit side by side
    without clipping. The inner wrapper is scaled from its top-left; the outer box
    is sized to the post-scale dimensions. We only scale our own wrapper div — the

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { TeachingExplanation } from '../../types/problem'
+import type { TeachingExplanation, WorkedSolutionRow } from '../../types/problem'
 
 /**
  * Presentation-layer types for the reusable learning shell. These intentionally
@@ -66,6 +66,8 @@ export interface CoachFeedback {
   message?: string
   /** Short concept reinforcement shown on correct answers. */
   conceptSummary?: string
+  /** Contribution-style worked solution rows shown on correct answers. */
+  workedSolution?: WorkedSolutionRow[]
   /** Rich hand-written teaching shown on correct answers. */
   teaching?: TeachingExplanation
 }

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { ProfitMeter } from '../visuals/ProfitMeter'
 import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
-import { QuestionPrompt, type WorkspaceStepDef } from '../../features/learning-experience'
+import type { WorkspaceStepDef } from '../../features/learning-experience'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import { EV_L4_P3 } from '../../data/problems/ev-l4-p3'
@@ -17,6 +17,11 @@ const GAMES = [
   { id: 'A', payout: 9, cost: 7, profit: 2 },
   { id: 'B', payout: 6, cost: 3, profit: 3 },
 ]
+const BAR_MAX = Math.max(...GAMES.flatMap((g) => [g.payout, g.cost]))
+
+function barWidth(value: number): string {
+  return `${(value / BAR_MAX) * 100}%`
+}
 
 interface State {
   profitA: string
@@ -91,7 +96,7 @@ export function EvL4P3BetterGame() {
   const profitsStep: WorkspaceStepDef = {
     id: 'profits',
     title: 'Find each game\u2019s profit',
-    prompt: <QuestionPrompt>Work out each game{'\u2019'}s expected profit: payout − cost.</QuestionPrompt>,
+    prompt: 'Work out each game\u2019s expected profit: payout − cost.',
     status: checks.profits,
     canAdvance: checks.profits === 'correct',
     advanceHint: ADVANCE_HINT,
@@ -114,8 +119,8 @@ export function EvL4P3BetterGame() {
             return (
               <div key={g.id} className="game-card better-game-card">
                 <strong>Game {g.id}</strong>
-                <div className="bar-row"><span>Payout</span><div className="bar bar-payout" style={{ width: `${g.payout * 10}px` }}>${g.payout}</div></div>
-                <div className="bar-row"><span>Cost</span><div className="bar bar-cost" style={{ width: `${g.cost * 10}px` }}>${g.cost}</div></div>
+                <div className="bar-row"><span>Payout</span><div className="bar bar-payout" style={{ width: barWidth(g.payout) }}>${g.payout}</div></div>
+                <div className="bar-row"><span>Cost</span><div className="bar bar-cost" style={{ width: barWidth(g.cost) }}>${g.cost}</div></div>
                 <div className="better-game-profit-row">
                   <label className={`field-label better-game-profit-field${profitStatus[i] ? ` cell-status cell-status-${profitStatus[i]}` : ''}`}>
                     Expected profit
@@ -142,12 +147,7 @@ export function EvL4P3BetterGame() {
     id: 'choose',
     title: 'Pick the better game',
     status: checks.choice,
-    prompt: (
-      <>
-        <QuestionPrompt label="Question">Which is the better game for the player?</QuestionPrompt>
-        <p className="section-note">Then submit your choice.</p>
-      </>
-    ),
+    prompt: 'Which is the better game for the player?',
     action: (
       <button type="button" className="btn-secondary touch-target ws-step-check"
         disabled={session.submitting || state.choice === ''}
@@ -157,6 +157,13 @@ export function EvL4P3BetterGame() {
     ),
     content: (
       <div className="l4-better-step ws-compact">
+        <div className="better-game-recap" aria-label="Your computed profits">
+          <p className="section-note">
+            Game A expected profit: <strong>{state.profitA || '—'}</strong>
+            {' · '}
+            Game B expected profit: <strong>{state.profitB || '—'}</strong>
+          </p>
+        </div>
         <fieldset className="better-game-selector">
           <legend>Which is the better game?</legend>
           <div className="better-game-choices">
@@ -181,10 +188,11 @@ export function EvL4P3BetterGame() {
   const steps: WorkspaceStepDef[] = [profitsStep, chooseStep]
 
   return (
-    <ProblemLayout problem={EV_L4_P3} problemNumber={12} feedback={session.feedback} completed={session.completed}
+    <ProblemLayout problem={EV_L4_P3} problemNumber={12} workspaceMinimalHeader feedback={session.feedback} completed={session.completed} justCompleted={session.justCompleted} streakResult={session.streakResult}
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-7"
       restarted={session.restarted} onRestart={() => { reset(); setChecks(NO_CHECKS); session.restart() }} onReview={session.backToReview}
       attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
+      completionMessage="You found Game A keeps $2 and Game B keeps $3 — Game B is the better game."
       steps={steps} onStepChange={session.clearFeedback} />
   )
 }

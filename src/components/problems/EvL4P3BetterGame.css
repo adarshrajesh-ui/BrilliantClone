@@ -47,6 +47,14 @@
   height: clamp(96px, 16vh, 120px);
 }
 
+.better-game-recap {
+  margin: 0 0 0.75rem;
+}
+
+.better-game-recap .section-note {
+  margin: 0;
+}
+
 .better-game-selector {
   border: 1px solid var(--border, #e2e8f0);
   border-radius: 10px;

@@ -29,9 +29,11 @@ export function scheduleNextReview(args: {
   score: number
   practicedAt: string
   wasCorrect: boolean
+  /** A repeat of a recent mistake type pulls the retry forward (5 vs 10 min). */
+  repeatedMistake?: boolean
 }): string {
   if (!args.wasCorrect) {
-    return addMs(args.practicedAt, 10 * MINUTE)
+    return addMs(args.practicedAt, (args.repeatedMistake ? 5 : 10) * MINUTE)
   }
   return addMs(args.practicedAt, reviewIntervalMs(args.score))
 }
@@ -42,4 +44,22 @@ export function targetDifficultyForScore(score: number): number {
 
 export function isReviewDue(nextReviewAt: string, nowIso: string): boolean {
   return new Date(nextReviewAt).getTime() <= new Date(nowIso).getTime()
+}
+
+/**
+ * Amount of scaffolding a learner needs at a given mastery level. Ordered from
+ * most support to least: `guided` (<0.4) walks through the approach, `supported`
+ * (0.4–0.7) keeps hints on tap, `independent` (>0.7) removes the scaffold.
+ */
+export type ScaffoldTier = 'guided' | 'supported' | 'independent'
+
+export function scaffoldTierForScore(score: number): ScaffoldTier {
+  const clamped = clampScore(score)
+  if (clamped < 0.4) {
+    return 'guided'
+  }
+  if (clamped > 0.7) {
+    return 'independent'
+  }
+  return 'supported'
 }

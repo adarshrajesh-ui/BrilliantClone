@@ -210,7 +210,7 @@ export function DiceTray3D({
 
       {totalThrows >= 50 && (
         <p className="dt3-converge-note" aria-hidden="true">
-          The average sum is converging toward 7.
+          The average sum is settling as more rolls add up.
         </p>
       )}
     </div>

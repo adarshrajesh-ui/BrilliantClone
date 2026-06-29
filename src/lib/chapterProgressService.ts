@@ -30,23 +30,6 @@ function todayDateString() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function yesterdayDateString() {
-  const d = new Date()
-  d.setDate(d.getDate() - 1)
-  return d.toISOString().slice(0, 10)
-}
-
-function computeStreak(lastActiveDate: string | undefined, currentStreak: number) {
-  const today = todayDateString()
-  if (!lastActiveDate || lastActiveDate === today) {
-    return currentStreak || 1
-  }
-  if (lastActiveDate === yesterdayDateString()) {
-    return currentStreak + 1
-  }
-  return 1
-}
-
 function createDefaultProgress(userId: string): ChapterProgress {
   return normalizeChapterProgress(null, userId)
 }
@@ -133,10 +116,13 @@ export async function ensureChapterProgress(userId: string): Promise<ChapterProg
     }
 
     if (best.lastActiveDate !== today) {
+      // The daily streak is now owned by streakService and driven by genuine
+      // learning events — NOT by app-open. We still touch lastActiveDate so the
+      // doc/derived fields stay current, but streakCount is preserved as-is for
+      // backward-compat readers and never incremented here.
       return saveProgress({
         ...best,
         lastActiveDate: today,
-        streakCount: computeStreak(best.lastActiveDate, best.streakCount),
       })
     }
 
@@ -145,7 +131,8 @@ export async function ensureChapterProgress(userId: string): Promise<ChapterProg
   } catch (error) {
     const local = readLocalProgress(userId) ?? createDefaultLocalProgress(userId)
     if (local.lastActiveDate !== today) {
-      local.streakCount = computeStreak(local.lastActiveDate, local.streakCount)
+      // streakCount is no longer advanced on load (see streakService); only the
+      // last-active marker is refreshed.
       local.lastActiveDate = today
     }
     const normalized = normalizeChapterProgress(local, userId)

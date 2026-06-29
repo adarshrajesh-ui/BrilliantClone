@@ -6,7 +6,6 @@ import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import type { WorkspaceStepDef } from '../../features/learning-experience'
-import { QuestionPrompt } from '../../features/learning-experience'
 import type { CheckResult } from '../../types/problem'
 import {
   PROBLEM_EV_L1_P3,
@@ -71,7 +70,11 @@ export function EvL1P3CompareGames() {
 
   const selectedGames = Array.isArray(state.selectedGames) ? state.selectedGames : []
   const selectedSet = new Set(selectedGames)
-  const reveal = state.reveal || session.completed
+  const reveal =
+    state.reveal ||
+    session.completed ||
+    answerStatus === 'correct' ||
+    session.feedback?.canComplete === true
 
   const toggleGame = (game: EvL1P3Game) => {
     setState((prev) => {
@@ -85,13 +88,7 @@ export function EvL1P3CompareGames() {
   const steps: WorkspaceStepDef[] = [
     {
       id: 'fluency-check',
-      title: 'Pick the best long-run average',
-      prompt: (
-        <>
-          <QuestionPrompt>Which game has the highest long-run average?</QuestionPrompt>
-          <p>Select every game that ties for the highest expected value, then choose the reason.</p>
-        </>
-      ),
+      prompt: PROBLEM_EV_L1_P3.scenarioText,
       status: answerStatus,
       action: (
         <button
@@ -101,7 +98,6 @@ export function EvL1P3CompareGames() {
           onClick={() => {
             const result = checkEvL1P3({ selectedGames, reason: state.reason })
             setAnswerStatus(statusFromResult(result))
-            setState((p) => ({ ...p, reveal: true }))
             void session.handleCheck(
               result,
               'final',
@@ -118,6 +114,13 @@ export function EvL1P3CompareGames() {
           <div className="l1-compare-callout">
             <span>Key idea</span>
             <strong>Compare games by long-run average, not by biggest prize or win rate.</strong>
+          </div>
+
+          <div className="l1-select-instruction">
+            <h3>1. Select every game with the highest long-run average</h3>
+            <p className="l1-select-hint">
+              It can be a tie — tap all the games that share the highest average (more than one can be correct), then choose the reason below.
+            </p>
           </div>
 
           <div className="compare-cards l1-compare l1-fluency-cards" aria-label="Game options">
@@ -159,7 +162,7 @@ export function EvL1P3CompareGames() {
           {reveal && <div className="l1-shared-highest-badge">Game A + Game B: Highest EV</div>}
 
           <div className="l1-reason-panel">
-            <h3>Choose the best reason</h3>
+            <h3>2. Choose the best reason</h3>
             <div className="choice-column ws-options l1-reason-options">
               {REASONS.map((reason) => (
                 <button
@@ -187,8 +190,11 @@ export function EvL1P3CompareGames() {
     <ProblemLayout
       problem={PROBLEM_EV_L1_P3}
       problemNumber={3}
+      workspaceMinimalHeader
       feedback={session.feedback}
       completed={session.completed}
+      streakResult={session.streakResult}
+      justCompleted={session.justCompleted}
       revealedHintIds={session.revealedHintIds}
       onRevealHint={session.revealHint}
       nextProblemId="problem-2"

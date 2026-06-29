@@ -4,7 +4,7 @@ import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
-import { QuestionPrompt, type WorkspaceStepDef } from '../../features/learning-experience'
+import type { WorkspaceStepDef } from '../../features/learning-experience'
 import type { CheckResult } from '../../types/problem'
 import {
   PROBLEM_EV_L2_P3,
@@ -48,11 +48,12 @@ const NO_CHECKS: Checks = { valid: undefined, defectA: undefined, defectB: undef
 // real mistake, undefined for guard results (not yet answerable).
 function statusFromResult(result: CheckResult): StepStatus {
   if (result.isCorrect) return 'correct'
-  if (result.mistakeType === '') return undefined
+  if (!result.mistakeType) return undefined
   return 'incorrect'
 }
 
 const ADVANCE_HINT = 'Check this step and fix it to continue.'
+const SETUP_CONTEXT = 'Game setup: $20 with 25% chance, $4 with 25% chance, and $0 with 50% chance.'
 
 export function EvL2P3DiagnoseSetups() {
   const { state, setState, loaded, reset } = usePersistedProblemState<State>('ev-l2-p3', DEFAULT)
@@ -98,7 +99,7 @@ export function EvL2P3DiagnoseSetups() {
     {
       id: 'valid',
       title: 'Pick the valid EV formula',
-      prompt: <QuestionPrompt>Select the formula that is a valid, complete EV model.</QuestionPrompt>,
+      prompt: 'Select the formula that is a valid, complete EV model.',
       status: checks.valid,
       canAdvance: checks.valid === 'correct',
       advanceHint: ADVANCE_HINT,
@@ -114,12 +115,22 @@ export function EvL2P3DiagnoseSetups() {
       ),
       content: (
         <>
+          <p className="diagnose-setup-context section-note">{SETUP_CONTEXT}</p>
+          <div className="diagnose-criteria" aria-label="Valid EV checklist">
+            <ul className="diagnose-checklist">
+              {CRITERIA.map((c) => (
+                <li key={c}>{c}</li>
+              ))}
+            </ul>
+          </div>
           <div className="diagnose-cards">
             {FORMULAS.map((f) => (
               <button
                 key={f.id}
                 type="button"
                 className={`diagnose-card touch-target${state.valid === f.id ? ' diagnose-card-selected' : ''}`}
+                aria-pressed={state.valid === f.id}
+                aria-label={`Formula ${f.id}: ${f.expr}${state.valid === f.id ? ', selected as valid' : ''}`}
                 onClick={() => {
                   setState((p) => ({ ...p, valid: f.id }))
                   setChecks((p) => ({ ...p, valid: undefined }))
@@ -127,22 +138,20 @@ export function EvL2P3DiagnoseSetups() {
               >
                 <span className="diagnose-card-name">Formula {f.id}</span>
                 <span className="diagnose-card-expr">{f.expr}</span>
-                <ul className="diagnose-checklist">
-                  {CRITERIA.map((c) => (
-                    <li key={c}>{c}</li>
-                  ))}
-                </ul>
                 <span className="diagnose-pick">{state.valid === f.id ? 'Selected as valid ✓' : 'Tap to mark valid'}</span>
               </button>
             ))}
           </div>
+          <p className="sr-only" role="status" aria-live="polite">
+            {state.valid ? `Formula ${state.valid} selected as the valid model.` : 'No formula selected yet.'}
+          </p>
         </>
       ),
     },
     {
       id: 'diagnose-a',
       title: 'Diagnose Formula A',
-      prompt: <QuestionPrompt label="Question">What is wrong with Formula A?</QuestionPrompt>,
+      prompt: 'What is wrong with Formula A?',
       status: checks.defectA,
       canAdvance: checks.defectA === 'correct',
       advanceHint: ADVANCE_HINT,
@@ -158,6 +167,7 @@ export function EvL2P3DiagnoseSetups() {
       ),
       content: (
         <div className="diagnose-defect">
+          <p className="diagnose-setup-context diagnose-setup-context-compact section-note">{SETUP_CONTEXT}</p>
           <p className="diagnose-defect-label">Formula A — 20 + 4 + 0</p>
           <div className="choice-column ws-options">
             {DEFECTS.map((d) => (
@@ -165,6 +175,7 @@ export function EvL2P3DiagnoseSetups() {
                 key={d.id}
                 type="button"
                 className={`choice-btn touch-target ws-option${state.defectA === d.id ? ' choice-btn-selected' : ''}`}
+                aria-pressed={state.defectA === d.id}
                 onClick={() => {
                   setState((p) => ({ ...p, defectA: d.id }))
                   setChecks((p) => ({ ...p, defectA: undefined }))
@@ -174,19 +185,19 @@ export function EvL2P3DiagnoseSetups() {
               </button>
             ))}
           </div>
+          <p className="sr-only" role="status" aria-live="polite">
+            {state.defectA ? `Formula A diagnosis selected: ${state.defectA}.` : 'No Formula A diagnosis selected yet.'}
+          </p>
         </div>
       ),
     },
     {
       id: 'diagnose-b',
       title: 'Diagnose Formula B',
-      prompt: (
-        <>
-          <QuestionPrompt label="Question">What is wrong with Formula B?</QuestionPrompt>
-          Then check your diagnosis.
-        </>
-      ),
+      prompt: 'What is wrong with Formula B?',
       status: checks.defectB,
+      canAdvance: checks.defectB === 'correct',
+      advanceHint: ADVANCE_HINT,
       action: (
         <button
           type="button"
@@ -200,6 +211,7 @@ export function EvL2P3DiagnoseSetups() {
       content: (
         <>
           <div className="diagnose-defect">
+            <p className="diagnose-setup-context diagnose-setup-context-compact section-note">{SETUP_CONTEXT}</p>
             <p className="diagnose-defect-label">Formula B — 20 × 0.25 + 4 × 0.25</p>
             <div className="choice-column ws-options">
               {DEFECTS.map((d) => (
@@ -207,6 +219,7 @@ export function EvL2P3DiagnoseSetups() {
                   key={d.id}
                   type="button"
                   className={`choice-btn touch-target ws-option${state.defectB === d.id ? ' choice-btn-selected' : ''}`}
+                  aria-pressed={state.defectB === d.id}
                   onClick={() => {
                     setState((p) => ({ ...p, defectB: d.id }))
                     setChecks((p) => ({ ...p, defectB: undefined }))
@@ -216,6 +229,9 @@ export function EvL2P3DiagnoseSetups() {
                 </button>
               ))}
             </div>
+            <p className="sr-only" role="status" aria-live="polite">
+              {state.defectB ? `Formula B diagnosis selected: ${state.defectB}.` : 'No Formula B diagnosis selected yet.'}
+            </p>
           </div>
 
         </>
@@ -227,8 +243,11 @@ export function EvL2P3DiagnoseSetups() {
     <ProblemLayout
       problem={PROBLEM_EV_L2_P3}
       problemNumber={6}
+      workspaceMinimalHeader
       feedback={session.feedback}
       completed={session.completed}
+      justCompleted={session.justCompleted}
+      streakResult={session.streakResult}
       revealedHintIds={session.revealedHintIds}
       onRevealHint={session.revealHint}
       nextProblemId="problem-4"

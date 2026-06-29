@@ -14,9 +14,24 @@ export type SkillId =
   | 'risk-spread'
   | 'full-ev-model'
 
+export interface WorkedSolutionRow {
+  label: string
+  expression: string
+  value?: string
+}
+
+export interface CheckResultExplanation {
+  conceptSummary?: string
+  workedSolution?: WorkedSolutionRow[]
+  whatHappened?: string
+  whyItMatters?: string
+  repairStep?: string
+}
+
 export interface CheckResult {
   isCorrect: boolean
   mistakeType: string | null
   feedback: string
   canComplete: boolean
+  explanation?: CheckResultExplanation
 }

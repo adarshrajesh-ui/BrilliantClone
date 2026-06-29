@@ -85,9 +85,13 @@ export function EvL3P3MiniDeckTable() {
   const contribStatus: FieldStatus[] | undefined = showStatus
     ? state.rows.map((r, i) => tableNumericFieldStatus(r.contribution, EXPECTED_CONTRIBS[i]))
     : undefined
+  const evStatus: FieldStatus | undefined = showStatus
+    ? tableNumericFieldStatus(state.evAnswer, EV)
+    : undefined
 
   const rowsDone = state.rows.map((r, i) => rowComplete(r, i))
   const allRowsDone = rowsDone.every(Boolean)
+  const canSubmit = allRowsDone && state.evAnswer.trim() !== ''
   const activeRowValue = state.activeRow !== null ? VALUES[state.activeRow] : null
 
   const update = (i: number, field: keyof Row, val: string) =>
@@ -103,31 +107,34 @@ export function EvL3P3MiniDeckTable() {
     {
       id: 'deck',
       title: 'Inspect the dealt mini-deck',
-      prompt: 'Ten cards are dealt and grouped by value. Count how many cards share each value (Aces = 1; J, Q, K = 10).',
+      prompt: 'Count how many cards share each value.',
       content: (
-        <div className="ws-visual">
-          <CardDealScene
-            cards={MINI_DECK_L3P3}
-            groups={MINI_DECK_L3P3_GROUPS}
-            showCounts
-            visualCap={4}
-            highlightValue={activeRowValue}
-            caption="One draw from the 10-card mini deck"
-          />
-          {session.completed && <EvBadge value={EV} />}
-        </div>
+        <>
+          <div className="ws-visual">
+            <CardDealScene
+              cards={MINI_DECK_L3P3}
+              groups={MINI_DECK_L3P3_GROUPS}
+              showCounts
+              visualCap={4}
+              highlightValue={activeRowValue}
+              caption="One draw from the 10-card mini deck"
+            />
+            {session.completed && <EvBadge value={EV} />}
+          </div>
+          <p className="section-note tap-hint">Ten cards are dealt and grouped by value. Aces count as 1; J, Q, K count as 10.</p>
+        </>
       ),
     },
     {
       id: 'table',
       title: 'Build the table and find the EV',
-      prompt: 'For each value fill count, probability (count ÷ 10) and contribution (value × probability), then add the contributions for the expected value.',
+      prompt: 'Fill in the table, then find the expected value.',
       action: (
-        <button type="button" className="btn-secondary touch-target" disabled={session.submitting}
+        <button type="button" className="btn-secondary touch-target" disabled={session.submitting || !canSubmit}
           onClick={() => void session.handleCheck(
             checkMiniDeck({ rows: state.rows, evAnswer: state.evAnswer }),
             'final', formatRows(state.rows), formatRows(state.rows),
-          )}>Submit answer</button>
+          )}>{session.submitting ? 'Saving…' : 'Submit answer'}</button>
       ),
       content: (
         <div className="mini-deck-workspace">
@@ -182,9 +189,9 @@ export function EvL3P3MiniDeckTable() {
                   </tbody>
                 </table>
               </div>
-              <label className="field-label mini-deck-ev-field">Expected value
+              <label className={`field-label mini-deck-ev-field${evStatus ? ` cell-status cell-status-${evStatus}` : ''}`}>Expected value per draw
                 <input className="touch-input" value={state.evAnswer} inputMode="decimal"
-                  aria-label="Expected value"
+                  aria-label="Expected value of one random card drawn from the mini deck"
                   onChange={(e) => setState((p) => ({ ...p, evAnswer: e.target.value }))} />
               </label>
             </div>
@@ -198,10 +205,11 @@ export function EvL3P3MiniDeckTable() {
   ]
 
   return (
-    <ProblemLayout problem={EV_L3_P3} problemNumber={9} feedback={session.feedback} completed={session.completed}
+    <ProblemLayout problem={EV_L3_P3} problemNumber={8} workspaceMinimalHeader feedback={session.feedback} completed={session.completed} justCompleted={session.justCompleted} streakResult={session.streakResult}
       revealedHintIds={session.revealedHintIds} onRevealHint={session.revealHint} nextProblemId="problem-5"
       restarted={session.restarted} onRestart={() => { reset(); session.restart() }} onReview={session.backToReview}
       attemptCount={session.finalAttemptCount} lastSubmittedAnswer={session.lastSubmittedAnswer} reviewHintUsed={session.reviewHintUsed}
-      steps={steps} />
+      completionMessage="You built a full card table and used it to find the expected value of one draw."
+      steps={steps} onStepChange={session.clearFeedback} />
   )
 }

@@ -73,7 +73,7 @@ export function ExpandedCoursePathway({
             </span>
             <span>
               <i aria-hidden="true" />
-              <strong>{totalProblems}</strong> Exercises
+              <strong>{totalProblems}</strong> Problems
             </span>
           </div>
 

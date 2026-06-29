@@ -13,7 +13,7 @@ export const PROBLEM_1: CanonicalDefinition = {
   concept: 'Expected value is the average outcome over many repetitions of a random process.',
   difficulty: 1,
   scenarioText:
-    'Pick up two dice and throw them into the tray. Each roll lands on some sum from 2 to 12. Throw the pair many times and watch where the average sum per roll settles.',
+    'Roll two dice many times. Each roll gives a sum from 2 to 12. Watch where the average sum per roll tends to move as the rolls add up.',
   visualType: 'dice-tray',
   interactionType: 'simulate-and-predict',
   givenData: {
@@ -30,21 +30,21 @@ export const PROBLEM_1: CanonicalDefinition = {
   mistakeRules: [
     { mistakeType: 'chose-extreme-outcome', feedback: 'You picked a single extreme sum (2 or 12). Those are the rarest results, not the average — expected value is what the sum averages to over many rolls.' },
     { mistakeType: 'used-single-die-average', feedback: 'That is the average of ONE die. With two dice the averages add: 3.5 + 3.5 = 7. Aim for the average of the sum, not a single die.' },
-    { mistakeType: 'assumed-sample-equals-ev', feedback: 'That looks like the sample average you happened to roll. The theoretical long-run average sum is exactly 7 — keep rolling and watch the line settle toward it.' },
+    { mistakeType: 'assumed-sample-equals-ev', feedback: 'That looks like the sample average you happened to roll. The theoretical long-run average sum is exactly 7 — keep rolling and watch the line approach it.' },
   ],
   feedback: {
-    correct: 'Correct — 7 is the long-run average sum. Each die averages 3.5, so the two add to 3.5 + 3.5 = 7. The sums 2..12 are not equally likely; 7 is the most likely sum, so the average per roll settles on 7.',
+    correct: 'Correct — the long-run average sum is 7. Each die averages 3.5, so two dice average 3.5 + 3.5 = 7. 7 also happens to be the most common sum, but the average comes from all possible rolls (2–12), not just the peak.',
   },
   teachingExplanation: {
     title: 'Why this makes sense',
     body: [
       'A single roll shows one sum between 2 and 12 — but expected value is not about one roll. It is the average sum per roll if you threw the pair thousands of times.',
-      'Each fair die averages (1 + 2 + 3 + 4 + 5 + 6) ÷ 6 = 3.5. With two dice the averages simply add: 3.5 + 3.5 = 7. And the sums are not equally likely — there is one way to roll a 2 (1+1) but six ways to roll a 7, so a histogram of sums peaks at 7. The running-average line wobbles early, then hugs 7.',
+      'Each fair die averages (1 + 2 + 3 + 4 + 5 + 6) ÷ 6 = 3.5. With two dice the averages simply add: 3.5 + 3.5 = 7. The sums are not equally likely — there is one way to roll a 2 (1+1) but six ways to roll a 7, so a histogram of sums peaks at 7. The running-average line wobbles early, then approaches 7.',
     ],
     takeaway: 'Expected value is the long-run average per trial; for two dice the average sum is 7.',
   },
   hints: [
-    { id: 'p1-h1', label: 'Watch the line', content: 'Watch the running-average graph after each roll. Early on it jumps around; after many rolls it settles toward one value.' },
+    { id: 'p1-h1', label: 'Watch the line', content: 'Watch the running-average graph after each roll. Early on it jumps around; after many rolls it tends to move toward one value.' },
     { id: 'p1-h2', label: 'Average one die', content: 'One fair die averages (1 + 2 + 3 + 4 + 5 + 6) ÷ 6 = 3.5.' },
     { id: 'p1-h3', label: 'Add the dice', content: 'Two dice average 3.5 + 3.5 = 7, and 7 is the most common sum (the histogram peaks there).' },
   ],

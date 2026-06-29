@@ -7,7 +7,7 @@ import { PokerChipLoader } from '../PokerChipLoader'
 import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
-import { QuestionPrompt, usePrefersReducedMotion } from '../../features/learning-experience'
+import { usePrefersReducedMotion } from '../../features/learning-experience'
 import type { WorkspaceStepDef } from '../../features/learning-experience'
 import type { CheckResult } from '../../types/problem'
 import { PROBLEM_7, checkSameAverageDifferentRide } from '../../data/problems/problem-7'
@@ -284,16 +284,12 @@ export function Problem7WholeEVModel() {
     {
       id: 'play',
       title: 'Run both machines',
-      prompt: (
-        <>
-          Watch how differently the two machines behave across many runs.
-          <QuestionPrompt>Start the simulation to run both machines together 20 times, then reset or keep testing manually.</QuestionPrompt>
-        </>
-      ),
+      prompt: 'Run both machines 20 times.',
       canAdvance: gateMet,
       advanceHint: playAdvanceHint,
       content: (
         <div className="l5p1-play">
+          <p className="section-note">Start the simulation to run both machines together 20 times, then reset or keep testing manually.</p>
           <div className="l5p1-sim-controls">
             <button
               type="button"
@@ -365,18 +361,18 @@ export function Problem7WholeEVModel() {
             </div>
           </div>
 
-          <p className="l5p1-live" role="status" aria-live="polite">
-            {state.printer.trials > 0 || state.slot.trials > 0
-              ? `Money Printer averages $${printerAvg.toFixed(2)} over ${state.printer.trials} runs. Jackpot Slot averages $${slotAvg.toFixed(2)} over ${state.slot.trials} runs.`
-              : 'Run both machines to compare their running averages.'}
-          </p>
+          {(state.printer.trials > 0 || state.slot.trials > 0) && (
+            <p className="l5p1-live" role="status" aria-live="polite">
+              {`Money Printer averages $${printerAvg.toFixed(2)} over ${state.printer.trials} runs. Jackpot Slot averages $${slotAvg.toFixed(2)} over ${state.slot.trials} runs.`}
+            </p>
+          )}
         </div>
       ),
     },
     {
       id: 'questions',
       title: 'Same average, different ride?',
-      prompt: <QuestionPrompt>Answer all three questions, then submit.</QuestionPrompt>,
+      prompt: 'Answer all three questions.',
       status: checks.questions,
       action: (
         <button
@@ -498,8 +494,11 @@ export function Problem7WholeEVModel() {
     <ProblemLayout
       problem={PROBLEM_7}
       problemNumber={12}
+      workspaceMinimalHeader
       feedback={session.feedback}
       completed={session.completed}
+      justCompleted={session.justCompleted}
+      streakResult={session.streakResult}
       revealedHintIds={session.revealedHintIds}
       onRevealHint={session.revealHint}
       restarted={session.restarted}

@@ -11,7 +11,7 @@
   --ws-gap: clamp(0.9rem, 2.2vw, 1.35rem);
   --ws-pad-x: clamp(0.9rem, 3vw, 1.35rem);
   --ws-radius: 18px;
-  --ws-brilliant-green: #2fba6f;
+  --ws-brilliant-green: var(--color-success, #2fba6f);
   --ws-brilliant-red: #d85b63;
   --ws-ink: #303030;
 }
@@ -72,7 +72,7 @@
   font-size: 0.85rem;
   color: #6b7280;
   text-decoration: none;
-  visibility: hidden;
+  display: none;
 }
 .ws-back:hover {
   color: var(--primary);
@@ -212,11 +212,180 @@
   display: none;
 }
 
+/* =========================================================================
+   Enclosed (Brilliant-style) layout: the question, the simulation/answer
+   space, and the Check button all live INSIDE one enlarged white card. The
+   page-level close (×) stays outside it in the global lesson header.
+   ========================================================================= */
+.problem-workspace[data-enclosed] .ws-body {
+  padding: 0.4rem var(--ws-pad-x) 0.7rem;
+}
+.problem-workspace[data-enclosed] .ws-card {
+  flex-direction: column;
+  width: min(100%, 64rem);
+  border-radius: 28px;
+  overflow: hidden;
+}
+/* Question lives at the top of the card. */
+.ws-card-header {
+  flex: 0 0 auto;
+  width: 100%;
+  padding: clamp(1.1rem, 3vw, 2.25rem) clamp(1.1rem, 4vw, 3rem) 0.25rem;
+  text-align: center;
+}
+.ws-card-header .ws-title {
+  font-size: clamp(1.15rem, 2.4vw, 1.6rem);
+}
+.ws-card-header .ws-scenario,
+.ws-card-header .ws-prompt {
+  max-width: 46rem;
+}
+/* The simulation / answer space fills the middle and scrolls within the card. */
+.ws-card-steps {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.problem-workspace[data-enclosed] .ws-card-steps .ws-step {
+  padding: clamp(0.85rem, 3vw, 2rem);
+}
+/* Check button: centered, pinned as low as possible inside the card. */
+.ws-card-action {
+  flex: 0 0 auto;
+  width: 100%;
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  padding: 0.75rem clamp(1.1rem, 4vw, 3rem) clamp(1.1rem, 3vw, 1.75rem);
+}
+.ws-card-action > :is(button, a) {
+  min-width: 14rem;
+  min-height: 48px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--ws-ink);
+  color: #ffffff;
+  font-weight: 800;
+  text-align: center;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.24);
+}
+.ws-card-action > :is(button, a):disabled {
+  background: #eeeeee;
+  color: #b7b7b7;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.problem-workspace[data-enclosed][data-result='correct'] .ws-card-action > :is(button, a):not(:disabled) {
+  background: var(--ws-brilliant-green);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+}
+.problem-workspace[data-enclosed][data-result='incorrect'] .ws-card-action > :is(button, a):not(:disabled) {
+  background: var(--ws-ink);
+}
+
+/* =========================================================================
+   Correct full-problem solve — celebratory success treatment.
+   The rounded card border lights up in the brand green and a soft green glow
+   rises from the lower-middle, underneath the card, fading up through the
+   edges. Scoped to [data-solved] so an INTERMEDIATE per-step "correct" never
+   gets the full celebration (it keeps the lighter [data-result='correct'] card
+   border only). Placed after the enclosed rules so equal-specificity selectors
+   win on source order.
+   ========================================================================= */
+.problem-workspace[data-solved] .ws-card {
+  border-color: var(--ws-brilliant-green);
+  box-shadow:
+    0 0 0 1.5px var(--ws-brilliant-green),
+    0 22px 55px -14px color-mix(in srgb, var(--ws-brilliant-green) 55%, transparent);
+}
+.problem-workspace[data-solved] .ws-body {
+  /* Extra bottom room so the glow has a strip to live in beneath the card. */
+  padding: clamp(0.7rem, 2vw, 1.35rem) var(--ws-pad-x) clamp(1.4rem, 4vw, 2.8rem);
+  /* Green light from the lower-middle, behind the card, fading upward. The
+     opaque white card masks the centre, so the glow reads as a halo around the
+     card — strongest underneath, softening toward the top edges. */
+  background: radial-gradient(
+    135% 108% at 50% 116%,
+    color-mix(in srgb, var(--ws-brilliant-green) 48%, transparent) 0%,
+    color-mix(in srgb, var(--ws-brilliant-green) 24%, transparent) 30%,
+    color-mix(in srgb, var(--ws-brilliant-green) 9%, transparent) 56%,
+    transparent 80%
+  );
+}
+
+/* The in-card Check is spent once solved — drop it so the card shows only the
+   question + visual (the bottom bar owns Why?/Continue). */
+.problem-workspace[data-solved] .ws-card-action {
+  display: none;
+}
+
+/* Bottom controls collapse to the centered Why? + Continue pair. Previous and
+   the spent Check/hint controls are hidden; what remains centres as a group. */
+.problem-workspace[data-solved] .ws-side-actions,
+.problem-workspace[data-solved] .ws-nav {
+  flex: 0 0 auto;
+}
+.problem-workspace[data-solved] .ws-controls {
+  gap: 0.75rem;
+}
+.problem-workspace[data-solved] .ws-primary-action,
+.problem-workspace[data-solved] .ws-prev {
+  display: none;
+}
+.problem-workspace[data-solved] .ws-hint-toggle:not(.ws-why-toggle) {
+  display: none;
+}
+
+/* Why?: a calm gray pill, sized to sit beside Continue. */
+.problem-workspace[data-solved] .ws-why-toggle {
+  min-height: 44px;
+  padding: 0.5rem 1.3rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: #eceff2;
+  border-color: #e3e6ea;
+  color: #4b5563;
+}
+.problem-workspace[data-solved] .ws-why-toggle:hover {
+  background: #e2e6eb;
+  color: #1f2937;
+}
+
+/* Continue: the prominent green pill from the screenshot. */
+.problem-workspace[data-solved] .ws-next {
+  min-width: 11rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.6rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ws-brilliant-green);
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+}
+.problem-workspace[data-solved] .ws-next:hover {
+  background: color-mix(in srgb, var(--ws-brilliant-green) 90%, #000000);
+  text-decoration: none;
+}
+.problem-workspace[data-solved] .ws-next:disabled {
+  background: #e6e7e9;
+  color: #b7b7b7;
+  box-shadow: none;
+}
+
 /* ---- Sticky bottom action bar ---- */
 .ws-actionbar {
   flex: 0 0 auto;
   position: sticky;
   bottom: 0;
+  z-index: 5;
   background: #ffffff;
   border-top: 1px solid #eceef0;
   padding: 0.45rem var(--ws-pad-x) max(0.45rem, env(safe-area-inset-bottom));
@@ -254,7 +423,7 @@
   justify-content: flex-start;
 }
 .ws-hint-toggle {
-  min-height: 34px;
+  min-height: 44px;
   font-size: 0.78rem;
   font-weight: 700;
   white-space: nowrap;
@@ -366,7 +535,32 @@
   color: #1f2937;
   font-size: 1.2rem;
   line-height: 1;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0.25rem;
+}
+
+.problem-workspace :is(
+  .ws-hint-toggle,
+  .ws-prev,
+  .ws-next,
+  .ws-primary-action > button,
+  .ws-primary-action > a,
+  .ws-card-action > button,
+  .ws-card-action > a,
+  .ws-modal-close,
+  .ws-option,
+  .match-slot,
+  .match-clear,
+  .diagnose-card,
+  .l5-option,
+  .l5p1-option,
+  .btn-choice,
+  .game-card,
+  .bucket
+):focus-visible {
+  outline: 3px solid var(--focus-ring, color-mix(in srgb, var(--primary) 45%, #ffffff));
+  outline-offset: 3px;
 }
 
 .ws-modal-body :last-child {
@@ -574,6 +768,14 @@
     overflow: visible;
     border-radius: 18px;
   }
+  .problem-workspace[data-enclosed] .ws-card {
+    width: 100%;
+    overflow: visible;
+    border-radius: 18px;
+  }
+  .problem-workspace[data-enclosed] .ws-card-steps {
+    overflow: visible;
+  }
   .ws-step {
     gap: 0.65rem;
     overflow: visible;
@@ -678,6 +880,37 @@
   }
 }
 
+/* Keep the solved Why?/Continue pair centered on phones, where the base mobile
+   rules otherwise stretch the nav full-width and split the controls. */
+@media (max-width: 768px) {
+  .problem-workspace[data-solved] .ws-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .problem-workspace[data-solved] .ws-side-actions {
+    flex: 0 0 auto;
+    justify-content: center;
+  }
+  .problem-workspace[data-solved] .ws-nav {
+    width: auto;
+    flex: 0 0 auto;
+    justify-content: center;
+  }
+  .problem-workspace[data-solved] .ws-next-wrap {
+    flex: 0 0 auto;
+  }
+}
+
+/* Phones: let horizontally-fanned card/dice visuals (e.g. the DeckSpread fan)
+   flow instead of being hard-clipped by the desktop .ws-visual overflow:hidden.
+   Page scroll is already enabled <=768px, so this only relaxes the clip at
+   phone widths; desktop keeps overflow:hidden. */
+@media (max-width: 480px) {
+  .ws-visual {
+    overflow: visible;
+  }
+}
+
 /* Very narrow phones (≤390px): keep everything single-column and tappable. */
 @media (max-width: 390px) {
   .ws-header-top {
@@ -689,5 +922,16 @@
   .ws-actionbar {
     padding-left: 0.65rem;
     padding-right: 0.65rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .problem-workspace *,
+  .problem-workspace *::before,
+  .problem-workspace *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
   }
 }

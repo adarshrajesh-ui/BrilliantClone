@@ -1,4 +1,4 @@
-import type { CheckResult, TeachingExplanation } from '../../types/problem'
+import type { CheckResult, TeachingExplanation, WorkedSolutionRow } from '../../types/problem'
 import type { CoachFeedback, CoachTone } from './types'
 
 /**
@@ -50,6 +50,10 @@ export function humanizeMistakeType(mistakeType: string | null | undefined): str
   if (MISTAKE_LABELS[mistakeType]) {
     return MISTAKE_LABELS[mistakeType]
   }
+  const normalized = mistakeType.replace(/-/g, '_')
+  if (MISTAKE_LABELS[normalized]) {
+    return MISTAKE_LABELS[normalized]
+  }
   return mistakeType
     .replace(/[-_]+/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase())
@@ -63,6 +67,8 @@ export interface CoachFeedbackOptions {
   nextActionText?: string
   /** Concept reinforcement shown on a correct answer. */
   conceptSummary?: string
+  /** Worked solution rows shown on a correct answer. */
+  workedSolution?: WorkedSolutionRow[]
   /** Rich teaching copy shown on a correct answer. */
   teaching?: TeachingExplanation
 }
@@ -85,6 +91,7 @@ export function checkResultToCoachFeedback(
       title: 'Correct',
       message: result.feedback,
       conceptSummary: options.conceptSummary,
+      workedSolution: options.workedSolution,
       teaching: options.teaching,
     }
   }

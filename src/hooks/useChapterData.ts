@@ -5,6 +5,9 @@ import { ensureChapterProgress } from '../lib/chapterProgressService'
 import { ensureMilestones } from '../lib/milestonesService'
 import { evaluateMastery } from '../lib/masteryService'
 import { getFirestoreErrorMessage } from '../lib/authErrors'
+import { readLocalProgress } from '../lib/localProgressStore'
+import { normalizeChapterProgress } from '../core/persistence/migration'
+import { TOTAL_PROBLEMS } from '../data/chapter'
 import type { ChapterProgress, Milestones } from '../types/chapter'
 
 interface ChapterState {
@@ -37,14 +40,23 @@ export function useChapterData() {
       return
     }
 
-    setState((prev) => ({ ...prev, loading: true, error: null }))
+    // Seed from the on-device copy so a same-device revisit knows completion
+    // status immediately, before the Firestore round-trip. This lets a finished
+    // problem render its review/retry view without first flashing the workspace.
+    const seeded = readLocalProgress(user.uid)
+    setState((prev) => ({
+      ...prev,
+      progress: seeded ? normalizeChapterProgress(seeded, user.uid) : prev.progress,
+      loading: true,
+      error: null,
+    }))
 
     try {
       const [progress] = await Promise.all([
         ensureChapterProgress(user.uid),
         ensureMilestones(user.uid),
       ])
-      if (progress.completedProblemIds.length === 8) {
+      if (progress.completedProblemIds.length === TOTAL_PROBLEMS) {
         await evaluateMastery(user.uid)
       }
       const [updatedProgress, updatedMilestones] = await Promise.all([

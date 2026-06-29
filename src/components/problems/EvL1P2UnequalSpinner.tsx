@@ -6,7 +6,6 @@ import { ProblemLayout } from '../lesson/ProblemLayout'
 import { useProblemSession } from '../../hooks/useProblemSession'
 import { usePersistedProblemState } from '../../hooks/usePersistedProblemState'
 import type { DemoStepConfig, WorkspaceStepDef } from '../../features/learning-experience'
-import { QuestionPrompt } from '../../features/learning-experience'
 import './l1-workspace.css'
 import { PROBLEM_EV_L1_P2, checkEvL1P2, evL1P2SpinOutcome } from '../../data/problems/ev-l1-p2'
 
@@ -105,12 +104,7 @@ export function EvL1P2UnequalSpinner() {
     {
       id: 'predict',
       title: 'Predict the long-run average',
-      prompt: (
-        <>
-          <QuestionPrompt>Which average payout per spin do you expect?</QuestionPrompt>
-          <p>Pick a prediction, then submit it.</p>
-        </>
-      ),
+      prompt: 'Which average payout per spin do you expect?',
       canAdvance: state.predictionSubmitted,
       advanceHint: 'Submit a prediction to continue.',
       content: (
@@ -121,7 +115,11 @@ export function EvL1P2UnequalSpinner() {
                 key={c}
                 type="button"
                 className={`choice-btn ws-option touch-target${state.prediction === c ? ' choice-btn-selected' : ''}`}
-                onClick={() => setState((p) => ({ ...p, prediction: c }))}
+                aria-pressed={state.prediction === c}
+                onClick={() => {
+                  setState((p) => ({ ...p, prediction: c }))
+                  session.clearFeedback()
+                }}
                 disabled={state.predictionSubmitted}
               >
                 ${c}
@@ -152,12 +150,7 @@ export function EvL1P2UnequalSpinner() {
     {
       id: 'spin',
       title: 'Spin and observe',
-      prompt: (
-        <>
-          <QuestionPrompt>Spin many times and watch the average settle.</QuestionPrompt>
-          <p>{state.totalSpins}/100 spins</p>
-        </>
-      ),
+      prompt: 'Spin many times and watch the average settle.',
       canAdvance: state.totalSpins >= 100,
       advanceHint: 'Run at least 100 spins to continue.',
       content: (
@@ -193,7 +186,7 @@ export function EvL1P2UnequalSpinner() {
               )}
             </div>
             <div className="l1-graph">
-              <RunningAverageGraph averages={state.runningAverages} target={5} maxY={20} />
+              <RunningAverageGraph averages={state.runningAverages} target={5} maxY={20} showTarget={session.completed} />
             </div>
           </div>
           <p className="sr-only" aria-live="polite">{state.liveMessage}</p>
@@ -203,12 +196,7 @@ export function EvL1P2UnequalSpinner() {
     {
       id: 'identify',
       title: 'Identify the long-run average',
-      prompt: (
-        <>
-          <QuestionPrompt>What is the long-run average per spin?</QuestionPrompt>
-          <p>Enter your answer, then submit it.</p>
-        </>
-      ),
+      prompt: 'What is the long-run average per spin?',
       action: (
         <button
           type="button"
@@ -249,8 +237,11 @@ export function EvL1P2UnequalSpinner() {
     <ProblemLayout
       problem={PROBLEM_EV_L1_P2}
       problemNumber={2}
+      workspaceMinimalHeader
       feedback={session.feedback}
       completed={session.completed}
+      justCompleted={session.justCompleted}
+      streakResult={session.streakResult}
       revealedHintIds={session.revealedHintIds}
       onRevealHint={session.revealHint}
       nextProblemId="ev-l1-p3"
@@ -267,6 +258,7 @@ export function EvL1P2UnequalSpinner() {
       demoFinalCta={DEMO_CTA}
       completionMessage="You predicted, ran 100+ spins on the 25/75 spinner, and identified $5 as the long-run average."
       steps={steps}
+      onStepChange={session.clearFeedback}
     />
   )
 }

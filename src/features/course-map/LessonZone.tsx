@@ -44,7 +44,7 @@ export function LessonZone({ zone, continueLabel, problemHref }: LessonZoneProps
         href={problemHref(targetHole.problemId)}
         continueLabel={continueLabel}
       />
-      <ol className="coursemap-exercises" aria-label={`${zone.title} exercises`}>
+      <ol className="coursemap-exercises" aria-label={`${zone.title} problems`}>
         {zone.holes.map((hole) => {
           const stateLabel = exerciseStateLabel(hole)
 
