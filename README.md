@@ -2,7 +2,7 @@
 
 A learn-by-doing web app that teaches expected value through 14 visual, interactive problems across 5 lessons, with AI-generated adaptive practice layered on learning-science principles.
 
-**Live app:** _Pending deployment — after `npm run deploy`, paste your Firebase Hosting URL here (e.g. `https://<project-id>.web.app`)._
+**Live app:** **https://expected-value-lab.web.app/**
 
 **Decision record / BrainLift:** see [`BrainLift.md`](./BrainLift.md) for the reasoning behind the AI-first build process and the app-design decisions.
 
@@ -27,7 +27,7 @@ The chapter "Expected Value" is built in three deliberate phases:
 | 5 | 14 problems (5 lessons) with completion rules, mistake types, hints, feedback | Done |
 | 6 | Persistence: current problem, attempts, hints, mastery, streak, milestones | Done |
 | 7 | Mobile pass: tap-to-select/place, 44px touch targets | Done |
-| 8 | Deploy: Firebase Hosting + test checklist | Ready — live URL pending |
+| 8 | Deploy: Firebase Hosting + test checklist | Done |
 | 9 | Phase 2 — AI practice generation (server-side Cloud Functions, OpenAI, daily quota, difficulty matrix, deterministic fallback) | Done |
 | 10 | Phase 3 — Adaptive engine: per-skill mastery, spaced-repetition scheduler, interleaving, difficulty scaffolding | Done |
 
