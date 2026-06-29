@@ -2,6 +2,8 @@ Midpoint - MVP PRD Page 1
 PRD
 Midpoint: A learn-by-doing MVP for one introductory probability chapter
 
+> **Historical scope:** This PRD describes a **15-problem** chapter (5 lessons × 3). The shipped app has **14 problems** (3+3+2+3+3). See the [README](./README.md) for the current build.
+
 This PRD edit is planning/spec only. No application code was changed.
 
 PRD change summary (2026-06-24 — no-scroll Brilliant-like problem workspace)
