@@ -267,6 +267,8 @@ code {
 
   .lesson-completion-strip {
     grid-template-columns: auto 1fr;
+    gap: 0.5rem 0.65rem;
+    padding: 0.6rem 0.7rem;
   }
 
   .lesson-completion-xp,
@@ -404,6 +406,10 @@ code {
   border-radius: 0.85rem;
   background: #fff;
   box-shadow: 0 12px 32px rgba(17, 24, 39, 0.12);
+}
+
+.menu-nav-mobile {
+  display: none;
 }
 
 .menu-user {
@@ -1833,6 +1839,26 @@ code {
   color: #6b7280;
 }
 
+@media (max-width: 640px) {
+  .practice-given-data {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .practice-given-data table {
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .practice-bottom-bar {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .practice-page {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
 .practice-cost {
   margin: 0;
   font-weight: 700;
@@ -2617,6 +2643,17 @@ code {
     min-height: 44px;
     padding: 0.55rem 0.25rem;
     font-size: 0.8rem;
+  }
+
+  .fairness-labels {
+    flex-wrap: wrap;
+    gap: 0.15rem 0.5rem;
+  }
+
+  .better-game-card .bar-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.15rem;
   }
 }
 
@@ -3409,9 +3446,11 @@ code {
 @media (max-width: 760px) {
   .chapter-page {
     min-height: auto;
+    overflow-x: clip;
   }
 
   .coursemap {
+    --coursemap-visual-scale: 1;
     width: min(24rem, calc(100vw - 2rem));
     grid-template-columns: 1fr;
     justify-items: center;
@@ -3426,6 +3465,7 @@ code {
 
   .coursemap-info-card {
     width: min(20rem, calc(90.91vw - 1.82rem));
+    transform: scale(1);
     transform-origin: top center;
   }
 
@@ -3438,8 +3478,20 @@ code {
     margin-bottom: 2rem;
   }
 
+  .coursemap-cta {
+    margin-left: 1.5rem;
+  }
+
+  .coursemap-cta-title {
+    overflow: hidden;
+    min-width: 0;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
   .coursemap-exercises {
     width: min(16rem, calc(100vw - 5rem));
+    margin-left: 1.5rem;
   }
 }
 
@@ -4018,6 +4070,7 @@ code {
   .header {
     justify-content: space-between;
     gap: 1rem;
+    min-height: 3.45rem;
   }
 
   .header-nav {
@@ -4026,6 +4079,70 @@ code {
 
   .premium-pill {
     display: none;
+  }
+
+  .br-home-page {
+    zoom: normal;
+  }
+
+  .brand {
+    font-size: 1.28rem;
+  }
+
+  .status-pill,
+  .menu-button {
+    min-height: 2.15rem;
+  }
+
+  .status-pill {
+    min-width: 4.2rem;
+    padding: 0 0.75rem;
+    font-size: 1rem;
+  }
+
+  .menu-button {
+    font-size: 1.1rem;
+    padding: 0 0.35rem;
+  }
+
+  .menu-nav-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid #edf0f4;
+  }
+
+  .menu-nav-mobile a {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 44px;
+    padding: 0 0.6rem;
+    border-radius: 0.6rem;
+    color: #374151;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .menu-nav-mobile a:hover {
+    background: #f4f1ff;
+    text-decoration: none;
+  }
+
+  .menu-nav-mobile a.active {
+    color: #111827;
+    background: #f4f1ff;
+  }
+
+  .menu-nav-mobile .nav-icon {
+    font-size: 1.1rem;
+  }
+
+  .layout {
+    overflow-x: clip;
   }
 
   .br-home-shell {
@@ -4060,7 +4177,7 @@ code {
   }
 
   .status-pill-muted {
-    display: none;
+    display: inline-flex;
   }
 
   .br-home-page {
@@ -4079,6 +4196,29 @@ code {
   .br-thumbnail-row {
     width: min(18.7rem, calc(100vw - 3rem));
     gap: 0.55rem;
+  }
+
+  .br-month-weekdays,
+  .br-month-grid {
+    gap: 0.22rem;
+  }
+
+  .br-month-weekdays {
+    margin-bottom: 0.3rem;
+  }
+
+  .br-month-weekdays span {
+    font-size: 0.54rem;
+  }
+
+  .br-month-cell {
+    font-size: 0.6rem;
+    border-radius: 0.35rem;
+  }
+
+  .br-streak-summary {
+    gap: 0.4rem;
+    margin-top: 0.75rem;
   }
 }
 
@@ -4634,6 +4774,10 @@ code {
 .coach-worked tr:last-child td { border-bottom: none; }
 .coach-worked th { font-weight: 600; color: #166534; white-space: nowrap; }
 .coach-worked td:last-child { font-weight: 700; color: #166534; text-align: right; white-space: nowrap; }
+@media (max-width: 640px) {
+  .coach-worked th,
+  .coach-worked td:last-child { white-space: normal; }
+}
 .coach-section { display: flex; flex-direction: column; gap: 0.15rem; }
 .coach-section-label {
   font-size: 0.7rem;

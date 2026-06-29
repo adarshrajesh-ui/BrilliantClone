@@ -625,9 +625,10 @@
      footprint shrinks to fit the viewport. Decorative, aria-hidden cards. */
   .deck-spread {
     max-width: 100%;
+    overflow-x: auto;
   }
   .deck-spread-card {
-    margin: 0 -16px;
+    margin: 0 -18px;
   }
 }
 

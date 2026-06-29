@@ -143,6 +143,45 @@ export function Layout() {
                   </button>
                   {menuOpen && (
                     <div className="menu-dropdown" role="menu">
+                      <nav className="menu-nav-mobile" aria-label="Primary navigation">
+                        <NavLink
+                          to="/home"
+                          role="menuitem"
+                          className={({ isActive }) => (isActive ? 'active' : undefined)}
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <span className="nav-icon" aria-hidden="true">
+                            ⌂
+                          </span>
+                          Home
+                        </NavLink>
+                        <NavLink
+                          to="/chapter/expected-value-intro"
+                          role="menuitem"
+                          className={({ isActive }) =>
+                            isActive || location.pathname.startsWith('/chapter/expected-value-intro')
+                              ? 'active'
+                              : undefined
+                          }
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <span className="nav-icon" aria-hidden="true">
+                            ◇
+                          </span>
+                          Courses
+                        </NavLink>
+                        <NavLink
+                          to="/practice"
+                          role="menuitem"
+                          className={({ isActive }) => (isActive ? 'active' : undefined)}
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <span className="nav-icon" aria-hidden="true">
+                            ◎
+                          </span>
+                          Practice
+                        </NavLink>
+                      </nav>
                       <div className="menu-user">
                         <span className="menu-user-name">{profile?.displayName || 'Guest'}</span>
                         {isGuest ? (
